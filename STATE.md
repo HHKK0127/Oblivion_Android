@@ -3887,3 +3887,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v568 `4e824d64` →（本件 v569 を本 commit で push）＝**160裁定**。
 - **次**: V-561-1（通知 id 90/98/10 の分岐）／V-562-3（chargen 中 HUD）／V-565/566/567/568 系の残り（V-566-1 は L2 ゲート待ち）。
 
+## 2026-11-19 (lh) — V-561-1 クローズ v570（U5 フォロー）: **RaceSexMenu 通知ハンドラ `0x5CC200` の全分岐**（id 3種・28 ブロック dispatch・Random/Reset ダイアログ・ACT 5 種・テール2系統）
+
+- **成果物**: `tmp/re/v570_racenotify_dispatch_ruling.md`（probe **v570_1〜v570_8・8本 EXIT=0**）。台帳 **row546**・ai-todo **#161 追加 note**。
+- **① [確定(XML+命令)] 通知 id は 90/10/98 の3種のみ**: handler 全1713 insn の `cmp ebx` は3箇所。`race_sex_menu.xml` の `<id>` 全列挙＝10個（window=1／grab=2／**race_name text=10**／scroll=20／**Done=90**／テンプレ 100-104）→ **id10=名前入力テキスト**、**id98 は XML 外**（「98」0件）＝残点 V-570-3。id 1/2/20/100-104 は全ブロック不一致で epilogue（act なし）。
+- **② [確定(命令)] `0x5CC8BA` 以降＝28 ブロックの線形 dispatch**: (strA=要素名, strB=親ページ名, prep flag) で `0x5C3440(this,strA,strB,prep)`（ret 0x10・GetPage(strB)→`0x589930` [部分確定]）→ tile → **通知 id を float 化して tile の `<id>`(0xFA8) と浮動小数比較**。`id<tile`→次、`id>=tile`→act（block4-6 のみ `jnp` 反転・意味同一）。**strA/strB は v567 遷移表と表裏**（詳細→Shape/Tone、Face→Main…）。prep flag=1..9→2 刻み（11..47）、act 時 prep+1（10,12..48）。**block28 less→`0x5CDA11`＝epilogue（全滅）**。
+- **③ [確定(命令)] Random/Reset＝確認ダイアログ2系統**: `sRandomizeFace`/`sResetFace` ＋ flg `[0xB3B4C8]`/`[0xB3B4C9]` ＋ **cb `0x5C9FC0`/`0x5C9F70`＝`0x578D70()` 応答==2(Yes) で実行本体 `0x5C9CD0`/`0x5C9C70` へ jmp**、否なら flg=0。実行本体は顔データ→`[esi+0x880]` age 計算→user3 SetFloat→再 Yes 確認ループ。
+- **④ [確定(命令)] id10 経路**: ゲート `al=0x57D2F0([esi+0x8EC])`==0 のとき受理 → `0x5C2730`（0xFD3/0xFD4 同期）→ `0x5C30C0`（**入力文字列→`race_name`(0xFDE) SetString**＝v561 共通前処理の実体）。通常時＝`0x57DD90`+`0x5C30C0` 前処理→90。
+- **⑤ [確定(命令)] id98 act**: `vfunc+0x170`→`0x526F00`（`[esi+0x1FA]` 件の配列末尾＋`+0xE8+0x29C`→`0x5528F0`・vfunc+0x128）→`0x5C91E0`→tail＝**顔フォーム再構築系**。
+- **⑥ [確定(命令)] ACT 5 種**: Random 確認／Reset 確認／block3=`0x5C7070(id)`+`0x5C2F20`／block4-6=**`0x5C5C30(1)`＝Style ページ切替**／block7-28=**`0x5CCFB7`→`0x5C9650(strB)`＝親ページへ移動**（block28 で実測・他 [部分確定]）。
+- **⑦ [確定(命令)] テール2系統**: `0x5CD9C5` は `[0xB3B4C9]` **無条件クリア**＋`[esp+0x13]==1`（ダイアログ時）は `[0xB3B4C8]` **維持**、==0 でクリア。`0x5CD9D3`(Reset) は `[0xB3B4C8]` クリア。後半＝player vfunc+0x154→`0x7B4280`(配列[0xB42F54])→`0x7C5E70`/`0x7C7EB0` [部分確定]。
+- **⑧ 教訓（再発型）**: **機械表は anchor 基準で掴む**（strA/strB を backward window で取ると前 act の文字列 Yes/No に紛れる→ブロック先頭の `push 0xfa8` を境に strA=直前・strB=直後）／**分岐先の next/ACT は先頭4命令 peek**（1命令だと `mov edx,…` 始まりを誤判）／**XML `<id>` 全列挙で通知 id 発生源が機械確定**（98 の「XML 外」即検出）／jp/jnp は fall-through とペアで読む。
+- **残点 V-570-1..6**: 1=act ID と `0x5C9650` 引数契約【中】／2=`0x5C7070`・`0x5C5C30` 本体【中】／3=**id98 発生源**【中】／4=0xFD3/0xFD4 XML 名【低】／5=gt 誤爆しない理由【低】／6=`[0xB3B4C9]` クリア経路【低】。
+- **本日 push 累計（セッション）**: v405 → … → v569 `08932899`(+掃除 `d77cfa51`) →（本件 v570 を本 commit で push）＝**161裁定**。
+- **次**: V-562-3（chargen 中 HUD の命令的裏付け）／V-565/566/567/568 系残り（V-566-1 は L2 ゲート待ち）／V-569-1（p3 グルーピングの P）。
+

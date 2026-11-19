@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T16:00:00Z",
+  "lastUpdated": "2026-11-19T18:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14598,14 +14598,30 @@
         "v559"
       ],
       "content": "2026-11-19 v569 裁定＝V-559-2 クローズ（StatsMenu p3 Skills/p5 Misc の行生成全分岐・ai-todo #157 追加 note）。成果物 tmp/re/v569_p3_p5_rows_ruling.md・台帳 row545。probe v569_1〜v569_18（18本 EXIT=0）。①p3 0x5DC630 [確定(命令)]: 21 行・listindex は P=0x51C090(0x5E3320([0xB333C4]),form) で 2 群（真→0..、偽→C+1..・番号 C 空白・最大 21=22 スロット）＝分類グルーピング。失敗時 'Error creating skill item in Stats menu. Template...'。②行フィールド [確定(XML+命令)]: user1=1.0 定数(fld1)／user2=0x65FCA0 進度 0..1（temp_fill_bar=parent().user2/user1・既定 100/50 はダミー）／user3=vfunc+0x284 現在値（色は user7 と lt/eq/gt）／user4=0x565CC0 名前／user5=icon（'.' 直前に _small 挿入）／user6=fild(AV 索引)（internal・XML 未参照）／user7=0x5F1910 base。③0x5DA1A0(ret4・caller6): -1=全体刷新／8=health／9=magicka／0xA=fatigue／12..32 → [esi+(av-12)*4+0x60] の行へ user1/user2/user3/user7（slot 保存後呼び出しで初回 null 無し）。④p5 0x5DA930 [確定(命令)]=44 行完全表: helper5（明示 idx 0,1,2,4,5＝3 空白）＋ランク5（0x5F23B0・表 0xB11E3C）＋犯罪6（表 0xB11E50..・player+0x6C8+4k）＋単発28（Bounty=0x41FC90 float／Fame=vfunc+0x204／Infamy=vfunc+0x208／他=player+0x658..0x6C4・全 44 ラベル GMST 同定済）。⑤listindex 機構: add1=連続／add2=1 スロット空白・空白 15 箇所（3,11,16,25,28,30,33,35,38,40,44,48,51,54,57）→ 44+15=59=最大 58+1 の算術整合。Nirnroots のみ create→+2→SetFloat（idx=58）。唯一の条件行=SE Bounty（0x46B280(\"SEWorld\")≠0・偽なら以降 -1）。⑥シグネチャ: 0x565BE0=cdecl(2,idx)→AV 索引 12..32／0x51C090=ret4=P（意味 [未確定] V-569-1）／0x5DA8C0・0x585410=ret 0xc／SetFloat・SetString=ret8。⑦教訓: push 保留（esp-shift）でスロット実体がずれる（文字列=normal 0x1c、slot カーソル=normal 0x24（+4 は 1 push 保留中の [esp+0x28]+4）、form=normal 0x28（1 push 保留の 5DC75D）、this=normal 0x2c）→ size 付き逐語ダンプが必須（線形行表示は 1 byte の push ecx を落とす）／レジスタ長は [a-z]+／io.open(p,'w') は newline 検証エラーでも truncate 先行で 0 バイト化する。残点 V-569-1..5（1=P の意味【中】／2-5【低】）。"
+    },
+    {
+      "id": "opencode-v570-racenotify-dispatch-20261119",
+      "timestamp": "2026-11-19T18:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v570",
+        "u5",
+        "racesexmenu",
+        "todo-161",
+        "v561"
+      ],
+      "content": "2026-11-19 v570 裁定＝V-561-1 クローズ（RaceSexMenu 通知ハンドラ 0x5CC200 の全分岐・ai-todo #161 追加 note）。成果物 tmp/re/v570_racenotify_dispatch_ruling.md・台帳 row546。probe v570_1〜v570_8（8本 EXIT=0）。①通知 id は 90/10/98 の3種のみ（handler 全1713 insn の cmp ebx は3箇所）[確定(XML+命令)]。race_sex_menu.xml の <id> 全列挙=10個（window=1, grab=2, race_name text=10, scroll=20, Done=90, テンプレ100-104）→ id10=名前入力テキスト、id98 は XML 外（98 文字列0件）＝残点 V-570-3。②0x5CC8BA 以降=28 ブロックの線形 dispatch [確定(命令)]: (strA=要素名, strB=親ページ名, prep flag) で 0x5C3440(4引数・GetPage(strB)→0x589930 [部分確定])→tile→通知 id(float)と tile の <id>(0xFA8) を浮動小数比較、id<tile→次・id>=tile→act。block4-6 のみ jnp 反転で意味同一。strA/strB 対応は v567 遷移表と表裏（詳細→Shape/Tone、Face→Main…）。prep flag=1..9→2刻み(11..47)、act 時 prep+1。block28 less→epilogue（act なし）。③GetPage(Random)/(Reset)=確認ダイアログ2系統: sRandomizeFace/sResetFace＋flg [0xB3B4C8]/[0xB3B4C9]＋cb 0x5C9FC0/0x5C9F70=0x578D70() 応答==2(Yes) で実行本体 0x5C9CD0/0x5C9C70 へ jmp、否なら flg=0。実行本体は顔データ→[esi+0x880] age 計算→user3 SetFloat→再 Yes 確認ループ。④id10 経路: ゲート al=0x57D2F0([esi+0x8EC])==0 のとき受理→0x5C2730(0xFD3/0xFD4 同期)→0x5C30C0(入力文字列→race_name 0xFDE SetString＝共通前処理の実体)。⑤id98 act: vfunc+0x170→0x526F00(配列末尾操作)→0x5C91E0→tail＝顔フォーム再構築系。⑥ACT 5 種: Random 確認/Reset 確認/block3=0x5C7070+0x5C2F20/block4-6=0x5C5C30(1)＝Style ページ切替/block7-28=0x5CCFB7→0x5C9650(strB)＝親ページへ移動。⑦テール: 0x5CD9C5=[0xB3B4C9] 無条件クリア+ダイアログ時(1)は [0xB3B4C8] 維持、==0 でクリア/0x5CD9D3(Reset)=[0xB3B4C8] クリア→共通後半(vfunc+0x154→0x7B4280→0x7C5E70/0x7C7EB0 [部分確定])。⑧教訓: 機械表は anchor 基準（push 0xfa8 を境に strA=直前・strB=直後。backward window 最初2個だと前 act の Yes/No に紛れる）／分岐先の next/ACT は先頭4命令 peek／XML <id> 全列挙で通知 id 発生源が機械確定（98 の XML 外が即検出）／jp/jnp は fall-through とペアで読む。残点 V-570-1..6（1=act ID と 0x5C9650 引数契約【中】／2=0x5C7070・0x5C5C30 本体【中】／3=id98 発生源【中】／4-6【低】）。"
     }
   ],
   "metadata": {
-    "totalEntries": 989,
+    "totalEntries": 990,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T16:00:00Z",
-    "entry_count": 989,
-    "last_updated": "2026-11-19T16:00:00Z"
+    "lastUpdated": "2026-11-19T18:00:00Z",
+    "entry_count": 990,
+    "last_updated": "2026-11-19T18:00:00Z"
   }
 }
