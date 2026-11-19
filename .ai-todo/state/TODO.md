@@ -169,6 +169,13 @@
   > 【移植への示唆】id は静的採番でなく動的カウンタ（初期200）／Main id=0 のみ特別（user0 キーも 0）／**スライダは2 id 消費**（数えると1つずれる）／id10/90/98 と 200系は役割分離＝移植の通知設計も2系統に分けるのが原版準拠。
   > 【手法の教訓（再発型）】id 復元は「ctor のカウンタ初期化→消費型関数 head（add eax,1／存／使用）→E8 全列挙→線形シミュレーション」の4段で機械復元できる／**prologue の byte 数（push 数＋sub＋cookie）を size 付き逐語ダンプで数えると引数スロット写像が一発で決まる**（[esp+0x40]=a4 の確定）／cdecl の push 順と str 構築の入れ子（中間 pop）を混同しない（push flag が a5 ではなく a4 になり得る）。
   > 【残点 V-571-1..4】1=**id98 発生源（第三系統）【中】**／2=0x589930 シグネチャで block1-8 を [確定] 化【中】／3=カウンタ他書手（他メニューの 200 リセット有無・ctor の残り refs）【低】／4=AddPane の a3/a5 意味【低】。
+  > V-571-1（id98 発生源探索）の絞込み 2026-11-19 v573。成果物 tmp/re/v573_id98_source_survey_ruling.md・台帳 row549。probe v573_1〜v573_5（5本・EXIT=0）。結果は「negative 確定＋前提の再定義」＝発生源は送信側 message 配線の解析待ち（残点を V-573-1 に継承）。
+  > 【[確定(命令)（negative）] id98 は即値で送られていない】EXE 全域: push 0x62（6a62）=3件のみ／push imm32 0x62（6862000000）=0件／mov reg,0x62（b8..bf+62000000）=0件／**call [reg+0x0c]（通知ハンドラ入口・短7形式+遠7形式の全247件）の直前文脈（前後28バイト）に 0x62 の出現=0件** → **id98 は変数/フィールド経由で送られる**。
+  > 【[部分確定] push 0x62 の3件はすべて無関係】#1 0x5BAA0D（head 0x5BA4D0）= 0x589B70(0x3FF) でメニュー取得 → push 列 (0,0,0xff,0,4,0,0x62,'local_player')+float×2 → call 0x5B87D0（0x6ECC80([0xB333C4])→0x4CCE20→vfunc+0x174(player)…）。0x5BA4D0 の callers=0x5BB1B0/0x5BB210/0x5BB350（0x5BBxxx＝マップ/ワールド系メニュー周辺）＝ワールド系処理で 0x62 は構造体フィールド/コード値。#2 0x82AEA2（head 0x828280）= call 0x772630 = [0xB4275C] のダブルバッファ・リスト挿入ヘルパ（定数）。#3 0x856703（head 0x856510）= call 0x7E2370 = 構造体コピー/初期化（[esi]=eax, [esi+4]=cx, [esi+6]=dl, [esi+8]=al, [esi+0xc]=malloc 0x401F00+配列コピー）で 0x62 はフィールド値。
+  > 【[未確定]（前提確定）発生源＝送信側 UIMenu message 配線】v265_opcode_gt_names14.md の『+0x04 汎用ディスパッチ経由・送信元特定は [推定・低]』が未解のまま。残点を **V-573-1 に再定義して継承【中】**。入口＝vtable[4/5/9] 共通の 0x60CF60（の中身）と、id をフィールド/変数から読む push 形式（即値でない以上 id の writer を遡る）。
+  > 【[確定(命令)]（副次成果）RaceSexMenu vtable 0xA6D38C 全16スロット】[0]=0x5C4E20（ctor 系・0x5C4E40 近傍）／[1]=0x5C26D0（head 0x5C25C0）／[2]=0x5C2790／**[3]=0x5CC200＝通知ハンドラ（v561 の [+0x0C] と完全整合）**／**[4]=[5]=[9]=0x60CF60（v265 の汎用ディスパッチ候補・3スロット共有＝common default）**／[6]=[7]=0x890B90（共通）／[8]=0x5C3BE0／[10]=0x5C2870（head 0x5C2790）／[11]=0x5CE570（head 0x5CDEF0）／[12]=0x5C3DD0／[13]=0x5C4E10（head 0x5C4BF0）／[14]=0x725DA0（head 0x725D80）／[15]=0。
+  > 【手法の教訓（再発型）】『送信元を探す』探索は ①即値走査（push imm8/32・mov reg,imm）で **negative を [確定] として記録**、②間接 call（ff 50 0c 系）の**文脈走査＝短7形式＋遠7形式の両方を走査**、③残った hit の **callee identity 同定**、の順で潰すと詰め切れる。negative で終わっても『存在しないこと自体』が裁定価値を持つ（本裁定の主成果）。
+  > 【残点】V-573-1【中】= id98 発生源（送信側 message 配線解析＝0x60CF60 中身と id writer の遡り）／V-573-2【低】= 0x5BA4D0（メニュー0x3FF）と 0x5B87D0 の引数契約（'local_player'＋0x62 の意味）。
 
 - [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
   > 【前提の訂正（2026-11-17・emu 実測で判明）】**「IME を開くとサーフェースが 1920x573 に縮む」はこの構成では起きない**。証跡: キーボードが実際に開いた状態（%TEMP%/opencode/ime_open_state.png・y≥570 をキーボードが占有）で、リサイズハンドラのログが **すべて `1920x1110`**（`LauncherScreen/TitleScreen/SettingsUI/SaveLoadUI screen size updated to: 1920x1110`）で、`1920x573` は一度も出ない。＝**IME はオーバーレイとして乗るだけでウィンドウ/サーフェースを縮めない**（GLSurfaceView が全画面・adjustPan 相当）。【試して失敗した修正（撤回済み・差分に残していない）】リサイズハンドラに `characterCreationUI->setScreenSize()` を追加し、`getConfirmButtonY()` を `screenHeight - 32 - 8` にクランプする案 → **`screenHeight` が 1110 のままなので発動せずノーオペ**（ボタンは依然キーボード下＝見えない）。【古い台帳の「IME 時は 1920x573」の出所】#143 の記録にある `DebugMenu screen size updated to: 1920x573` は **DebugMenu が縮む別の経路**（コンソールの EditText フォーカス時等）の観測であり、**キャラ作成の名前欄フォーカス時には起きない**。【正しい設計の候補】①**Kotlin 側で WindowInsets(ime) を取得し `nativeOnImeVisibility/insets` で native に通知** → native がボタン行を IME 上端（1110 − imeHeight − margin）へ移動（描画と当たり判定は同じ `getConfirmButtonY()` 経由なので1箇所で足りる）②`AndroidManifest` の `windowSoftInputMode=adjustResize` を試し、**実際にサーフェースが縮むことを実測してから**クランプ案を再開（ただし #143 の調査では GLSurfaceView 全画面で効かなかった旨の記録あり＝要再実験）③現状の回避として #143 の ✔ 自動クローズを前面に出す（実装済み・Back 不要）。**①が最も確実**、②は1実験で確認できる。【補足】検証②で Done タップ（1467,549）が失敗したのはこのため（ボタンは y≈990 にありキーボード下）。
@@ -2422,11 +2429,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2450,4 +2452,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 21:13:52
+**ai-todo** | Last Updated: 2026-11-19 21:21:56

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T22:00:00Z",
+  "lastUpdated": "2026-11-20T00:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14646,14 +14646,30 @@
         "v569"
       ],
       "content": "2026-11-19 v572 裁定＝V-569-1 クローズ（Skills タブグルーピング判定 0x51C090 の実体・ai-todo #157 追加 note）。成果物 tmp/re/v572_skill_grouping_predicate_ruling.md・台帳 row548。probe v572_1〜v572_3（3本 EXIT=0）。①[確定(命令)] 0x51C090(this,arg)=『arg が this+0x44 の 7 要素 dword 配列に含まれるか』の線形探索（edx 0..6 / ecx+=4 / 一致で al=1）、[this+0xC]==[0xB37D00] なら即 false。ret 4。＝クラスの管輪スキル7個判定。②[確定(命令)] [0xB37D00]=int GMST iClassCharactergenClass=0x230E6（charactergen クラス formID）を静的登録 0x9EDEA0 の逐語で確定。隣接 iClassNightblade=0x23C08 は別グローバル 0xB37CF8（自動逆引きは隣接混入で誤り→逐語で是正＝教訓: int GMST は value が文字列範囲外で必ず欠ける）。③[確定(命令)] v569 p3 グルーピングの正体: 管輪スキルが先頭 0..C-1／番号 C が空白／非管輪が C+1..（通常 C=7→22 スロット＝v569 算術一致）。charactergen 既定クラス時（P 常 false）は C=0→グルーピング無し（0..20 連番）＝キャラ生成中は並び替えしない。builder+0x30.user3=C=管輪スキル数。④arg=AV 索引 12..32、this=0x5E3320([0xB333C4])（ゲート 0x4D7F80＝vfunc+0x190 真 ∧ [vfunc+0x170 戻り+4]==0x23 → [+0x104] 返却・型は [部分確定] V-572-3）。⑤caller 8 本: p3 0x5DC630×2・0x5DA1A0×2・0x50D020・0x663C50/0x666BB0/0x668070（用途 [部分確定]）＝EXE 共通 helper。移植: 『クラス選択前＝素順／確定後＝管輪7個先頭（間1空白）』が原版実挙動。残点 V-572-1..3（全て【低】）。"
+    },
+    {
+      "id": "opencode-v573-id98-source-survey-20261119",
+      "timestamp": "2026-11-20T00:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v573",
+        "u5",
+        "racesexmenu",
+        "todo-161",
+        "v571"
+      ],
+      "content": "2026-11-19 v573 裁定＝V-571-1 の絞込み（id98 発生源探索・negative 確定と引き継ぎ・ai-todo #161 追加 note）。成果物 tmp/re/v573_id98_source_survey_ruling.md・台帳 row549。probe v573_1〜v573_5（5本 EXIT=0）。①[確定(命令)（negative）] id98 は即値で送られていない: push 0x62（6a62）=3件のみ/push imm32 0x62=0件/mov reg,0x62=0件/call [reg+0x0c]（通知入口・短7+遠7形式）全247件の文脈（前後28B）に 0x62 なし → 変数/フィールド経由。②[部分確定] 3件はすべて無関係: #1 0x5BAA0D（0x5BA4D0＝メニュー0x3FF 取得→'local_player'+0x5B87D0（0x6ECC80 player 系→vfunc+0x174）・callers 0x5BB1B0/210/350＝マップ/ワールド系）／#2 0x772630＝[0xB4275C] ダブルバッファ・リスト挿入／#3 0x7E2370＝構造体コピー（[esi]=eax,[+4]=cx,[+6]=dl,[+8]=al,[+0xc]=malloc+配列コピー）で 0x62 はフィールド値。③[未確定]（前提確定）発生源＝送信側 UIMenu message 配線（v265 の『vtable+0x04 汎用ディスパッチ・送信元特定は [推定・低]』）→ 残点を V-573-1 に再定義・継承【中】（入口＝0x60CF60 と id writer の遡り）。④[確定(命令)]（副次成果）RaceSexMenu vtable 0xA6D38C 全16スロット: [3]=0x5CC200＝通知ハンドラ（v561 と整合）/[4]=[5]=[9]=0x60CF60（汎用ディスパッチ候補・3スロット共通）/[0]=0x5C4E20 ctor 系/[6]=[7]=0x890B90/[1]=0x5C26D0/[2]=[10]=0x5C2790 系/[8]=0x5C3BE0/[11]=0x5CE570/[12]=0x5C3DD0/[13]=0x5C4E10/[14]=0x725DA0/[15]=0。教訓: 送信元探索は『①即値走査で negative を [確定] 記録→②間接 call 文脈走査（ff 50 0c 系は短7+遠7形式）→③残 hit の callee identity 同定』の順。negative で終わっても『存在しないこと』自体が裁定価値。残点 V-573-1【中】（id98 発生源＝message 配線）／V-573-2【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 992,
+    "totalEntries": 993,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T22:00:00Z",
-    "entry_count": 992,
-    "last_updated": "2026-11-19T22:00:00Z"
+    "lastUpdated": "2026-11-20T00:00:00Z",
+    "entry_count": 993,
+    "last_updated": "2026-11-20T00:00:00Z"
   }
 }
