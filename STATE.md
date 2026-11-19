@@ -3873,3 +3873,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v567 `11f3f531` →（本件 v568 を本 commit で push）＝**159裁定**。
 - **次**: V-559-2（StatsMenu p3/p5 行生成の全分岐）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-565/566/567 系の残り。
 
+## 2026-11-19 (kg) — V-559-2 クローズ v569（U3 フォロー）: **StatsMenu p3 Skills と p5 Misc の行生成全分岐を完全確定**（21 行 2 群グルーピング＋44 行完全表＋算術整合検証）
+
+- **成果物**: `tmp/re/v569_p3_p5_rows_ruling.md`（probe **v569_1〜v569_18・18本 EXIT=0**）。台帳 **row545**・ai-todo **#157 追加 note**（※途中 #161 と誤記→#157 に修正済み・裁定書/台帳/row 3 箇所）。
+- **① [確定(命令)] p3 `0x5DC630`**: 21 スキル行を 1 ループ生成。**listindex は P=`0x51C090(0x5E3320([0xB333C4]), form)` で 2 群**（真→0..、偽→C+1..、C=真件数・**番号 C は空白**・最大 21＝22 スロット）＝**行は元順ではなく分類グルーピング**。失敗時 `'Error creating skill item in Stats menu. Template...'`。
+- **② [確定(XML+命令)] 行フィールド**: listindex=0xFAA（y=70×idx・`stat_item_line` filename=idx mod 3）／**user1=1.0 定数（`fld1`）**／**user2=`0x65FCA0` 進度 0..1**（XML `temp_fill_bar`=`parent().user2/user1`・既定 100/50 はダミー）／user3=現在値（色は user7 と lt/eq/gt）／user4=名前／user5=icon（**'.' 直前に `_small` 挿入**）／**user6=fild(AV 索引)**（internal・XML 未参照）／user7=base。
+- **③ [確定(命令)] `0x5DA1A0`（ret 4・caller 6）**: -1=全体刷新／8=health／9=magicka／0xA=fatigue／0..7=属性／**12..32 → スロット配列 `[esi+(av-12)*4+0x60]` の行に user1/user2/user3/user7**（slot 保存後呼び出し＝初回も null 無し）。
+- **④ [確定(命令)] p5 `0x5DA930`＝44 行の完全表**: helper 5（**明示 idx 0,1,2,4,5＝3 空白**・Days Passed=時計／Quests 2 種=`0x52A8A0` 計数／Skill Increases=+0x660／Training=+0x664）＋ランク別 5（`0x5F23B0`・表 `0xB11E3C`）＋犯罪 6（表 `0xB11E50..`・player+0x6C8+4k）＋単発 28（Bounty=`0x41FC90` float／Fame=vfunc+0x204／Infamy=vfunc+0x208／他=player+0x658..0x6C4・**全 44 ラベル GMST 同定済**）。
+- **⑤ [確定(命令)] listindex 機構**: `add1`=連続・**`add2`=1 スロット空白**。**空白 15 箇所（3,11,16,25,28,30,33,35,38,40,44,48,51,54,57）→ 44+15=59=最大 58+1 の算術整合**（取りこぼし機械検証）。Nirnroots 行のみ create→+2→SetFloat（idx=58）。**唯一の条件行=SE Bounty**（`0x46B280("SEWorld")`≠0・偽なら以降 −1 シフト）。
+- **⑥ [確定(命令)] シグネチャ（ret N）**: `0x565BE0`=cdecl(2,idx)→**AV 索引 12..32**／`0x51C090`=ret4=P（**意味 [未確定] V-569-1**）／`0x5DA8C0`=ret 0xc／`0x585410`=ret 0xc／SetFloat・SetString=ret8。
+- **⑦ 教訓（ハーネスの罠・再発型）**: **push 保留（esp-shift）でスロット実体がずれる**（文字列=normal 0x1c、**slot カーソル=normal 0x24（+4 は 1 push 保留中の [esp+0x28]+4）**、**form=normal 0x28（1 push 保留の 5DC75D）**、this=normal 0x2c）→ **size 付き逐語ダンプが必須**（線形行表示は 1 byte の `push ecx` を落とす）／レジスタ長は `[a-z]+`（`edi` 逃し）／静的登録は `push imm32` バイト走査／**行数×空白=スロット数の整合検証**。**追記ツールの罠再確認**: `io.open(p,'w')` は **newline 検証エラーでも truncate が先行**し 0 バイト化する（row545.txt で発生→再作成で復元）。
+- **残点 V-569-1..5**: 1=**P の意味（グルーピング正体）＋`builder+0x30.user3`=C の表示先【中】**／2=p5 空白 15 箇所が y=70 空行で正しいか【低】／3=`0x52A8A0` 2 クエリの区別【低】／4=`0x565BE0` 引数 2 と `0x565CC0`/`0x65FCA0` シグネチャ【低】／5=`0x5DC8F3-FC` 3 命令の目的【低】。
+- **本日 push 累計（セッション）**: v405 → … → v568 `4e824d64` →（本件 v569 を本 commit で push）＝**160裁定**。
+- **次**: V-561-1（通知 id 90/98/10 の分岐）／V-562-3（chargen 中 HUD）／V-565/566/567/568 系の残り（V-566-1 は L2 ゲート待ち）。
+

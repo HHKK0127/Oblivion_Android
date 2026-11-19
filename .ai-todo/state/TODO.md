@@ -172,6 +172,16 @@
   > 【p1 の副次】health/magicka/fatigue は XML stat_p1.user6/user7（health current/max）・user8/user9（magicka）・user10/user11（fatigue）。v364 の AV9→0xFB6+0xFB7/0xFBB、AV10→0xFB8+0xFB9/0xFBC が magicka/fatigue の current/max と一致（AV8=health は同 switch 列挙外・[部分確定]）。
   > 【移植への示唆】タブは General/Attributes/Skills/Factions/Misc の5つ。属性の色は base との比較なので現在値と base の2系統が必須。p4 は「所属ファクション＋ランク名」で、非表示フラグ(bit0/bit3)と DUMMY ランクの除外を再現する必要あり。タブ見出しはアイコンのみ（文字ラベルは原版に無い独自要素）。
   > 【残点 V-559-1..4】1=health(AV8) の p1 供給箇所【低】／2=p3・p5 の行生成全分岐【中】／3=タブアイコンの UV crop【低】／4=[item]+0x34 bit0/bit3 のフラグ名【低】。
+  > V-559-2（StatsMenu p3/p5 の行生成全分岐）クローズ 2026-11-19 v569。成果物 tmp/re/v569_p3_p5_rows_ruling.md・台帳 row545。probe v569_1〜v569_18（18本・EXIT=0、うち v569_4/6/17 は試行・補助）。
+  > 【p3 Skills=0x5DC630 [確定(命令)]】21 スキル行を 1 ループ生成。listindex はプリディケート P=0x51C090(0x5E3320([0xB333C4]), form) で 2 群: 真→0..（counterA 初期0）、偽→C+1..（counterB、C=真の件数・C>0 で +1）→ **番号 C は空白・行は元順ではなく分類グルーピング**（最大 21＝22 スロット）。instantiate 失敗時は 'Error creating skill item in Stats menu. Template...'(0xA6DB10→0x4A7A60) をログ。
+  > 【行フィールド [確定(XML+命令)]】listindex=0xFAA（y=70×idx・stat_item_line の filename=idx mod 3）／user1=**1.0 定数（fld1）**／user2=**0x65FCA0(player,form) の進度 0..1**（XML temp_fill_bar が parent().user2/user1 を読む＝既定 100/50 はダミーで EXE が上書きして初めてバーが動く）／user3=vfunc+0x284 現在値（色は user7 と lt/eq/gt で under/even/over）／user4=0x565CC0 名前／user5=icon（元文字列 0x446AF0(global 0xB33A98,idx)->+0x24 をコピーし '.' の直前に _small を挿入: strchr→tail+6→memcpy6）／**user6=fild(AV 索引)**（internal・XML 未参照）／user7=0x5F1910 base。
+  > 【0x5DA1A0 共有 AV フィラー（ret 4・caller 6 箇所: p1 系/p3 行ループ毎行/タブ系 0x5DCD70 ×3/0x5DCEF0）】arg=-1 全体刷新、8=health、9=magicka(user8/9/13=0xFB6/0xFB7/0xFBB on [esi+0x28])、0xA=fatigue(user10/11/14)、0..7=属性([esi+0x2c])、**12..32 → ebx=av-12 で row=[esi+ebx*4+0x60]（p3 スロット配列・null チェック）に user1=1.0・user2=進度・user3・user7 を設定**。p3 行ループは slot 保存(0x5DC74A)→呼出(0x5DC8CB)の順＝初回ビルドでも null 発生なし。
+  > 【p5 Misc=0x5DA930 [確定(命令)]＝44 行の完全表（v569 §3.2）】helper 5（Days Passed=0x402C00([0xB332E0]) 時計／Active Quests・Quests Completed=0x52A8A0 計数×2（引数 1,0,0,buf と 1,1,0,buf）／Skill Increases=player+0x660／Training Sessions=+0x664・**明示 listindex 0,1,2,4,5＝3 番空白**）＋ランク別 5（21 回で 0x565BE0(2,idx)→0x5F23B0 ランク 0..4 集計・表 0xB11E3C＝Novice..Master）＋犯罪 6（表 0xB11E50..0xB11E64＝Items Stolen/Pickpocketed/Trespasses/Assaults/Murders/Horses Stolen・player+0x6C8+4k）＋単発 28（Bounty=0x41FC90(player+0x44) float／SE Bounty=player+0x700 float（条件行）／Fame=vfunc+0x204／Infamy=vfunc+0x208／DaysJailed=+0x658…Artifacts=+0x6A4…Nirnroots=+0x6C4・全 44 ラベルの GMST 同定済）。
+  > 【listindex 機構 [確定(命令)]】add edi,1=連続／**add edi,2=1 スロット空白**。helper は明示 idx。**空白 15 箇所（3,11,16,25,28,30,33,35,38,40,44,48,51,54,57）→ 44 行＋15 空白＝59＝最大 58＋1 の算術整合**で取りこぼしを機械検証。Nirnroots 行のみ create→+2→SetFloat 順（idx=58）。**唯一の条件生成=SE Bounty 行**（0x46B280("SEWorld")≠0 のみ・偽なら create と +1 がスキップされ以降の全 idx が -1 シフト）。
+  > 【シグネチャ実測（ret N）】0x565BE0=cdecl(2,idx)→**AV 索引 12..32**／0x51C090=ret 4=P（意味は [未確定] V-569-1）／0x5F23B0=ret 4 ランク／0x5F1910=ret 4 base／0x446AF0=ret 4 icon 元／0x5DA8C0=ret 0xc misc helper（listindex,value,label）／0x585410=ret 0xc instantiate／0x58CEB0/58CED0=ret 8 SetFloat/SetString／0x402C00=ret 時計。
+  > 【手法メモ（再発型・重要）】①**push 保留（esp-shift）を無視するとスロット実体がずれる**: テンプレ文字列は normal [esp+0x1c..0x23]（2 push 直後）、**slot カーソルは normal [esp+0x24]（+4 は 1 push 保留中の 0x5DC8E5 [esp+0x28]+4 が実体 0x24）**、**form/AV 索引は normal [esp+0x28]（1 push 保留の 0x5DC75D）**、builder this は normal [esp+0x2c]。②**線形行表示は 1 byte の push ecx(0x5DC8D4) を落とす→ size 付き逐語ダンプで byte 境界確認が必須**。③レジスタ長は [a-z]+ 固定（{2} だと edi を逃す）。④静的登録バンドは push imm32(68) のバイト走査が最強（デコードずれ回避）。⑤**行数×空白=スロット数のアリタナイ検証**で表の取りこぼしを機械検出。
+  > 【移植への示唆】Skills タブは分類グルーピング（原版順再現には P=0x51C090 の解明が必須）／進行度バーは user1=1.0＋user2=0..1 正規化（既定 100/50 のまま使うと全バー 50% 固定）／+2 加算＝行間隔が 15 箇所（詰めると原版と違う）／SE 有無で Misc 全行 ±1 シフト。
+  > 【残点 V-569-1..5】1=**P の意味（グルーピングの正体）と builder+0x30.user3=C の表示先【中】**／2=p5 空白 15 箇所が y=70 空行で正しいか（stat_misc_template の y 公式未確認）【低】／3=0x52A8A0 2 クエリ（1,0,0 と 1,1,0）の区別【低】／4=0x565BE0 引数 2・0x565CC0・0x65FCA0 の正確なシグネチャ（x87 戻り含む）【低】／5=0x5DC8F3-5DC8FC の 3 命令の目的（単体では dead に見える）【低】。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -2381,11 +2391,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2409,4 +2414,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 19:41:35
+**ai-todo** | Last Updated: 2026-11-19 20:28:14

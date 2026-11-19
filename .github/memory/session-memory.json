@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T15:00:00Z",
+  "lastUpdated": "2026-11-19T16:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14582,14 +14582,30 @@
         "todo-166"
       ],
       "content": "2026-11-19 v568 裁定＝V-557-1..3 クローズ（ループ継ぎ目／BinkOpen フラグ名／credits 再生箇所・ai-todo #166 追加）。成果物 tmp/re/v568_bink_residuals_ruling.md・台帳 row544。probe v568_1〜v568_4（4本 EXIT=0）。①[確定(命令)] CreditsMenu.bik は EXE から再生されない。値リテラル CreditsMenu.bik(0xA31AD4) と GMST 名 sCreditsMenuMovie:General(0xA31AE4) の .text dword 参照はともに 0 件（.data の GMST テーブルのみ＝ランタイム名前検索も無い）。スロット [0xB0309C] の .text 参照は静的登録 thunk 0x9AAB71 の1件のみ。比較: [0xB0308C]→0x40F0B1／[0xB03094]→0x405577, 0x5B5D00, 0x5B5F99／[0xB030A4]→0x66F2C0／[0xB03084]→0x40EAE2（全スロットに実在の再生呼出があるのに対し credits のみ無い）。整合: credits_menu.xml(942B) に .bik 参照なし・本文は外部 Data\\Credits.txt（v364 §2）。②[確定負] ループ継ぎ目は EXE から決定不能。FUN_004106C0（decompiled L9416-9462）は _BinkNextFrame とローカルフレーム加算 param_1[3]++ のみで先頭へ戻す命令は1件も無い。停止判定は *(uint*)(*param_1+8) <= param_1[3] && cVar1==0 の1箇所。背景は描画ループ 0x57F170 が毎フレーム FUN_00410810(0,1) を呼ぶ（継続フラグ=1）。継ぎ目の実現は binkw32 内部（SDK 依存）。③[未確定] BinkOpen フラグの SDK 名は bink.h が必要（EXE に手掛かりなし）。[確定(命令)] 条件: 0x2000＝ファイルサイズが [0xB030BC]=26,214,400 B（GMST iPreloadSizeLimit=25 MiB）超過時（＋0x983754 の返り値との AND）／0x08000000＝スレッド不一致時に追加し SuspendThread/ResumeThread（IAT 0xA280F0）でガード／失敗時 \"Could not open %s for playback.\"。BinkOpen import は _BinkOpen@8 のみ。移植への示唆: クレジット動画は原版に無い（同梱されるが再生されない）＝credits_menu.mp4 は独自演出で削除候補（U7⑤ と同根）。ループは『原版は binkw32 に任せている』と書くのが正確。フラグ移植時は値と成立条件のみを根拠にする。教訓: 再生される／されないは5つの同型スロットの .text 参照数を並べるだけで機械的に決着する（credits のみ thunk 1 件）／リテラルと GMST 名の両方を走査しないとランタイム名前検索の可能性を潰せない／EXE から決定できないものは決定不能と明示し値と成立条件だけを根拠として残す。"
+    },
+    {
+      "id": "opencode-v569-p3-p5-rows-20261119",
+      "timestamp": "2026-11-19T16:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v569",
+        "u3",
+        "statsmenu",
+        "todo-157",
+        "v559"
+      ],
+      "content": "2026-11-19 v569 裁定＝V-559-2 クローズ（StatsMenu p3 Skills/p5 Misc の行生成全分岐・ai-todo #157 追加 note）。成果物 tmp/re/v569_p3_p5_rows_ruling.md・台帳 row545。probe v569_1〜v569_18（18本 EXIT=0）。①p3 0x5DC630 [確定(命令)]: 21 行・listindex は P=0x51C090(0x5E3320([0xB333C4]),form) で 2 群（真→0..、偽→C+1..・番号 C 空白・最大 21=22 スロット）＝分類グルーピング。失敗時 'Error creating skill item in Stats menu. Template...'。②行フィールド [確定(XML+命令)]: user1=1.0 定数(fld1)／user2=0x65FCA0 進度 0..1（temp_fill_bar=parent().user2/user1・既定 100/50 はダミー）／user3=vfunc+0x284 現在値（色は user7 と lt/eq/gt）／user4=0x565CC0 名前／user5=icon（'.' 直前に _small 挿入）／user6=fild(AV 索引)（internal・XML 未参照）／user7=0x5F1910 base。③0x5DA1A0(ret4・caller6): -1=全体刷新／8=health／9=magicka／0xA=fatigue／12..32 → [esi+(av-12)*4+0x60] の行へ user1/user2/user3/user7（slot 保存後呼び出しで初回 null 無し）。④p5 0x5DA930 [確定(命令)]=44 行完全表: helper5（明示 idx 0,1,2,4,5＝3 空白）＋ランク5（0x5F23B0・表 0xB11E3C）＋犯罪6（表 0xB11E50..・player+0x6C8+4k）＋単発28（Bounty=0x41FC90 float／Fame=vfunc+0x204／Infamy=vfunc+0x208／他=player+0x658..0x6C4・全 44 ラベル GMST 同定済）。⑤listindex 機構: add1=連続／add2=1 スロット空白・空白 15 箇所（3,11,16,25,28,30,33,35,38,40,44,48,51,54,57）→ 44+15=59=最大 58+1 の算術整合。Nirnroots のみ create→+2→SetFloat（idx=58）。唯一の条件行=SE Bounty（0x46B280(\"SEWorld\")≠0・偽なら以降 -1）。⑥シグネチャ: 0x565BE0=cdecl(2,idx)→AV 索引 12..32／0x51C090=ret4=P（意味 [未確定] V-569-1）／0x5DA8C0・0x585410=ret 0xc／SetFloat・SetString=ret8。⑦教訓: push 保留（esp-shift）でスロット実体がずれる（文字列=normal 0x1c、slot カーソル=normal 0x24（+4 は 1 push 保留中の [esp+0x28]+4）、form=normal 0x28（1 push 保留の 5DC75D）、this=normal 0x2c）→ size 付き逐語ダンプが必須（線形行表示は 1 byte の push ecx を落とす）／レジスタ長は [a-z]+／io.open(p,'w') は newline 検証エラーでも truncate 先行で 0 バイト化する。残点 V-569-1..5（1=P の意味【中】／2-5【低】）。"
     }
   ],
   "metadata": {
-    "totalEntries": 988,
+    "totalEntries": 989,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T15:00:00Z",
-    "entry_count": 988,
-    "last_updated": "2026-11-19T15:00:00Z"
+    "lastUpdated": "2026-11-19T16:00:00Z",
+    "entry_count": 989,
+    "last_updated": "2026-11-19T16:00:00Z"
   }
 }
