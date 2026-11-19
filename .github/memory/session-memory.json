@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T05:28:42Z",
+  "lastUpdated": "2026-11-19T06:10:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14114,14 +14114,139 @@
         "id-cache"
       ],
       "content": "2026-11-19 旧残点群消化第99弾 v555（probe v555_1..18 全18本 EXIT=0）＝V-555-1..3 完遂・旧 V-406-3 継続第85弾: 成果物 tmp/re/v555_ninode_property_ruling.md・台帳 row531（bak380）・round_verify ALL OK（rows 31..531 / total 417 / done 412 / open 5）・STATE (ju)・ai-todo #151 note。[確定] Value@Tile は 0x1C バイトの payload: ctor 589DF0 が +0x00=所有 Tile*（58B220 が *payload=this）／+0x04=float（0.0 初期化）／+0x08=ポインタ（0 初期化）／+0x0C=word 0／+0x0E=word 0／+0x18=word 属性 ID（引数）／+0x1A=byte 設定済みフラグ（58CA00 が 1 を立てる）。ctor は同時に 0x18 バイトのリストノード（+0=next／+4=prev／+8=payload／+0xC=tag 0x65）を確保。挿入は 58B220(this,id) GetOrCreate: [this+0x18] を線形走査し、初めて key が id を超えたノードの直前へ 589640（node[0]=at; node[4]=at[4]; at[4][0]=node or list[4]=node; at[4]=node; count++）、超えるノードが無ければ 5B1E20 で末尾 append（6AA320 の先頭 prepend とは別）。設定は 58CEB0→58B220＋58CA00(float)／58CED0→58B220＋58CA50。getter は 588B50(payload)／588BD0(float)／588B80(有無: フラグ0かつfloat0.0を未設定)／588C10(ポインタ・miss 0xA2F7EC)。[確定・訂正] 589D60 の [this+0x24] は NiNode（v554 の『所有メニュー』を [確定負]）: TileImage vtable 0xA69110 の +0x08=591600 と Tile3D vtable 0xA6AEEC の +0x08=590C20 が push 0xDC; call 401F00 → ctor 70B780（NiNode vtable 0xA7E38C）→ [this+0x24]=eax。NiNode の子配列は埋め込み NiTArray（base +0xB0／max +0xB4／size +0xB6・dtor 70B810 が [+0xB0]-4 ヘッダで解放）。[確定・訂正] 707530(obj,type) の [ecx+0x9C] は NiAVObject のプロパティリスト（v554 の『メニュー子要素リスト』を [確定負]）: NiAVObject ctor 708450 が +0x98=0xA7DF14（NiTPointerList<NiPointer<NiProperty>>）／+0x9C=0（head）／+0xA0=0。707530 は arg>=0xA で即0、payload の vtable[+0x4C]() を比較（NiTexturingProperty vtable 0xA7DB5C の +0x4C=mov eax,6; ret／NiMaterialProperty vtable 0xA7E1F4 は 2）＝型インデックスでプロパティ検索。よって 589D60 は『NiNode 先頭子の NiTexturingProperty(6) を取り 4057B0(tex,0) → [this+0x2C] に 0x20 を OR』。[確定] MapMenu（vtable 0xA6CC9C・ctor 5B7360・alloc 0x100・type-id 5B7480: mov eax,0x3FF）も同型 NiTArray を +0xB0/+0xB4/+0xB6 に持ち、vtable +0x0C=5BB880 が 588C10(tile,0xFB2)（=属性 user4 のポインタ）を 488810→4028D0 で配列へ追加、更新 5B7550 が size 回ループして menu->vtable[+0x88](menu,element,out) を呼ぶ。[確定・訂正] 0xB3B350/354/358 は『singleton 3 種』ではなく id 属性（0xFA8=id）1/2/3 の子キャッシュ: 5A8000(this) が 5894F0(this,1/2/3)（自ノードの id 一致なら自身、さもなくば [+0x34] 子を再帰＝id 深さ優先探索）の結果を 0xB3B350(1)/0xB3B358(2)/0xB3B354(3) に格納し、user3(0xFB1) を id1 から 0xB140BC、user9(0xFB7) を id2/id3 から 0xB140C0/0xB140C4 にキャッシュ。setter 5A8090(which,ptr)、getter 5A8260/70/80 は mov eax,[global]; ret。589D60 は 3 つを子更新ループから除外（二重更新防止）。BSS 初期値 0。591C50（TileMenu vtable +0x14）は属性 0xFA2=class の文字列を 587B20/587D20（1001–1051 switch）で生成し [this+0x44] に格納、失敗時 'ERROR: Cant find menu class!'（0xA6B178）。RTTI: 0xA7DF14=NiTPointerList<NiPointer<NiProperty>>／0xA7DB5C=NiTexturingProperty／0xA7E38C=NiNode／0xA6CC9C=MapMenu／0xA6AF14=TileMenu／0xA690E8=Tile／0xA69110=TileImage／0xA69138=TileRect／0xA6AEC4=TileText／0xA6AEEC=Tile3D／0xA696DC=Menu。文字列実読: 0xA6A49C=id／0xA6B178=ERROR: Cant find menu class!。名前表: class=0xFA2／id=0xFA8／stackingtype=0xFA5／user3=0xFB1／user4=0xFB2／user9=0xFB7。教訓: 『+0xB0 配列』だけでは所有者を決められない——同型 NiTArray を MapMenu と NiNode が別々に持つため [this+0x24] の書き手（591600/590C20 が 70B780 で生成）まで辿る／[+0x9C] がリスト head でも『メニューの子』とは限らず ctor の +0x98=vtable 実読で NiTPointerList<NiPointer<NiProperty>> と判明する／型 ID 検索の比較相手 vtable[+0x4C] は定数仮想（mov eax,6; ret）の実測で意味が確定する／ソート済みリスト挿入は『超えたノードの直前』と『末尾 append』の 2 経路で prepend とは別物。残点 V-556-1..3（1=589640/5B1E20/488810→4028D0 の実装差（prev 連結・grow 条件）【中】／2=MapMenu 要素の実型と vtable[+0x88] の実装＋+0xB4(max) の grow 契機【中】／3=4057B0(tex,0) の完全な意味と [this+0x2C] フラグの消費側【低】）。本日 push: v405→v554（4c775616）150件＋本件 v555。v 採番 v555 消費（次=v556）。"
+    },
+    {
+      "id": "opencode-re-api-session-prompt-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "high",
+      "category": "configuration",
+      "tags": [
+        "opencode",
+        "api",
+        "session",
+        "re",
+        "handoff",
+        "automation",
+        "resume",
+        "prompt",
+        "inter-session"
+      ],
+      "content": "2026-11-19 【別セッションへ依頼を送る唯一の手段＝HTTP API】subagent ツールは『自分が spawn した子セッション限定』で、既存セッションへは `{\"error\":\"Session ... is not a child of the current session\"}` で拒否される。代わりにバックグラウンドサービスが公開する HTTP API を使う。手順: (1) CLI は C:/Users/hiroki.kogarumai/.bun/install/global/node_modules/@opencode/cli-windows-x64/bin/opencode.exe。(2) `opencode service status` → http://127.0.0.1:28894（v2.3.0）。(3) 送信は **POST /api/session/{sessionID}/prompt**（OpenAPI 説明=\"Durably admit one session input and schedule agent-loop execution unless resume is false\"）。body は `{text, delivery:'queue'|'steer', resume:bool}`。(4) **resume:false はキュー投入のみ（エージェント非起動・コスト0）／resume:true はその場でエージェントループ起動**。(5) 検証は `GET /api/session/{id}/inbox` で読み返す（日本語は UTF-8 で無傷）。呼び出し例: `opencode api post /api/session/<id>/prompt --data '<json>'`。実測: resume:false で 14:15 に投入した msg_1f23acb4a001N4h43m07Kme2P5 は inbox に残り**未処理のまま**（RE は自走ループを止めない限り inbox を読まない＝ファイルを tmp/re に置いただけでは読まれない）。resume:true で 14:43 に投入した msg_1f254a401001wQ3Mo61lTtGG9j は約20秒で assistant メッセージ3件を生成し、RE の reasoning が『U1..U7, priority U7 > U2 > U3 > U1(remaining 3) > U5 > U6 > U4』と**優先順と U1 縮小改稿を正しく認識**して U7 から着手した。他に使えるエンドポイント: /api/session/active, /api/session/{id}/message, /api/session/{id}/command, /api/experimental/session/{id}/log。"
+    },
+    {
+      "id": "opencode-131-touch-dropped-log-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "android",
+        "todo-131",
+        "title-screen",
+        "touch",
+        "ime",
+        "jni",
+        "loading-gate",
+        "fix"
+      ],
+      "content": "2026-11-19 #131 完了（コミット 0c49d815・branch fix-title-touch-preload・master 2c98edb5 起点）。【真因】ネイティブではなく Kotlin 側の無言ドロップ。GameRenderer.onTouchEvent は `if (nativeEngineHandle != 0L)` のときだけ nativeOnTouchEvent を呼び、else にログが無かった。handle の代入は onSurfaceCreated（GameRenderer.kt:134）の1箇所のみで、その nativeInitEngine() は jni_bridge.cpp:69 の Renderer::init(1920,1080) を同期で待つ＝BSA/ESM 読込の間は handle=0。MainActivity.kt:287 の `Forwarded touch to native` は gameRenderer?.onTouchEvent(...) の**後に無条件で出る**ため native 到達の証拠にならない（#98 の観測と一致）。【実測 prefix（修正前 APK）】08:34:01.282 Calling nativeInitEngine() → 08:34:04.217 Forwarded touch to native だが同時刻に JNIBridge 行なし → 08:34:08.930 INIT RESULT: SUCCESS → 08:34:08.933 handle=135859673055376 → 08:34:11.815 JNIBridge nativeOnTouchEvent → Renderer Touch event detected。集計 forwarded=7/dropped=0/jnibridge=36/native_touch=12。【修正】挙動は変えず（読込中に押せる UI が無く、保留してタイトル表示後に再生すると指の下の項目を誤爆するため破棄が正しい）、DOWN/POINTER_DOWN のみ理由付きログ。nativeOnTouchEvent に到達する action 集合は不変。【実測 postfix（APK 223.8MB）】05:29:32.138 / 39.473 / 47.855 の3回 `Dropped touch (960.0, 300.0) action=0: engine handle not ready, game data still loading (#131)` → 05:29:49.955 INIT RESULT: SUCCESS → 05:29:56.468 JNIBridge 到達。集計 forwarded=5/dropped=3/jnibridge=12/native_touch=4。verifier APPROVE（挙動等価・Log/TAG スコープ・コメント行番号一致・diff 1ファイル +16/-2）。"
+    },
+    {
+      "id": "opencode-worktree-build-traps-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "high",
+      "category": "constraint",
+      "tags": [
+        "oblivion",
+        "android",
+        "worktree",
+        "gitignore",
+        "build",
+        "local.properties",
+        "cxx",
+        "apk",
+        "eocd",
+        "verification",
+        "todo-165"
+      ],
+      "content": "2026-11-19 【worktree ビルドの罠3件（実測）】(1) `git worktree add` は gitignore 対象を持ち込まないため、新規 worktree には app/src/main/assets/videos/（8本 82.9MB）**と local.properties（SDK パス）が欠落**する。local.properties 欠落時は `assembleDebug` が 8 秒で `SDK location not found. Define a valid SDK location with an ANDROID_HOME ... or by setting the sdk.dir path` で FAILURE（2件目は `Could not isolate value ... BuildFlowService.Parameters` で同じ根因）。対策は tools/check_worktree_assets.py で検出→`--fix`（#165 で local.properties 検査を追加・コミット 638acd9b）。canonical は `--canonical <main repo>` で指定する（スクリプト既定はスクリプト所在ツリーで、そこに local.properties が無いと『cannot fix』になる）。(2) サーバ再起動などでビルドが中断すると app/.cxx/.../CMakeFiles/native-lib.dir/**.o.rsp が欠落し、`clang++: error: no such file or directory: '@CMakeFiles\\native-lib.dir\\ui\\debug_menu.cpp.o.rsp'` で `:app:buildCMakeDebug[x86_64] FAILED`（7分54秒後に失敗）。対策は app/.cxx を削除してクリーン再ビルド（フルで52分）。(3) **APK の健全性検査は末尾4バイト判定では誤る**。正常な APK の末尾は EOCD のコメント長（例 `00 00`）なので `50 4B 05 06` にはならない。正しい検査は **EOCD シグネチャ `50 4B 05 06` をファイル末尾 128KB から逆順スキャン**して位置を出す、または python の zipfile で `testzip()`（None=OK）＋エントリ数＋assets/videos 8本＋.so 3ABI を確認する。健全な基準: 約 223.8〜228.1MB / testzip OK / entries 2622 / assets/videos 8本（map_loop.mp4 10,010,588B・credits_menu.mp4 21,744,934B・oblivion_intro.mp4 47,933,803B）/ lib 3ABI。"
+    },
+    {
+      "id": "opencode-166-167-title-video-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "high",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "android",
+        "todo-166",
+        "todo-167",
+        "title-screen",
+        "video",
+        "assetextractor",
+        "cache",
+        "atomic"
+      ],
+      "content": "2026-11-19 #166/#167（branch fix-title-video-assets-fallback・600f1a58 + db995aac + 751dddaf）。【#166 真因】AssetExtractor の展開先は `<extFiles>/oblivion_assets/videos/`（externalDir = File(getExternalFilesDir(null), \"oblivion_assets\")・AssetExtractor.kt:23-27／:107）で、ゲートは `.extraction_complete` + `version.txt`（:32-45）。動画なし APK で一度走ると以後**永久に再展開されない**（実測: version.txt=6=CURRENT_VERSION かつ oblivion_assets/videos/ 不在）。対処として GameRenderer.titleVideoFromAssets を第3段（APK assets/videos/* → cacheDir）に追加し、背景をロゴより先に解決。ユーザーが実機で背景動画の再生を目視確認。ログ実測: `Copied title video [map_loop.mp4] from APK assets to cache (10010588 bytes)` → `Title video initialized: textureId=197, file=oblivion_iv_logo.mp4 -> map_loop.mp4` → `Title IV logo completed, holding minimized frame for 1200ms` → `switching to background: map_loop.mp4`。【#167】cacheDir へのコピーを `<name>.part` → `renameTo` のアトミック方式へ（GameRenderer.titleVideoFromAssets と IntroVideoActivity.findVideoFile の第3段）。前例 AssetExtractor.extractVideos（.videos_temp→rename）に合わせる。既存の切り詰めファイルは依然ヒット扱い（長さ照合は openFd() が deflate 圧縮で例外になるため不可）＝スコープ外。verifier 2巡（1巡目 REJECT: 陳腐化 KDoc『not atomic (#167)』が今回の修正と矛盾→削除、Intro の catch で .part 未削除→hoist して削除、catch ログ文言、行番号 :224-258）→ APPROVE。emu 実測 .part 残骸 0件。"
+    },
+    {
+      "id": "opencode-159-ime-inset-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "medium",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "android",
+        "todo-159",
+        "chargen",
+        "ime",
+        "keyboard",
+        "inset",
+        "fix"
+      ],
+      "content": "2026-11-19 #159 完了（コミット 0a04e6d9・branch fix-chargen-ime-inset・8ファイル +215/-1）。【実測で確定した信号】`1110 - 573 = 537 = ime 627 - nav 90`。前回『可視フレーム信号は死んでいる』は**誤り**で、真因はサンプリング窓 1.2 秒が短すぎたこと（キーボード出現に約 6.5 秒かかる）。修正は `covered = max(restVisibleBottom - frame.bottom, ime.bottom - navigationBars.bottom).coerceAtMost(restVisibleBottom)` の二重化（Type.ime() は API 30 ガード・minSdk 25）＋200ms ポーリング再計測。C++ 側は `lifted = screenHeight - imeCoverPx_ - 8 - kConfirmCancelHeight`、`minY = getContentPosition().y` で下限クランプ。emu E2E PASS: `IME cover changed: 537px` → (1467, 549) タップ → `Character creation applied: name='Adventurer'` / race formID=0x00023FE9 / skills -> player (21/21) / startGame()、**キーボードを閉じずに成立**。"
+    },
+    {
+      "id": "opencode-u1-new-flow-canonical-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-164",
+        "new-game",
+        "chargen",
+        "intro-movie",
+        "canonical",
+        "docs-inconsistency"
+      ],
+      "content": "2026-11-19 【NEW 選択後の動作は既存正典で確定済み（再解析不要）】docs/RE_EXE_REPORT.md §21.3〜§21.7・§29.4 に [確定(命令)] で記載: (1) NEW 確定は PlayerCharacter+0x7f8 のフラグ（書込は FUN_005b5df0 の1箇所・:1725）。(2) ワールドロード本体 FUN_0066eaf0 の末尾がそのフラグを消費し、**同一ブロック内で** FUN_005732d0(2,..)（クエスト開始）→ FUN_0057b7e0()（キャラ生成開始 :1733）→ FUN_00410ba0(PTR_s_OblivionIntro_bik_00b030a4,1,1,0,0,1,0)＝OblivionIntro.bik 再生（:1737）。(3) FUN_0057b7e0 = FUN_00678d90（プレイヤー初期化）→ FUN_00589b70(0x40c, RaceSexMenu) → FUN_005ca010(1)（race_sex_menu.xml・:1744-1749）。(4) ウィザード FUN_005976b0（ディスパッチ 0xa6b490+0x38）が this[0x16]（step）で分岐: step1-3=FUN_005d6390（skills_menu.xml の属性説明）、step4=FUN_005dcf20（確定）、step5=`\"%s %s %s?\"` の確認ダイアログ（:1752-1760）。(5) FUN_005cc200（1586行）が人種/性別/外見/髪型/目の選択 UI を構築（:3123-3130）。**→ 再生时机は (b)『New Game 確定直後・キャラ作成開始と同フレーム』で確定**。移植側は誤り（title_screen.cpp:1145 が videos/oblivion_intro.mp4 を**起動時**に再生・:1170 playIntroVideo、NEW 確定後に再生する経路なし。renderer.cpp:4986-5004 は gameStarted → 直接 showCharacterCreation）。U1 の残点は3点のみ: (a) FUN_00410ba0 の第6引数 1 の意味（スキップ可否か）(b) 再生中の入力の塞がり方 (c) 動画開始と RaceSexMenu 生成の順序。**【docs と code の不一致 3件】** ① RE_EXE_REPORT.md:1742『Android 側の TitleScreen::setupIntroVideo()（videos/oblivion_intro.mp4）に**対応**』は誤り（原版は NEW 確定後・移植は起動時）② RE_EXE_REPORT.md:1770『キャラ生成ウィザード…未実装分』は #126/#127 で UI 実装済みのため『ウィザード順序と導入ムービーが未実装』へ更新すべき ③ ASSET_GUIDE.md:148『oblivion_intro.mp4 …（New Game オープニング）』は**正典どおりで正しい**＝①と食い違う。修正は #164 の実装と同時に行う。"
+    },
+    {
+      "id": "opencode-bink-movie-names-canonical-20261119",
+      "timestamp": "2026-11-19T06:10:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "bik",
+        "movies",
+        "title-screen",
+        "todo-166",
+        "todo-164",
+        "u7"
+      ],
+      "content": "2026-11-19 【原版 .bik 実名一覧（U7⑥ の材料・docs/RE_EXE_REPORT.md:945 に既載）】全 29.97fps / 1280x720: OblivionIntro.bik 3,461F 115.5s 129.9MiB（New Game 導入）/ OblivionOutro.bik 1,739F 58.0s 67.3MiB / CreditsMenu.bik 1,712F 57.1s 21.8MiB / **Map loop.bik 750F 25.0s 14.3MiB** / **Oblivion iv logo.bik 418F 13.9s 16.0MiB** / bethesda softworks HD720p.bik 300F 10.0s 0.7MiB / game studios.bik 299F 10.0s 5.7MiB / 2k games.bik 180F 6.0s 0.7MiB / Oblivion Legal.bik 122F 4.1s 0.8MiB。→ 移植の命名 map_loop.mp4 / oblivion_iv_logo.mp4 は原版『Map loop.bik』『Oblivion iv logo.bik』に対応し、実名の出典が存在する。U7 の未確定は残る5点（①2段構成か静止画か ②ロゴ表示/フェード時間の規定値・移植 IV_LOGO_HOLD_MS=1200 は出典なし ③背景のループ有無と継ぎ目 ④背景の音声有無・移植は setVolume(0f,0f) ⑤credits_menu.mp4 を 1% で出す演出の実在＝移植 GameRenderer.kt:247 の Random.nextInt(100)==0）。"
     }
   ],
   "metadata": {
-    "totalEntries": 960,
+    "totalEntries": 967,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T05:28:42Z",
-    "entry_count": 960,
-    "last_updated": "2026-11-19T05:28:42Z"
+    "lastUpdated": "2026-11-19T06:10:00Z",
+    "entry_count": 967,
+    "last_updated": "2026-11-19T06:10:00Z"
   }
 }
