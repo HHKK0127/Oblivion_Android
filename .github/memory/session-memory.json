@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T09:40:00Z",
+  "lastUpdated": "2026-11-19T10:25:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14321,14 +14321,29 @@
         "input"
       ],
       "content": "2026-11-19 v560 裁定＝U1 残点 3 点（ai-todo #164 完了）。成果物 tmp/re/v560_u1_residuals_ruling.md・台帳 row536。骨格は docs/RE_EXE_REPORT.md §21.3〜§21.7 の既存 [確定(命令)] を再確認のみ。⒜ FUN_00410ba0 の第6引数 = 映像のフィット基準 [確定(命令)]。FUN_00410A70 が第6引数を FUN_004104C0 の第5引数へ転送し、0 なら高さ基準（DAT_00b06c50=480）、非0 なら幅基準（DAT_00b06c4c=640）で scale = 基準/幅or高さ を算出（decompiled L9316-9325）。Intro 0x66F2D1 は 1 なので幅基準（1280x720→640x360・y=60 のレターボックス）。スキップ可否フラグではない。⒝ 再生中の入力は塞がない [確定(命令)]。FUN_00410390（0x410390）が毎フレーム PeekMessageA→TranslateMessage→DispatchMessageA を回し、[[0xB3F928]+0x280]->vtable[+0x0C] で入力デバイスを更新。中断は (1)[0xB33426](skip) (2)前景ムービー（movie+0x20 != 2）に限り MessageMenu(0x3E9) 出現 (3)デバイス更新が負。引数非0ならキー 5/0x1D を FUN_00403520 で検査し、押下中かつ GetExitCodeThread([0xB33434])==0x103 で [0xB33426]=1。⒞ RaceSexMenu 生成が先・OblivionIntro 再生が後 [確定(命令)]: 0x66F295 call 0x57B7E0（キャラ生成開始）→ 0x66F29C [ebp+0x7F8]=0（新規ゲームフラグ解除）→ 0x66F2B9 call 0x6A9B40（音楽停止）→ 0x66F2BE ecx=[0xB030A4]（GMST sOblivionIntro）→ 0x66F2D1 call 0x410BA0(path,1,1,0,0,1,0)。a7=0 の前景モードは同期ブロックするので RaceSexMenu は生成済みだが表示されず動画終了後に前面化。移植への示唆: 導入ムービーは RaceSexMenu 生成後に再生（生成→再生→表示）。ムービー中の入力を塞ぐ実装は原版より強く閉じている。フィットは幅基準（640 論理幅）。教訓: 「第N引数」の意味は push 順を実読して callee のパラメータ位置まで追わないと決まらない／「入力が塞がれる」の確認は毎フレーム関数の中身（ポンプ＋キー検査＋skip フラグ）を読むのが最短。"
+    },
+    {
+      "id": "opencode-v561-u5-done-button-20261119",
+      "timestamp": "2026-11-19T10:25:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v561",
+        "u5",
+        "racesexmenu",
+        "todo-161"
+      ],
+      "content": "2026-11-19 v561 裁定＝U5 race_button_done(id=90) の未入力・未選択時挙動（ai-todo #161 完了）。成果物 tmp/re/v561_u5_done_button_ruling.md・台帳 row537。①ボタン無効化は無い [確定負]: race_sex_menu.xml 全体で <disabled> は 0 個（<onlyif> 4 個は id=90 と無関係）＝id=90 は常に押せる。②エラー文字列キーも無い [確定負]: 未入力用の専用文字列は無く、ボタン表記 _done/_return のみ。③「そのまま確定」でも「拒否」でもなく確認ダイアログ [確定(命令)]: id=90 は RaceSexMenu vtable +0x0C の 0x5CC200 で cmp ebx,0x5A により分岐。(a) Main ページ → 0x5CCA77 で GetTrait([esi+0x30] /*race_name*/, 0xFDE /*string*/) を検査し、長さ0→0x5CCADF、空白以外ありでフラグ解除、strcmp(name,[0xB39440] /*既定名*/)==0 または空白のみでないなら 0x5CCBB7 の FUN_00579C10(0xB38CF0,0xB39438,…,1)＝確認メッセージ。空名・空白のみでも 0x5CCBB7 に到達し、手前 0x5CCB0E で 0x5E32F0(player) 名の頭文字が母音かで a/an を選ぶ＝空チェックは拒否ではなく冠詞選択。(b) Shape/Tone/General(Face) → 0x5CCA09 で SetTrait([esi+4],0xFAE, GetTrait(GetPage(\"Face\"),0xFAE))＝Face ページへ戻す。(c) それ以外 → 0x5CC8BA の後処理。④「種族未選択」状態が存在しない [確定(命令)]: 種族は 0x5CC200 の初期化で必ず 1 件選択済みで、Done 経路に種族の有無を見る分岐が無い。移植への示唆: 移植の「races が空なら Done を拒否」は原版に無い防御（原版は空でも確認ダイアログを出して進む）。原版の Done はページ送りボタンでもある（Main→確認 / Shape・Tone・General(Face)→Face へ戻る）。教訓: 「無効化されているか」は XML の <disabled> 件数を数えるのが最短／「エラー文字列で弾く」かは文字列キー表ではなく実際の分岐の到達先（拒否ループか確認ダイアログか）を読む／未選択状態の有無は「その状態を作る初期化が存在するか」で決まる。"
     }
   ],
   "metadata": {
-    "totalEntries": 972,
+    "totalEntries": 973,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T09:40:00Z",
-    "entry_count": 972,
-    "last_updated": "2026-11-19T09:40:00Z"
+    "lastUpdated": "2026-11-19T10:25:00Z",
+    "entry_count": 973,
+    "last_updated": "2026-11-19T10:25:00Z"
   }
 }
