@@ -3827,3 +3827,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v562 `c90810d2` →（本件 v563 を本 commit で push）＝**160裁定**。
 - **次**: V-563-1（ページ順序の完全対応）が次に手が着く中程度の残点。旧残点は V-557-1..3（ループ継ぎ目・BinkOpen フラグ名・credits 再生箇所）／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）。
 
+## 2026-11-19 (kd) — U8/U9 完了 v565/v566（ai-todo #161 / #156）: **U 節 追加2項目クローズ**＝U8 は v370 正 / v561 誤を命令で確定、U9 は左上ブロック群の描画源を `characterCreationUI`（`size` 未設定）に絞り込み
+
+- **v565（U8 矛盾裁定）**: 成果物 `tmp/re/v565_u8_name_validation_adjudication.md`（probe v565_1/v565_3/v565_4・3本 EXIT=0）。台帳 **row541**・ai-todo **#161 note**。**裁定＝v370 正 / v561 誤**（矛盾は v561 がフラグの極性を逆読み）。
+  - **(a)** 空/全空白名で Done は `0x5CCBB7` へ到達 → `[0xB39438]` を `call 0x579C10` へ → `add esp,0x14` → SEH 復元 → **`ret 8`（成功 tail `0x5CD9C5` を経由しない）＝ブロック**。確認文 `'%s %s?'` 経路には進まない。
+  - **(b)** 分岐は2条件のみ: `strcmp(name,[0xB39440])==0`（プレースホルダ一致）／`flag==1`（スペース以外1文字も無い）。flag は `5CCA7F` で初期1、`5CCAB3` で非スペース発見時に0（`0x5CC28F xor ebx,ebx` より bl=0）＝**同一スロット**（v370 の主張を独立再現）。
+  - **(c)** `sNoNameCharacter` の呼出元は `0x5CCBB7` の1箇所のみ。**静的登録の push リテラルで実文字列を確定**: `[0xB39438]`=sNoNameCharacter「You must first enter a valid name.」／`[0xB39440]`=sEnterName「Enter character name.」。
+  - **(d)** 移植 `hasConfirmableName()` は**原版準拠で正しい**。ただし v370 の指摘どおり「名前 == プレースホルダ」も拒否すべき（`0x5CCAFC` の strcmp 分岐）。**v561 の「エラー文字列なし」「空名でも確認ダイアログ」は [確定負] 訂正**。
+  - **成功側の tail 実測**: `5CCB9C call 0x579C10(text, callback=0x5C2BA0,1,…)` → `5CCBAF add esp,0x2c` → **`5CCBB2 jmp 0x5CD9C5`**（raw `83 c4 2c e9 0e 0e 00 00`）。
+- **v566（U9 描画源）**: 成果物 `tmp/re/v566_u9_left_top_blocks_ruling.md`（probe なし・移植コード静的解析）。台帳 **row542**・ai-todo **#156 note**。
+  - **絞り込み**: 2D の矩形＋輪郭はすべて `ui/` の `UIDrawHelper` 経由で `engine/` の描画呼び出しは0件 → `renderer.cpp` の `->render()` 全68箇所を列挙 → **5380-5664 無効化で残るのはタイトル/起動/ローディング/キャラ作成パス（4749-5055）とフレーム末尾（5679/5683/5688・`isVisible()` ガード）のみ**。シーンパス（5300-5380）は 3D のみで2D矩形を描かない（`renderPlaceholderEntities`＝イコサ球・`retroFilter->renderToScreen`＝フルスクリーンクワッド＋パススルー）。
+  - **根因**: `characterCreationUI` に **`setPosition`/`setSize` が一度も呼ばれない**（全21箇所を列挙）→ `size=(0,0)` → **`getContentSize()` = (-20,-60)（負）** → 全 `drawPanel` が左端にクリップされた帯（0..30px）として縦に積まれる。パネル背景/タイトルバー/閉じるボタンは `size=(0,0)` で退化＝「枠なしのブロック群」。
+  - **行数はタブ依存**（NAME＝タブ帯＋名前2パネル／ATTRIBUTES＝ヘッダ＋**属性8行**／SKILLS＝21行）。確定/中止ボタンは `y=-54` で画面外。
+  - **次の一手（2行）**: `renderer.cpp:5455` と `6043` の `characterCreationUI->render()` をコメントアウト。決定版は `ui_draw_helper.cpp:343` の先頭に caller ログ1行。
+- **本日 push 累計（セッション）**: v405 → … → v564 →（本件 v565/v566 を本 commit で push）＝**157裁定**。
+- **次**: V-557-1..3（ループ継ぎ目／`BinkOpen` フラグ名／credits 再生箇所）／V-558-1→v563 でクローズ済／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-563-1（ページ順序の完全対応）。
+

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T12:00:00Z",
+  "lastUpdated": "2026-11-19T13:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14483,14 +14483,46 @@
         "bsa"
       ],
       "content": "2026-11-19 【#96 の素材を取り込み】修正した BSAFileExtractor で `Oblivion - Misc.bsa` から抽出した実物 XML を worktree `fix-chargen-ui-quality` の `app/src/main/assets/menus/` へ配置（**追跡可能＝gitignore 対象外**。`.gitignore` は videos/ と一部 textures/ui/*.png のみ除外し、menus/ は除外していない）。取り込み 5 ファイル: menus/chargen/race_sex_menu.xml 22156B / menus/main/hud_main_menu.xml 24838B / menus/main/stats_menu.xml 102783B / menus/options/main_menu.xml 6554B / menus/options/copy of main_menu.xml 8137B。**注意**: `copy of main_menu.xml` は BSA 内の重複アーティファクトで不要（削除候補）。原版のメニュー XML は `Oblivion - Misc.bsa` 内に 89 個あり、v562 で『原版に展開工程は無くランタイムで BSA をマウントする』と確定済み。移植の `menu_xml_interpreter`(M2/M3)＋`menu_ui_builder`(M4) は実装・テスト済み（`app/src/main/cpp/tests/menu_xml_tests.cpp`・MenuXmlTests 142 ケース）なので、これらの XML を解決して正典どおりの画面を作れる。**未確定**: 原版メニュー座標（`screen()` は実解像度・スケール基準は 640×480、v557 §2.7）から移植の 1920×1110 への写像規則は正典に無い（#96 を完全再現するには要裁定）。"
+    },
+    {
+      "id": "opencode-v565-u8-name-adjudication-20261119",
+      "timestamp": "2026-11-19T13:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v565",
+        "u8",
+        "racesexmenu",
+        "todo-161",
+        "v370",
+        "v561"
+      ],
+      "content": "2026-11-19 v565 裁定＝U8（v370 と v561 の矛盾解消・ai-todo #161）。成果物 tmp/re/v565_u8_name_validation_adjudication.md・台帳 row541。probe v565_1/v565_3/v565_4（3本 EXIT=0）。裁定＝**v370 正 / v561 誤**（矛盾は v561 がフラグの極性を逆読み）。(a) 空/全空白名で Done は 0x5CCBB7 へ到達し、mov ecx,[0xB39438] → call 0x579C10 → add esp,0x14 → SEH 復元 → ret 8（成功 tail 0x5CD9C5 を経由しない）＝ブロック。確認文 '%s %s?' 経路には進まない。(b) 分岐は2条件のみ: strcmp(name,[0xB39440])==0（プレースホルダ \"Enter character name.\" 一致）／flag==1（スペース以外を1文字も含まない）。flag は 5CCA7F で初期1、5CCAB3 で非スペース発見時に0（0x5CC28F xor ebx,ebx より bl=0）＝同一スロット。(c) sNoNameCharacter の呼出元は 0x5CCBB7 の1箇所のみ。静的登録の push リテラルで実文字列を確定: [0xB39438]=sNoNameCharacter 'You must first enter a valid name.' ／[0xB39440]=sEnterName 'Enter character name.'（0x9F7B10 / 0x9F7B30 の push 列）。(d) 移植 hasConfirmableName()（空/全空白 → false → onNameRejected）は原版準拠で正しい。ただし名前==プレースホルダも拒否すべき（0x5CCAFC の strcmp 分岐）。v561 の『エラー文字列なし』『空名でも確認ダイアログ』は [確定負] 訂正。成功側の tail 実測: 5CCB9C call 0x579C10(text, callback=0x5C2BA0,1,…) → 5CCBAF add esp,0x2c → 5CCBB2 jmp 0x5CD9C5（raw 83 c4 2c e9 0e 0e 00 00）。エラー側は arg2=0（コールバック無し）。教訓: 2つの裁定が正反対なら『フラグの極性』と『メッセージ文字列の実体』を必ず実測／BSS グローバルの値はファイル上ゼロなので登録ブロックの push リテラルを読めば1手で実文字列が取れる／add esp 直後の E9 rel32 を raw バイトで数えれば tail 先まで機械確定できる。"
+    },
+    {
+      "id": "opencode-v566-u9-left-top-blocks-20261119",
+      "timestamp": "2026-11-19T13:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v566",
+        "u9",
+        "port-render",
+        "todo-156"
+      ],
+      "content": "2026-11-19 v566 裁定＝U9（画面左上ブロック群の描画源特定・ai-todo #156）。成果物 tmp/re/v566_u9_left_top_blocks_ruling.md・台帳 row542（probe なし・移植コード静的解析のみ）。描画源＝**characterCreationUI->render()**（renderer.cpp:5055 タイトル/キャラ作成パス／6043 ゲーム内パス）→ UICharacterCreation::render()（ui_character_creation.cpp:263）→ PlaceholderAssets::drawPanel()（ui/placeholder_assets.cpp:84）→ UIDrawHelper::drawColoredQuad（塗り）＋ UIDrawHelper::drawBorder（輪郭）。ユーザーの仮説『メニュー領域(4700-5020) 側』は当たり。根因＝**characterCreationUI に setPosition()/setSize() が一度も呼ばれない**（全21箇所を列挙：initialize/setScreenSize/setESMManager/setOnConfirm/setOnNameRejected/open/update/render/isVisible/onTouchDown/isNameInputActive/setPlayerName のみ）。UIComponent::position/size は初期化子なし＝(0,0)、UIPanel ctor は titleBarHeight=40/contentMargin=10 のみ、setScreenSize→UIComponent::onScreenResize は screenWidth/Height のみ。→ getContentPosition()=(10,50)／**getContentSize()=(-20,-60) と負** → 全 drawPanel が左端にクリップされた細い帯（0..30px）として縦に積まれる。パネル背景・タイトルバー・閉じるボタンは size=(0,0) で退化＝『枠なしのブロック群』。5380-5664 無効化で消えない理由＝実行点がタイトル/キャラ作成パスの 5455（末尾で return するブロック）で、無効化したゲーム内パスとは別コードパス。除外: retroFilter->renderToScreen（フルスクリーンクワッド1枚＋コンポジットはパススルー）／renderPlaceholderEntities（3D イコサ球・シェーダにアウトライン無し）／UISystem 系（UICharacterSheet は setPosition/setSize 済みで中央配置・初期非表示）→いずれも [確定負]。aabbVisualization/npcOverlay/touchTrail は toggle のみで参照ゼロのデッドフラグ。行数はタブ依存: NAME＝タブ帯＋名前2パネル＋情報テキスト／ATTRIBUTES＝ヘッダ1＋属性8行（for (i<8)）／SKILLS＝21行。確定/中止ボタンは y=50-60-44=-54 で画面外。次の一手: renderer.cpp:5455 と 6043 の characterCreationUI->render() をコメントアウト（2行）→ 消えれば確定。決定版は ui_draw_helper.cpp:343 drawColoredQuad 先頭に caller アドレスの LOGI を1行追加して x≈0..30/y≈50..200/幅が負 の行を addr2line で特定。修正の方向性（未実施）: UICharacterCreation に onScreenResize() オーバーライドを追加して setSize()/setPosition() を呼ぶ。教訓: 『無効化しても残る』はどのパスが実行されているかが鍵（同じ render でもタイトルパスとゲームパスに二重に置かれている）／『サイズ未設定』は getContentSize() が負になり、矩形が原点付近にクリップされて『左上のブロック群』に見える／矩形描画は1関数に集約されているので caller アドレスを1行ログすれば1回で確定できる。"
     }
   ],
   "metadata": {
-    "totalEntries": 982,
+    "totalEntries": 984,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T12:00:00Z",
-    "entry_count": 982,
-    "last_updated": "2026-11-19T12:00:00Z"
+    "lastUpdated": "2026-11-19T13:00:00Z",
+    "entry_count": 984,
+    "last_updated": "2026-11-19T13:00:00Z"
   }
 }
