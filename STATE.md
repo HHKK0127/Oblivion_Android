@@ -3752,3 +3752,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v556 →（本件 v557 を本 commit で push）＝**154裁定**。
 - **次**: U2（RaceSexMenu の user0 ページ対応表・枚数・並び順）→ #162。BSA 実物 `race_sex_menu.xml`(22156B) と `stats_menu.xml`(102783B) は抽出済み。
 
+## 2026-11-19 (jx) — U2 完了 v558（ai-todo #162・RaceSexMenu のページ構成）: **原版は 5 タブではなく 21 ページ**・**ページ名は GMST `sMain`…`sColor`**・**`<tab>` 要素は存在しない [確定負]**
+
+- **成果物**: `tmp/re/v558_racesexmenu_pages_ruling.md`（probe **v558_1..6（6本）EXIT=0**・BSA 実物 `menus\chargen\race_sex_menu.xml` 21451B を直接抽出）。台帳 **row534（bak40）**・`round_verify` **ALL OK**（rows 31..534 / total 420 / done 415 / open 5）。U 節 **U2 を `[x]`**・ai-todo **#162 note**・memory 追記。
+- **① [確定(XML+命令)] `RaceSexMenu.user0`＝表示中ページ index**: XML `:12` `<user0> 0 </user0> <!-- what pane/page is currently visible -->`、`:250-253` の `visible = me().user0 == RaceSexMenu.user0` で**完全一致のページだけ可視**。
+- **② [確定(命令)] 21 ページ**: `0x5C4340`=AddPane が head `0x5CA010` から 21 回呼ばれ `this+0x40/+0x44/…/+0x90` に順次格納。ページ配列は `this+0x94`（`0x5C4444` の `mov [ebx+edx*4+0x94],esi`／`0x5C3BE0`(vtable+0x20) が同配列からスクロール更新）。
+- **③ [確定(命令)] AddPane の本体**: `0x585410(parent,"race_template_pane")` → `SetTrait(0xFA8=id,index)`／`SetTrait(0xFAA=listindex,childcount-1)`／**`SetTrait(0xFAE=user0,index)`**。index=-1 は `[0xB3B5D4]++`（ctor で 200 初期化）。
+- **④ [確定(命令)] 21 ページ名（既定英語＋GMST）**: Main(sMain)／Race(sRace)／Hair(sHair)／Face(sFace)／Shape(sShape)／Tone(sTone)／General(Face)(sGeneralFace)／Brow(sBrow)／Cheeks(sCheeks)／Chin(sChin)／Forehead(sForehead)／Jaw(sJaw)／Mouth(sMouth)／Nose(sNose)／General(Skin)(sGeneralSkin)／Beard(sBeard)／Eye shades(sEyesTex)／Eyebrows(sEyebrows)／Mouth(Lips)(sMouthLips)／Nose shades(sNoseTex)／Hair Color(sColor)。初期化 `0x9F67FA`〜`0x9F76FA`（`mov ecx,<String>` の直後に表示既定値と `s*` GMST 名の 2 リテラル）／名前→フィールド対応は `0x5C3110(this,name)` の連鎖比較。
+- **⑤ [確定負] `<tab>`/`<page>` 要素は無い**: `race_name`(id 10)+`stat_title_left/right.dds` は単なるページタイトル描画、`race_button_done`(id 90) は `user5` で Done/Back 切替。
+- **⑥ [部分確定] ページ切替**: `SetTrait([menu+0x2c], 0xFAE, index)` を書く方式で、EXE 全域の実装型は 5 箇所＝`(cur-1)&mask` 循環 `0x5AA842`(head 0x5AA3A0)/`0x5B1C0D`(head 0x5B1A40)、`cur-1` `0x5AB26A`(head 0x5AADC0)/`0x5B3653`(head 0x5B2B70)、`arg+1` `0x5C1C23`(head 0x5C1B80)。RaceSexMenu 側の呼出元は未特定（V-558-1）。
+- **⑦ [確定負] 移植の 5 タブは原版に対応物なし**: `Attributes`/`Skills` は StatsMenu(0x3EB)、名前は Main ページ内。原版は「Main → Race → Hair/Face/Shape/Tone → 顔パーツ 8 種 → 肌 → 髭/眉/唇 → 瞳色/鼻色/髪色」の 1 本のページ列。
+- **⑧ XML 実物**: `:147` PAGES LAYOUT／`:200-205`「template PANES added here by code」＝ページはコードが動的生成／`:169-196` scroll bar の `user2 = RaceSexMenu.user1 - 6`・`user8 = 6`（＝`user1` は現在ページの項目数）。
+- **⑨ 教訓**: **「タブ」に見える UI でも XML に tab/page 要素が無ければ実体はコード駆動のページ index**——`user0` の宣言コメントとテンプレートの visible 条件（完全一致）で先に決める／**ページ一覧は「ページ名 String を初期化する `mov ecx,<String>` の直後に並ぶ 2 リテラル（表示既定値と `s*` GMST 名）」を機械走査すれば一度に取れる**（21 組）／ページ配列は AddPane の `mov [reg+index*4+disp]` と、その配列を読む vfunc の 2 箇所で同定できる。
+- **残点 V-558-1..4**: 1=ページ送り呼出元と入力（Done/左右キー/クリック）【中】／2=AddPane の index が 0 始まりか 1 始まりか【中】／3=Main ページの内容（`TextEditMenu`(0x41B) か性別トグルか）【中】／4=`sGeneralFace` 等 GMST の ESM 既定値【低】。
+- **本日 push 累計（セッション）**: v405 → … → v557 `3591f544` →（本件 v558 を本 commit で push）＝**155裁定**。
+- **次**: U3（StatsMenu 0x3EB の 5 タブ表示仕様 → #157）。実物 `stats_menu.xml`(102783B) は抽出済み。
+

@@ -45,6 +45,13 @@
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
+  > U2（RaceSexMenu ページ構成）RE 裁定完了 2026-11-19 v558。成果物 tmp/re/v558_racesexmenu_pages_ruling.md（probe v558_1..6 EXIT=0・BSA 実物 race_sex_menu.xml 21451B）。
+  > 【結論】①RaceSexMenu.user0 = 現在表示中のページ index（XML :12 の宣言コメント、:250-253 の visible = me().user0 == RaceSexMenu.user0 で完全一致のページだけ可視）[確定(XML+命令)]。②原版は 5 タブではなく 21 ページ。AddPane 0x5C4340 が head 0x5CA010 から 21 回呼ばれ this+0x40/+0x44/…/+0x90 に順次格納、ページ配列は this+0x94。③AddPane は 0x585410(parent,"race_template_pane") で生成し SetTrait(id=0xFA8,index)・SetTrait(listindex=0xFAA,childcount-1)・SetTrait(user0=0xFAE,index)。index=-1 は [0xB3B5D4]++ 自動採番（ctor で 200 初期化）。
+  > 【21 ページ実名（既定英語＋GMST）】Main(sMain) / Race(sRace) / Hair(sHair) / Face(sFace) / Shape(sShape) / Tone(sTone) / General(Face)(sGeneralFace) / Brow(sBrow) / Cheeks(sCheeks) / Chin(sChin) / Forehead(sForehead) / Jaw(sJaw) / Mouth(sMouth) / Nose(sNose) / General(Skin)(sGeneralSkin) / Beard(sBeard) / Eye shades(sEyesTex) / Eyebrows(sEyebrows) / Mouth(Lips)(sMouthLips) / Nose shades(sNoseTex) / Hair Color(sColor)。初期化 VA 0x9F67FA..0x9F76FA（mov ecx,<String> の直後に表示既定値と s* GMST 名の 2 リテラル）。表示名は GMST なので ESM で差し替え可能。
+  > 【タブ切替】<tab>/<page> 要素は存在しない [確定負]。XML の race_name(id10)+stat_title_left/right は単なるページタイトル描画、race_window(id1,500x558,clipwindow) がページ親、race_button_done(id90) は user5 で Done/Back 切替。切替は SetTrait([menu+0x2c],0xFAE,index) を書く方式で、EXE 全域の実装型は 5 箇所: (cur-1)&mask 循環 = 0x5AA842(head 0x5AA3A0)/0x5B1C0D(head 0x5B1A40)、cur-1 = 0x5AB26A(head 0x5AADC0)/0x5B3653(head 0x5B2B70)、arg+1 = 0x5C1C23(head 0x5C1B80)。RaceSexMenu 自身の呼出元は未特定 [部分確定 V-558-1]。
+  > 【移植への示唆（重要）】移植の Name / Race / Attributes / Skills / Appearance という 5 タブは原版に対応物が無い [確定負]。Attributes/Skills は StatsMenu(0x3EB) の担当、名前は Main ページ内。原版は「Main → Race → Hair/Face/Shape/Tone → 顔パーツ8種 → 肌 → 髭/眉/唇 → 瞳色/鼻色/髪色」の 1 本のページ列。5 タブを維持するなら「原版ページ列をタブに再編した独自 UI」と明記するのが正確。
+  > 【XML 実物の要点】:147 PAGES LAYOUT／:200-205「template PANES added here by code」＝ページはコードが動的生成（XML に 1 個も書かれていない）／:169-196 scroll bar の user2 = RaceSexMenu.user1 - 6・user8 = 6（＝RaceSexMenu.user1 は現在ページの項目数）／要素テンプレート button(101)/toggle(102)/slider(103)/text(104)。
+  > 【残点 V-558-1..4】1=RaceSexMenu のページ送り呼出元と入力（Done/左右キー/クリック）【中】／2=AddPane の index が 0 始まりか 1 始まりか【中】／3=Main ページの内容（名前入力 TextEditMenu(0x41B) か性別トグルか）【中】／4=sGeneralFace 等 GMST の ESM 既定値【低】。
 ①【高】**`user0` の値とページ構成の対応表** — v351 §1.3-1 が明示的に未確定として残した点。各 `user0` 値がどの pane（Race / Face 系ページ群 / その他）に対応するか、**その並び順（＝port のタブ順の正典）**を、`race_sex_menu.xml` の `<eq src="RaceSexMenu" trait="user0"/>` とページ定義、および EXE 側のページ切替ハンドラ（slot1 `SetElement` id==0x0A 分岐や通知 id 帯、v363/v364 の RaceSexMenu 解析を踏襲）で確定。
 ②【高】**各ページに表示される要素の一覧と生成元** — どのページに race リスト・性別 toggle・どのスライダー群・名前入力・Done/Back が出るか。特に **v351 §1.3-2「レース/性別ごとに表示されるスライダー集合の決定規則」**（＝Face ページ群の内訳と並び順）。
 ③【中】**Done(id90)/Back の通知とキャンセル時の状態復元** — user5 の 1/2 切替、Back 時に何がリセットされるか（v363_racesex_cancel_exit_ruling.md の残点があれば引き継ぐ）。NAME のエンジン側保存先は **#123**／StatsMenu の表示仕様は **#157** で依頼中のため**対象外と明記**（重複しないこと）。
@@ -2258,11 +2265,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2286,4 +2288,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 15:20:31
+**ai-todo** | Last Updated: 2026-11-19 15:30:14

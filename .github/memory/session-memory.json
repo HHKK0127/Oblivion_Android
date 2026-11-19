@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T07:20:00Z",
+  "lastUpdated": "2026-11-19T08:05:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14272,14 +14272,30 @@
         "todo-166"
       ],
       "content": "2026-11-19 v557 裁定＝U7 タイトル画面の映像演出（ai-todo #166 完了）。成果物 tmp/re/v557_title_video_ruling.md・台帳 row533。①【最重要】.data 0xB03084 は「ポインタスロット」ではなく GMST デフォルト値テーブル（8 バイト stride の {値, GMST 名}）: sIntroSequence(0xB03084)=「bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik」＝カンマ区切りプレイリスト / sMainMenuMovieIntro(0xB0308C)=Oblivion iv logo.bik / sMainMenuMovie(0xB03094)=Map loop.bik / sCreditsMenuMovie(0xB0309C)=CreditsMenu.bik / sOblivionIntro(0xB030A4)=OblivionIntro.bik / fStaticScreenWaitTime(0xB030AC)=3.0f / bPreloadIntroSequence(0xB030B4)=1 / iPreloadSizeLimit(0xB030BC)=26214400。値は ESM の GameSetting で上書き可能。OblivionOutro.bik は EXE 内に名前なし [確定負]。②タイトルは「ロゴ動画→1200ms 静止→背景ループ」ではなく、背景=Map loop.bik のループ動画＋ロゴ=静止画 2 枚の alpha クロスフェード（oblivion_logo=Menus\\Loading\\tes_oblivion_logo_final.dds 748x159 visible=user0(0xFAE)／内側 tes_oblivion_logo_bink.dds 760x169 alpha=user3(0xFB1)）。loading_background.dds は visible=false の未使用素材。③フェード時間は main_menu.xml の user4=3 秒が唯一の規定値（0x5B5C90 が SetTrait(user3,255)→GetTrait(user4)→FUN_00589980(menu,user3,255.0,0.0,秒) で 255→0 を補間）。IV_LOGO_HOLD_MS=1200 の根拠は無い [確定負]。④背景はループするが巻き戻し命令・逆再生フラグは無い [確定負]（描画ループ 0x57F170 が毎フレーム FUN_00410810(0,1) を呼び、FUN_004106C0 は BinkNextFrame 後に [movie+0xC] vs [Bink+8] を比較し到達後は第1スタック引数が非0なら継続・0なら停止＝0x4107D4..0x4107EA）。継ぎ目が先頭復帰かは binkw32 内部 [部分確定]。⑤背景に音声は無い [確定]（Map loop.bik の audioTracks=0／binkw32 import 9 個に BinkSetVolume は無い／FUN_00410310 が起動時に BinkSetSoundSystem を 1 回／FUN_00410C40→FUN_004105F0 は FUN_006A9B40 を呼ばない）。⑥credits の 1% 抽選は存在しない [確定負]（0.01f は .text に 10 箇所すべて 0x89A230..0x94A630 帯・映画コード帯に 0 箇所）。⑦起動順: 0x40D4D0 → Bink サウンド初期化 → FUN_00410E40（CreateThread MoviePlayer・非同期）で sIntroSequence を 0x410D10 が strtok(\",\") 分割して順次再生（bik=FUN_00410BA0／dds=FUN_00410840 で fStaticScreenWaitTime 秒の静止画・キー中断可）→ FUN_00410BA0(iv logo,1,1,0,0,0,0) 同期13.95s(418f) → 0x5B5C90 メインメニュー。⑧FUN_00410BA0 の引数転送は FUN_004104C0(movie,a2,a3,a5,a6) と FUN_004106C0(movie,a2,a4)。第6引数 a6＝フィット基準（0=高さ 480=0xB06C50／非0=幅 640=0xB06C4C）で Intro は 1=幅基準。a7=0 新規確保／非0 は [0xB33440] 再利用。⑨FUN_00410390 は入力ポンプ（PeekMessage/Translate/Dispatch＋デバイス vtable+0x0C＋[0xB33426] skip＋MessageMenu(0x3E9) 存在で中断＋キー 5/0x1D で skip セット）。塞ぐのではなくムービー自身がポンプを回す。⑩trait 名→ID（0x58A1C0 の push id; push name を機械走査・194 組）: visible=0xFA1 / alpha=0xFA7 / user0..25=0xFAE..0xFC7 / depth=0xFAB / filename=0xFE6 / zoom=0xFD2 / xdefault=0xFF0。メニュー型: MainMenu=0x414 / CreditsMenu=0x417 / RaceSexMenu=0x40C / StatsMenu=0x3EB / MessageMenu=0x3E9。⑪BSA 実物は bethesda_structs で直接抽出（tools/BSAFileExtractor/extracted/menus/** の 4 ファイルは全て 2620B で壊れている＝BSAFileExtractor.py:105-110 が探索ループ変数 archive_file を使い回すバグ）。"
+    },
+    {
+      "id": "opencode-v558-racesexmenu-pages-20261119",
+      "timestamp": "2026-11-19T08:05:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v558",
+        "u2",
+        "chargen",
+        "racesexmenu",
+        "todo-162"
+      ],
+      "content": "2026-11-19 v558 裁定＝U2 RaceSexMenu(0x40C) のページ構成（ai-todo #162 完了）。成果物 tmp/re/v558_racesexmenu_pages_ruling.md・台帳 row534。①RaceSexMenu.user0 = 現在表示中のページ index（XML race_sex_menu.xml:12 の宣言コメント、:250-253 の visible = me().user0 == RaceSexMenu.user0 で完全一致のページだけ可視）[確定(XML+命令)]。②原版は 5 タブではなく 21 ページ。AddPane 0x5C4340 が head 0x5CA010 から 21 回呼ばれ this+0x40/+0x44/…/+0x90 に順次格納、ページ配列は this+0x94（0x5C4444 の mov [ebx+edx*4+0x94],esi、0x5C3BE0(vtable+0x20) が同配列からスクロール更新）。③AddPane は 0x585410(parent,\"race_template_pane\") で生成し SetTrait(id=0xFA8,index)・SetTrait(listindex=0xFAA,childcount-1)・SetTrait(user0=0xFAE,index)。index=-1 は [0xB3B5D4]++ で自動採番（ctor で 200 初期化）。④21 ページ名（既定英語＋GMST・初期化 0x9F67FA..0x9F76FA）: Main(sMain) / Race(sRace) / Hair(sHair) / Face(sFace) / Shape(sShape) / Tone(sTone) / General(Face)(sGeneralFace) / Brow(sBrow) / Cheeks(sCheeks) / Chin(sChin) / Forehead(sForehead) / Jaw(sJaw) / Mouth(sMouth) / Nose(sNose) / General(Skin)(sGeneralSkin) / Beard(sBeard) / Eye shades(sEyesTex) / Eyebrows(sEyebrows) / Mouth(Lips)(sMouthLips) / Nose shades(sNoseTex) / Hair Color(sColor)。名前→フィールド対応は 0x5C3110(this,name) の連鎖比較。表示名は GMST なので ESM で差し替え可能。⑤<tab>/<page> 要素は存在しない [確定負]。race_name(id10)+stat_title_left/right.dds は単なるページタイトル描画、race_window(id1,500x558,clipwindow) がページ親、race_button_done(id90) は user5 で Done/Back 切替。⑥ページ切替は SetTrait([menu+0x2c],0xFAE,index) を書く方式で、EXE 全域の実装型は 5 箇所: (cur-1)&mask 循環 = 0x5AA842(head 0x5AA3A0)/0x5B1C0D(head 0x5B1A40)、cur-1 = 0x5AB26A(head 0x5AADC0)/0x5B3653(head 0x5B2B70)、arg+1 = 0x5C1C23(head 0x5C1B80)。RaceSexMenu 自身の呼出元は未特定 [部分確定 V-558-1]。⑦移植の Name/Race/Attributes/Skills/Appearance 5 分割は原版に対応物なし [確定負]。Attributes/Skills は StatsMenu(0x3EB)、名前は Main ページ内。原版は「Main → Race → Hair/Face/Shape/Tone → 顔パーツ8種 → 肌 → 髭/眉/唇 → 瞳色/鼻色/髪色」の 1 本のページ列。⑧XML 実物: :147 PAGES LAYOUT / :200-205「template PANES added here by code」＝ページはコードが動的生成 / :169-196 scroll bar の user2 = RaceSexMenu.user1 - 6・user8 = 6（＝user1 は現在ページの項目数）/ 要素テンプレート button(101)/toggle(102)/slider(103)/text(104)。⑨教訓: 「タブ」に見える UI でも XML に tab/page 要素が無ければ実体はコード駆動のページ index／ページ一覧は「ページ名 String を初期化する mov ecx,<String> の直後に並ぶ 2 リテラル（表示既定値と s* GMST 名）」を機械走査すれば一度に取れる／ページ配列は AddPane の mov [reg+index*4+disp] と、その配列を読む vfunc の 2 箇所で同定できる。"
     }
   ],
   "metadata": {
-    "totalEntries": 969,
+    "totalEntries": 970,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T07:20:00Z",
-    "entry_count": 969,
-    "last_updated": "2026-11-19T07:20:00Z"
+    "lastUpdated": "2026-11-19T08:05:00Z",
+    "entry_count": 970,
+    "last_updated": "2026-11-19T08:05:00Z"
   }
 }
