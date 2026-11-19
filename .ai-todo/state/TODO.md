@@ -53,6 +53,13 @@
   > 【vtable 比較（主証拠）】slot5＝TileMenu 0x591C50（生成 open）／HUDMainMenu **0x60CF60 no-op**／RaceSexMenu **0x60CF60 no-op**。slot3＝HUD 0x5A68C0／RaceSex 0x5CC200（notify）／TileMenu 0x5900D0。slot6＝TileMenu 0x591B40（HUD/Loading ゲート）／HUD・RaceSex 0x890B90。
   > 【教訓（再発型）】**vtable slot が共通 no-op であることを読まないと open 経路を誤同定する**（v574 の記述がそれで事故）→ **複数クラスの同一 slot を並べた vtable 比較が最短の訂正手段**。push imm32・mov reg,imm32・E8 の3系統走査が全0近ければ『引数は変数経由』と断定できる（v573 の negative 手法を継続適用）。
   > 【残点】V-575-1【中】＝open 実呼び出し元（entity 実行系＝0x58A0A0 登録先 entity 値の読み手を走査）＝V-574-1 を再定義して継承／V-575-2【中】＝slot5 no-op 化のクラス設計と HUD/RaceSex の実生成経路／V-575-3【低】＝0x587B20(1,id) の役割。
+  > V-575-1（open 実呼び出し元）の探索 2026-11-19 v576。成果物 tmp/re/v576_entity_mechanism_and_open_contradiction_ruling.md・台帳 row552。probe v576_1〜v576_7（7本・EXIT=0）。結果＝entity 機構は確定、ただし「open 成功呼び出し」は全系統で未検出という矛盾を記録して残点 V-576-1 へ。
+  > 【[確定(命令)] XML エンティティ機構】setter 0x58A0A0: 名前先頭で '&'（=0x1B グループ）／'_'（=0）／英字（A-Z 索引）に分岐 → malloc(0x10) ノード → 0x589EB0 で name/value 連結 → ヘッド [0xB13BC4] へ insert。**E8 callers は 0x58A1C0 の1関数223 箇所＝entity 定義の一括初期化**（&class;=4002・&HUDMainMenu;=0x3EC・&generic;/&false;/&true;/&left;/&center; 等223個）。[0xB13BC4] の refs は3件＝setter／getter／atexit 0xA24A40（[0xB3B0B0] 16B ノード配列の dtor 登録 0x589880/0x1c/0x10）。
+  > 【[確定(命令)] resolver 0x58B040(name, id)】'&' 先頭→バケット（先頭文字索引・eax=0x1B<<4=0x1B0 → [0xB3B0B4+eax]）→16B ノード歩き → 0x9836C9 strcmp。**未登録時 id==-1 なら word[0xB13BCE]+0x2710(=10000) を自動採番** → malloc(0x10)+0x4028D0 str.Set+0x589F20(obj,name,id)。**callers は2関数のみ**: 0x58BEE0@0x58C23C／0x58D2F0@0x58D356。
+  > 【[部分確定] 2消費者の役割】0x58BEE0 内＝'%s%i' 連番名合成→fldz→push -1 resolve（**新規作成型**）→0x58B220 挿入→0x58CA00（テンプレ/ノード複製系）／0x58D2F0 内＝0x588EF0→f2i→resolve（**XML 属性値の entity 解決**）。→ **entity の実行時消費者はこの2関数＝XML 実行系**（＝open の 4002 メッセージ送信の所在候補はここ）。
+  > 【[未確定] open 成功呼び出しの矛盾（3命題が同時成立しない）】①**.text 全域で 0xFA2(=a2 0f 00 00) の出現は3件のみ**: entity 登録 push（0x58A9A7）／open 内 cmp 即値（0x591C54）／0x42703E（a2＝mov al,moffs オペコード or 境界ずれ・land decode 失敗で実体未確定）。**push imm32・mov reg,imm・mov [mem],imm の全系統で『0xFA2 を渡す呼び出し側』不存在**。②**E8+E9 併走査で 0x591C50（open）への直接呼び出し＝0件**（vtable 経由のみ）、**0x587D20（生成 switch）への呼出＝open 内 0x591C76 の1件のみ（E9 も0件）**。③ open の成功パスは a1==0xFA2 固定。→ **『生成は open 内のみ／成功は 0xFA2 固定／渡し側なし』は同時に真にできない** → 次回は (a) 0x42703E の実体確定／(b) **ff /2（call indirect）の全 modrm+SIB+disp 完全列挙**（従来は mod=01/10 のみ＋SIB・disp32 を v575 で補完したが完全網羅は未）／(c) ret 0xc の引数規約（a1/a2 対応）再検証、のいずれかで解消＝**V-576-1 に再定義【中】**。
+  > 【教訓（系統的見落としの型）】①**E8 走査には E9 tail-jmp 併走査をセット**（今回補完・E9=0件を確定して初めて『open 内のみ』が確定）→以後 callers 全走査は E8+E9 が標準。②**ff /2 は SIB（ff 14 xx）・ff 15（disp32）も全列挙**。③**push imm32・mov reg,imm・mov [mem],imm の3系統 negative 手法が v573→v575→v576 と3回連続で矛盾検出に奏功**（negative も裁定価値）。④**a2 は mov al,moffs のオペコードでもあり得る**→4バイト列走査は必ず size 付き逐語で命令境界を確認。
+  > 【残点】V-576-1【中】＝矛盾解消（0x42703E 実体／ff /2 完全列挙／引数規約再検証）＝V-575-1 を再定義継承／V-576-2【中】＝0x58BEE0・0x58D2F0 の完全同定（entity 223 個の消費者全容）／V-576-3【低】＝id 採番 10000 系と [0xB3B0B0] ノード配列構造。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2445,6 +2452,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2468,4 +2480,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 21:41:22
+**ai-todo** | Last Updated: 2026-11-19 21:51:07

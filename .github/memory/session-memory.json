@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-20T04:00:00Z",
+  "lastUpdated": "2026-11-20T06:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14696,14 +14696,32 @@
         "v574"
       ],
       "content": "2026-11-19 v575 裁定＝V-574-1 の絞込み②（HUD/RaceSex の open slot＝共通 no-op で v574 訂正・TileMenu::open 実体と &class;(4002) 確定・ai-todo #166 追加 note）。成果物 tmp/re/v575_common_open_noop_ruling.md・台帳 row551。probe v575_1〜v575_6（6本 EXIT=0）。①[確定負]（v574 訂正）HUDMainMenu vtable 0xA6BEE4 slot5(+0x14)＝0x60CF60＝ret 8 no-op（TileMenu 0xA6AF14 slot5＝0x591C50 と別）→ HUD は TileMenu::open 経由で開かない。RaceSexMenu[4]/[5] も no-op → v573 の『汎用ディスパッチ候補』も [確定負]＝空関数（V-573-1 は別系統で継続）。0x60CF60 の E8 6関数＝無役割。②[確定(命令)] TileMenu::open 0x591C50: a1==0xFA2(4002) 固定（不一致→0 返却）→ f2i(a2) → 0x587B20(1,id) → 0x587D20(ctx,id) 生成 switch → [this+0x44]=menu／NULL→'ERROR: Cant find menu class!'。0xFA2＝XML エンティティ &class; の値（0x58A9A6 entity 定義）。③[部分確定] 絞込み: push 0xFA2＝1件のみ/mov reg,0xFA2＝0/E8 0x591C50＝0/call [reg+0x14] 281件の head は UI(0x57-0x5C) に0件/ff 14 SIB 19件も open なし → a1 の渡し方は entity/変数経由と推定。次の入口＝0x58A0A0 系 entity 実行（XML→4002 メッセージ）＝V-575-1【中】。④[確定(命令)] HUD 生成経路: push 0x3EC 25件＝取得のみ → 生成＝0x587D20 case1004 → ctor 0x5A6780（唯一 caller）→ それを呼ぶのは 0x591C50 のみ → HUD は TileMenu レイヤー経由か &class; メッセージ経由。chargen ゲートは open 呼び出し元側（V-574-1 継続）。教訓: vtable slot の no-op 比較（複数クラス同一 slot 並置）が経路誤同定の最短の訂正手段（v574 の誤りを v575 が是正）／push imm32・mov reg,imm・E8 の3系統が全0近ければ『引数は変数経由』と断定（v573 negative 手法の継続）。残点 V-575-1【中】（open 実呼び出し元＝entity 実行系）＝V-574-1 を再定義継承／V-575-2【中】／V-575-3【低】。"
+    },
+    {
+      "id": "opencode-v576-entity-open-contradiction-20261119",
+      "timestamp": "2026-11-20T06:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v576",
+        "u6",
+        "u4",
+        "menu",
+        "entity",
+        "todo-166",
+        "v575"
+      ],
+      "content": "2026-11-19 v576 裁定＝V-575-1 の探索（entity 機構の確定と『open 成功呼び出しの全系統未検出』矛盾の記録・ai-todo #166 追加 note）。成果物 tmp/re/v576_entity_mechanism_and_open_contradiction_ruling.md・台帳 row552。probe v576_1〜v576_7（7本 EXIT=0）。①[確定(命令)] entity setter 0x58A0A0: 名前先頭で &(0x1B)／_(0)／英字(A-Z 索引) 分岐 → malloc(0x10) → 0x589EB0 連結 → ヘッド [0xB13BC4] insert。callers＝0x58A1C0 の1関数223箇所＝entity 定義一括初期化（&class;=4002・&HUDMainMenu;=0x3EC 等）。refs＝3（setter／getter／atexit 0xA24A40＝[0xB3B0B0] 16B ノード配列）。②[確定(命令)] resolver 0x58B040(name,id): バケット索引(0x1B<<4)→0x9836C9 strcmp、未登録は id==-1 で word[0xB13BCE]+0x2710(=10000) 採番→作成。callers＝2関数のみ（0x58BEE0／0x58D2F0）。③[部分確定] 2消費者: 0x58BEE0＝'%s%i' 連番テンプレ展開（新規作成型）／0x58D2F0＝XML 値解決（0x588EF0→f2i）＝entity の実行時消費者はこの2関数（XML 実行系）。④[未確定] 矛盾（3命題が同時成立しない）: (i).text の 0xFA2 出現＝3件のみ（entity 登録／open 内 cmp／0x42703E＝mov al,moffs or 境界ずれ）→ 0xFA2 を渡す呼び出し側不存在、(ii) E8+E9 併走査で 0x591C50 直接0件・0x587D20＝open 内1件のみ、(iii) open 成功は a1==0xFA2 固定 → 解消手 (a) 0x42703E 実体／(b) ff /2 全 modrm+SIB+disp 完全列挙／(c) ret 0xc 引数規約再検証 ＝ V-576-1【中】。教訓: E8 走査には E9 tail-jmp 併走査をセット（今回補完で『open 内のみ』確定）／ff /2 は SIB・disp32 も全列挙／push imm・mov reg・mov [mem] の3系統 negative が v573→v575→v576 の3回連続で矛盾検出に奏功／a2 は mov al,moffs でもあり得る→4バイト列走査は size 付き逐語で境界確認。残点 V-576-1【中】＝矛盾解消（V-575-1 を再定義継承）／V-576-2【中】／V-576-3【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 995,
+    "totalEntries": 996,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-20T04:00:00Z",
-    "entry_count": 995,
-    "last_updated": "2026-11-20T04:00:00Z"
+    "lastUpdated": "2026-11-20T06:00:00Z",
+    "entry_count": 996,
+    "last_updated": "2026-11-20T06:00:00Z"
   }
 }
