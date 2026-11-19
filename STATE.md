@@ -3816,3 +3816,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v561 `d9a31b0b` →（本件 v562 を本 commit で push）＝**159裁定**。
 - **次**: **U 節は全 7 項目クローズ**。残るのは V-558-1（RaceSexMenu のページ送り呼出元）・V-559-2（p3/p5 行生成）・V-561-1（90 以外の通知）・V-562-3（chargen 中 HUD）などの新規残点群と、旧残点 V-557-1..3（`BinkOpen` フラグ名／ループ継ぎ目／credits 再生箇所）。
 
+## 2026-11-19 (kc) — V-558-1 クローズ v563（U2 フォロー）: **RaceSexMenu のページ切替は Done ボタン(id=90) のみ**
+
+- **成果物**: `tmp/re/v563_u2_page_switch_ruling.md`（probe **v563_1・v563_2**）。台帳 **row540（bak46）**・`round_verify` **ALL OK**（rows 31..540 / total 426 / done 421 / open 5）。ai-todo **#162 追加 note**・memory 追記。
+- **① [確定(命令)] 入力経路＝Done ボタン（tile id=90）のクリックのみ**: 通知ハンドラ `0x5CC200`（vtable `+0x0C`）が現在ページごとに `SetTrait(root=[this+4], 0xFAE /*user0*/, GetTrait(GetPage("<target>"), 0xFAE))` を実行。書き込みは 5 箇所＝`0x5CC857`(Main)／`0x5CC9AD`(Tone)／`0x5CC9F2`(Shape)／`0x5CCA42`(Face)／`0x5CC8BA`(Random)。
+- **② [確定負] タブ・左右キー・スクロールでのページ切替は無い**: `0x5C0000..0x5D0000` の `push 0xFAE` 80 箇所を全分類し、**メニュー根 `[this+4]` への SetFloat は 4 箇所のみ**で全て Done 経路。キー入力からページを書く経路は無い。
+- **③ 入口**: `0x5CC277 cmp ebx,0x5A` → Main は `0x5CCA77`（名前チェック→確認→Main へ戻す）／Shape・Tone・General(Face) は `0x5CCA09`（Face へ戻す）／その他は `0x5CC8BA` 等。`0x5CC200` の通知 id は 90／10（`race_name` クリック→`0x5C2730`）／98（`0x5CCBF4`）でページを書くのは 90 のみ。
+- **④ 教訓（手法）**: **`mov ecx, edi` が `push 0xfae` の直後にあるため素朴な逆走査では書き込みを取り逃す**——「push imm; mov ecx, reg; call SetFloat」の形を前方走査で拾う必要がある（v563_1 の逆走査だけでは「書き込み 0 件」と誤結論しかけた）。
+- **残点 V-563-1..2**: 1=ページごとの target 全対応（Shape→Tone→…→Main の完全順序）【中】／2=id 98・id 10 の分岐内容【低】。
+- **本日 push 累計（セッション）**: v405 → … → v562 `c90810d2` →（本件 v563 を本 commit で push）＝**160裁定**。
+- **次**: V-563-1（ページ順序の完全対応）が次に手が着く中程度の残点。旧残点は V-557-1..3（ループ継ぎ目・BinkOpen フラグ名・credits 再生箇所）／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）。
+

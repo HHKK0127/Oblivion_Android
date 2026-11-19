@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T11:10:00Z",
+  "lastUpdated": "2026-11-19T12:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14434,14 +14434,30 @@
         "canonical"
       ],
       "content": "2026-11-19 U1/U3 回答。【U1 残点（tmp/re/v560_u1_residuals_ruling.md・#164）】⒜ `FUN_00410BA0` の第6引数は**フィット基準**（`0`→高さ基準 480=`0xB06C50`／非0→幅基準 640=`0xB06C4C`）。Intro=`1`（幅基準）・iv ロゴ=`0`（高さ基準）・プレイリスト=`[0xB33427]`。⒝ 入力は『塞がれる』のではなく**ムービー自身がメッセージポンプを回して特定キーを skip として消費**（`FUN_00410390`: PeekMessage/TranslateMessage/DispatchMessageA → 入力デバイス更新 → `[0xB33426]`(skip) 判定 → 入力オブジェクトへ `FUN_00403520(1,5)`/`(1,0x1D)` を問合せ）。キーコード 5/0x1D の実キー同一性は未確定 [部分確定]。⒞ 動画開始と RaceSexMenu 生成は**同一ブロック**（v557 §2.2: 0x40EADB BinkSetSoundSystem → 0x40EAE0 CreateThread でプレイリスト非同期 → 0x40F0AF iv ロゴ同期 → 0x40F0C3 メインメニュー）。【U3（tmp/re/v559_statsmenu_tabs_ruling.md・#157）】StatsMenu の 5 タブ仕様の完全対応表が確定（表示行・ラベル文字列キー・値供給 getter・色分岐 `_red/_green/_blue_under/_even/_over`・tab p1 の SetString 3種 0xFAF/0xFB0/vfunc+0x268 の name/class/race 対応）。詳細は成果物参照。"
+    },
+    {
+      "id": "opencode-v563-u2-page-switch-20261119",
+      "timestamp": "2026-11-19T12:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v563",
+        "u2",
+        "racesexmenu",
+        "todo-162",
+        "page-switch"
+      ],
+      "content": "2026-11-19 v563 裁定＝V-558-1 クローズ（U2 フォロー・ai-todo #162 追加）。成果物 tmp/re/v563_u2_page_switch_ruling.md・台帳 row540。①RaceSexMenu のページ切替は Done ボタン（tile id=90）のクリックのみ [確定(命令)]。通知ハンドラ 0x5CC200（vtable +0x0C）が現在ページごとに SetTrait(root=[this+4], 0xFAE /*user0*/, GetTrait(GetPage(\"<target>\"), 0xFAE)) を実行。書き込みは 5 箇所: 0x5CC857(target=[0xB38F70]=Main) / 0x5CC9AD([0xB38FE8]=Tone) / 0x5CC9F2([0xB38FE0]=Shape) / 0x5CCA42([0xB38F80]=Face) / 0x5CC8BA([0xB38FF0]=Random)。②タブ・左右キー・スクロールでのページ切替は存在しない [確定負]。0x5C0000..0x5D0000 の push 0xFAE 80 箇所を全分類し、メニュー根 [this+4] への SetFloat は 4 箇所のみで全て Done 経路、キー入力からページを書く経路は無い。③入口: 0x5CC277 cmp ebx,0x5A で現在ページ判定。Main → 0x5CCA77（名前チェック→確認→Main へ戻す）／Shape・Tone・General(Face) → 0x5CCA09（Face へ戻す）／その他 → 0x5CC8BA 等。0x5CC200 の通知 id は 90／10（race_name クリック→0x5C2730）／98（0x5CCBF4）でページを書くのは 90 のみ。移植への示唆: 原版のページ送りは Done を押して次ページへ進むウィザード方式。タブ化は仕様変更。ページ index を書くのは SetTrait(menuRoot, user0, index) の 1 点なので移植も現在ページを 1 つの状態値に持つのが原版準拠。教訓（手法）: mov ecx, edi が push 0xfae の直後にあるため素朴な逆走査では書き込みを取り逃す。push imm; mov ecx, reg; call SetFloat の形を前方走査で拾う必要がある（逆走査だけでは書き込み 0 件と誤結論しかけた）。"
     }
   ],
   "metadata": {
-    "totalEntries": 979,
+    "totalEntries": 980,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T11:10:00Z",
-    "entry_count": 979,
-    "last_updated": "2026-11-19T11:10:00Z"
+    "lastUpdated": "2026-11-19T12:00:00Z",
+    "entry_count": 980,
+    "last_updated": "2026-11-19T12:00:00Z"
   }
 }

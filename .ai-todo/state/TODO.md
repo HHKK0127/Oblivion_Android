@@ -62,6 +62,14 @@
   > 【移植への示唆（重要）】移植の Name / Race / Attributes / Skills / Appearance という 5 タブは原版に対応物が無い [確定負]。Attributes/Skills は StatsMenu(0x3EB) の担当、名前は Main ページ内。原版は「Main → Race → Hair/Face/Shape/Tone → 顔パーツ8種 → 肌 → 髭/眉/唇 → 瞳色/鼻色/髪色」の 1 本のページ列。5 タブを維持するなら「原版ページ列をタブに再編した独自 UI」と明記するのが正確。
   > 【XML 実物の要点】:147 PAGES LAYOUT／:200-205「template PANES added here by code」＝ページはコードが動的生成（XML に 1 個も書かれていない）／:169-196 scroll bar の user2 = RaceSexMenu.user1 - 6・user8 = 6（＝RaceSexMenu.user1 は現在ページの項目数）／要素テンプレート button(101)/toggle(102)/slider(103)/text(104)。
   > 【残点 V-558-1..4】1=RaceSexMenu のページ送り呼出元と入力（Done/左右キー/クリック）【中】／2=AddPane の index が 0 始まりか 1 始まりか【中】／3=Main ページの内容（名前入力 TextEditMenu(0x41B) か性別トグルか）【中】／4=sGeneralFace 等 GMST の ESM 既定値【低】。
+  > U2 の残点 V-558-1 クローズ 2026-11-19 v563。成果物 tmp/re/v563_u2_page_switch_ruling.md（probe v563_1/v563_2・台帳 row540）。
+  > 【結論】RaceSexMenu のページ切替は **Done ボタン（tile id = 90）のクリックのみ** [確定(命令)]。タブ・左右キー・スクロールでのページ切替は存在しない [確定負]。
+  > 【実装】通知ハンドラ 0x5CC200（vtable +0x0C）内で、現在ページに応じて SetTrait(root=[this+4], 0xFAE /*user0*/, GetTrait(GetPage("<target>"), 0xFAE)) を実行する。書き込みは 5 箇所: 0x5CC857（target=[0xB38F70]=Main）／0x5CC9AD（[0xB38FE8]=Tone）／0x5CC9F2（[0xB38FE0]=Shape）／0x5CCA42（[0xB38F80]=Face）／0x5CC8BA（[0xB38FF0]=Random）。
+  > 【入口】0x5CC277 cmp ebx,0x5A で現在ページ判定。Main → 0x5CCA77（名前チェック→確認→Main へ戻す）／Shape・Tone・General(Face) → 0x5CCA09（Face へ戻す）／その他 → 0x5CC8BA 等。
+  > 【他 id】0x5CC200 が扱う通知 id は 90（Done）／10（race_name クリック→0x5C2730）／98（0x5CCBF4）で、ページを書くのは 90 のみ。
+  > 【移植への示唆】原版のページ送りは「Done を押して次ページへ」のウィザード方式。移植がタブ UI を採るなら、原版の Done で次ページへ進む動作の再現手段が別途必要（タブ化は仕様変更）。ページ index を書くのは SetTrait(menuRoot, user0, index) の 1 点なので、移植側も「現在ページ」を 1 個の状態値に持つのが原版準拠。
+  > 【手法メモ（重要）】mov ecx, edi が push 0xfae の直後にあるため、素朴な逆走査では書き込みを取り逃す。「push imm; mov ecx, reg; call SetFloat」の形を前方走査で拾う必要がある（v563_1 の逆走査だけでは「書き込み 0 件」と誤結論しかけた）。
+  > 【残点 V-563-1..2】1=ページごとの target 全対応（Shape→Tone→…→Main の完全順序）【中】／2=id 98・id 10 の分岐内容【低】。
 ①【高】**`user0` の値とページ構成の対応表** — v351 §1.3-1 が明示的に未確定として残した点。各 `user0` 値がどの pane（Race / Face 系ページ群 / その他）に対応するか、**その並び順（＝port のタブ順の正典）**を、`race_sex_menu.xml` の `<eq src="RaceSexMenu" trait="user0"/>` とページ定義、および EXE 側のページ切替ハンドラ（slot1 `SetElement` id==0x0A 分岐や通知 id 帯、v363/v364 の RaceSexMenu 解析を踏襲）で確定。
 ②【高】**各ページに表示される要素の一覧と生成元** — どのページに race リスト・性別 toggle・どのスライダー群・名前入力・Done/Back が出るか。特に **v351 §1.3-2「レース/性別ごとに表示されるスライダー集合の決定規則」**（＝Face ページ群の内訳と並び順）。
 ③【中】**Done(id90)/Back の通知とキャンセル時の状態復元** — user5 の 1/2 切替、Back 時に何がリセットされるか（v363_racesex_cancel_exit_ruling.md の残点があれば引き継ぐ）。NAME のエンジン側保存先は **#123**／StatsMenu の表示仕様は **#157** で依頼中のため**対象外と明記**（重複しないこと）。
@@ -2293,11 +2301,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2321,4 +2324,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 15:42:05
+**ai-todo** | Last Updated: 2026-11-19 16:58:29
