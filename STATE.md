@@ -3862,3 +3862,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v566 `5b1bd1ad` →（本件 v567 を本 commit で push）＝**158裁定**。
 - **次**: V-557-1..3（ループ継ぎ目／`BinkOpen` フラグ名／credits 再生箇所）／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-566-1（U9 の実測2行）。
 
+## 2026-11-19 (kf) — V-557-1..3 クローズ v568（U7 フォロー）: **credits は再生されない [確定(命令)]／ループ継ぎ目は EXE 判定不能 [確定負]／BinkOpen フラグは名称 [未確定]・条件 [確定]**
+
+- **成果物**: `tmp/re/v568_bink_residuals_ruling.md`（probe **v568_1〜v568_4**・4本 EXIT=0）。台帳 **row544**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] V-557-3: `CreditsMenu.bik` は EXE から再生されない**。値リテラル `CreditsMenu.bik`(0xA31AD4) と GMST 名 `sCreditsMenuMovie:General`(0xA31AE4) の **`.text` dword 参照はともに 0 件**（`.data` の GMST テーブルのみ＝ランタイム名前検索も無い）。スロット `[0xB0309C]` の `.text` 参照は **静的登録 thunk `0x9AAB71` の1件のみ**。比較: `[0xB0308C]`→`0x40F0B1`／`[0xB03094]`→`0x405577`・`0x5B5D00`・`0x5B5F99`／`[0xB030A4]`→`0x66F2C0`／`[0xB03084]`→`0x40EAE2`（**全スロットに実在の再生呼出があるのに対し credits のみ無い**）。整合: `credits_menu.xml`(942B) に `.bik` 参照なし・本文は外部 `Data\Credits.txt`（v364 §2）。
+- **② [確定負] V-557-1: ループ継ぎ目は EXE から決定不能**。`FUN_004106C0`（decompiled L9416-9462）は `_BinkNextFrame` とローカルフレーム加算 `param_1[3]++` のみで、**先頭へ戻す命令は1件も無い**。停止判定は `*(uint*)(*param_1+8) <= param_1[3] && cVar1==0` の1箇所。背景は描画ループ `0x57F170` が毎フレーム `FUN_00410810(0,1)` を呼ぶ（継続フラグ=1）。**継ぎ目の実現は binkw32 内部**。
+- **③ [未確定] V-557-2: `BinkOpen` フラグの SDK 名**（bink.h が必要・EXE に手掛かりなし）。**[確定(命令)] 条件**: `0x2000`＝ファイルサイズが `[0xB030BC]`=26,214,400 B（GMST `iPreloadSizeLimit`=25 MiB）超過時（＋`0x983754` の返り値との AND）／`0x08000000`＝スレッド不一致時に追加し `SuspendThread`/`ResumeThread`（IAT `0xA280F0`）でガード／失敗時 `"Could not open %s for playback."`。`BinkOpen` import は `_BinkOpen@8` のみ。
+- **④ 教訓**: **「再生される／されない」は5つの同型スロットの `.text` 参照数を並べるだけで機械的に決着**する（credits のみ thunk 1 件）／**リテラルと GMST 名の両方を走査**しないとランタイム名前検索の可能性を潰せない／**EXE から決定できないものは「決定不能」と明示**し、値と成立条件だけを根拠として残す（SDK 名は [未確定] のまま）。
+- **残点 V-568-1..3**: 1=フラグの SDK 名【低・bink.h があれば即決】／2=`0x983754` の返り値の意味【低】／3=credits_rect 以外の描画元【低】。
+- **本日 push 累計（セッション）**: v405 → … → v567 `11f3f531` →（本件 v568 を本 commit で push）＝**159裁定**。
+- **次**: V-559-2（StatsMenu p3/p5 行生成の全分岐）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-565/566/567 系の残り。
+

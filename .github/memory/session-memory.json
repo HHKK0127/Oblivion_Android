@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T14:00:00Z",
+  "lastUpdated": "2026-11-19T15:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14566,14 +14566,30 @@
         "v563"
       ],
       "content": "2026-11-19 v567 裁定＝V-563-1 クローズ（RaceSexMenu のページ→Done 後の行き先の完全対応表・ai-todo #162 追加）。成果物 tmp/re/v567_u2_page_order_ruling.md・台帳 row543。probe v564_5/v564_9/v564_10/v564_11（4本 EXIT=0）。完全対応表（源19ページ→行き先5種）: Main→0x5CCA77=Main（名前チェック→確認→Main 維持）／Shape(0xB38FE0)・Tone(0xB38FE8)→0x5CCA09=Face／General(Face)(0xB39000)→0x5CC9C4=Shape／顔詳細 Brow(0xB39008)・Cheeks(0xB39010)・Chin(0xB39018)・Eyes(0xB38F90)・Forehead(0xB39020)・Jaw(0xB39028)・Mouth(0xB39030)・Nose(0xB39038)→Shape／肌髪詳細 General(Skin)(0xB39040)・Beard(0xB39050)・Eye shades(0xB39320)・Eyebrows(0xB39058)・Mouth(Lips)(0xB39060)・Nose shades(0xB39328)→Tone。Race/Hair/Face/Hair Color は比較連鎖に無く 0x5CC8BA へフォールスルー。v563 の訂正 [確定負]: 「General(Face)→Face」は誤りで実測は General(Face)→Shape（0x5CC37E の次の分岐は 0x5CC3C1）。Shape→Face・Tone→Face は正しい。未同定ページ名 0xB38F90 = sEyes（value \"Eyes\"）静的登録 0x9F687A。v558 の「21 ページ」を補正 [部分確定]: 21 は AddPane 呼出数（生成 pane 数）として正しいが、静的登録バンド 0x9F6000..0x9F8000 には 155 件の名前登録があり、ページ/セクション名は sEyes/sAge/sComplexion/sGender/sSkin/sLips/sStyle 等を含めて 21 より多い。残りはフェイスモーフィングのスライダーラベル（sFacebrow/sCheekboneslow 等・数十件）とヘアカラー GMST（sHairColor0..15/iHairColor00..）＝ページではなく行ラベル。解釈 [部分確定]: 行き先は「1 階層上へ戻る」構造（顔詳細→Shape、肌髪詳細→Tone、Shape/Tone→Face、Main→確認）。Done は「次へ」ではなく「1 階層戻る／Main では確認」。教訓（ハーネスの罠）: capstone の op_str は mnemonic を含まないため re.match(r\"mov +eax,...\") はマッチ0件（v564_4b/6 が無出力の原因）→「eax/edx, dword ptr [...]」で始める。hex 桁数は {4,6}。ページ名は mov ecx,<global> の直前の push 列を読めば value/name が取れる。行内に | を書かない（(?:eax|edx) の縦棒が表を壊した）。"
+    },
+    {
+      "id": "opencode-v568-bink-residuals-20261119",
+      "timestamp": "2026-11-19T15:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v568",
+        "u7",
+        "bink",
+        "credits",
+        "todo-166"
+      ],
+      "content": "2026-11-19 v568 裁定＝V-557-1..3 クローズ（ループ継ぎ目／BinkOpen フラグ名／credits 再生箇所・ai-todo #166 追加）。成果物 tmp/re/v568_bink_residuals_ruling.md・台帳 row544。probe v568_1〜v568_4（4本 EXIT=0）。①[確定(命令)] CreditsMenu.bik は EXE から再生されない。値リテラル CreditsMenu.bik(0xA31AD4) と GMST 名 sCreditsMenuMovie:General(0xA31AE4) の .text dword 参照はともに 0 件（.data の GMST テーブルのみ＝ランタイム名前検索も無い）。スロット [0xB0309C] の .text 参照は静的登録 thunk 0x9AAB71 の1件のみ。比較: [0xB0308C]→0x40F0B1／[0xB03094]→0x405577, 0x5B5D00, 0x5B5F99／[0xB030A4]→0x66F2C0／[0xB03084]→0x40EAE2（全スロットに実在の再生呼出があるのに対し credits のみ無い）。整合: credits_menu.xml(942B) に .bik 参照なし・本文は外部 Data\\Credits.txt（v364 §2）。②[確定負] ループ継ぎ目は EXE から決定不能。FUN_004106C0（decompiled L9416-9462）は _BinkNextFrame とローカルフレーム加算 param_1[3]++ のみで先頭へ戻す命令は1件も無い。停止判定は *(uint*)(*param_1+8) <= param_1[3] && cVar1==0 の1箇所。背景は描画ループ 0x57F170 が毎フレーム FUN_00410810(0,1) を呼ぶ（継続フラグ=1）。継ぎ目の実現は binkw32 内部（SDK 依存）。③[未確定] BinkOpen フラグの SDK 名は bink.h が必要（EXE に手掛かりなし）。[確定(命令)] 条件: 0x2000＝ファイルサイズが [0xB030BC]=26,214,400 B（GMST iPreloadSizeLimit=25 MiB）超過時（＋0x983754 の返り値との AND）／0x08000000＝スレッド不一致時に追加し SuspendThread/ResumeThread（IAT 0xA280F0）でガード／失敗時 \"Could not open %s for playback.\"。BinkOpen import は _BinkOpen@8 のみ。移植への示唆: クレジット動画は原版に無い（同梱されるが再生されない）＝credits_menu.mp4 は独自演出で削除候補（U7⑤ と同根）。ループは『原版は binkw32 に任せている』と書くのが正確。フラグ移植時は値と成立条件のみを根拠にする。教訓: 再生される／されないは5つの同型スロットの .text 参照数を並べるだけで機械的に決着する（credits のみ thunk 1 件）／リテラルと GMST 名の両方を走査しないとランタイム名前検索の可能性を潰せない／EXE から決定できないものは決定不能と明示し値と成立条件だけを根拠として残す。"
     }
   ],
   "metadata": {
-    "totalEntries": 987,
+    "totalEntries": 988,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T14:00:00Z",
-    "entry_count": 987,
-    "last_updated": "2026-11-19T14:00:00Z"
+    "lastUpdated": "2026-11-19T15:00:00Z",
+    "entry_count": 988,
+    "last_updated": "2026-11-19T15:00:00Z"
   }
 }

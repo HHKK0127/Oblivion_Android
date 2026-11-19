@@ -31,6 +31,12 @@
   > 【重要・運用事故と復旧（2026-11-19）】ユーザーから『タイトル画面が前のバージョンに戻っている』と指摘。**原因は作製セッション自身の操作**: #156/#96 の検証で **master 相当（e3d36f9e）の worktree `fix-chargen-ui-quality` の APK を emulator-5554 にインストール**したため、**#166（タイトル背景動画フォールバック）が失われた**。#166 は未マージブランチ `fix-title-video-assets-fallback`（600f1a58 + db995aac + 751dddaf）にのみ存在し、master には入っていない。
   > 【復旧・実測 PASS】`fix-title-video-assets-fallback` の APK（226.9MB・testzip OK・assets/videos 8本）を `install -r -d` で再インストールし、cache の map_loop/oblivion_iv_logo/credits_menu を消して起動 → ログ実測: `Title video check: appContext=true, titleVideoInitAttempted=false` → `Title background selected: map_loop.mp4` → `Title video from cache: .../map_loop.mp4` → `Title video initialized: textureId=197, file=oblivion_iv_logo.mp4 -> map_loop.mp4` → `Title IV logo completed, holding minimized frame for 1200ms` → `Title IV logo hold done, switching to background: map_loop.mp4` → **`Title background playing: /data/user/0/com.example.oblivion/cache/map_loop.mp4`**。背景動画が復旧。
   > 【再発防止の結論】**未マージ修正（5ブランチ）が master 検証で消えるのは構造的問題**。対処: ①マージ判断を出す（#159 IME / #166+#167 タイトル動画 / #165 ガード / #131 ドロップログ / #96 素材）②今後の emu 検証は『全修正を含む統合ビルド』で統一する。今回は②を守らず master ビルドを入れたのが直接原因。
+  > V-557-1..3（ループ継ぎ目／BinkOpen フラグ名／credits 再生箇所）クローズ 2026-11-19 v568。成果物 tmp/re/v568_bink_residuals_ruling.md・台帳 row544。probe v568_1〜v568_4（4本・EXIT=0）。
+  > 【V-557-3 credits 再生箇所＝再生されない [確定(命令)]】CreditsMenu.bik(0xA31AD4) と GMST 名 sCreditsMenuMovie:General(0xA31AE4) の .text dword 参照はともに 0 件（.data の GMST テーブルのみ＝ランタイム名前検索も無い）。スロット [0xB0309C] の .text 参照は 1 件のみ＝静的登録 thunk 0x9AAB71。比較（再生される側）: [0xB0308C] sMainMenuMovieIntro→0x40F0B1／[0xB03094] sMainMenuMovie→0x405577, 0x5B5D00, 0x5B5F99／[0xB030A4] sOblivionIntro→0x66F2C0／[0xB03084] sIntroSequence→0x40EAE2。全スロットに実在の再生呼出があるのに対し credits のみ無い。整合: credits_menu.xml(942B) に .bik 参照なし・本文は外部 Data\Credits.txt（v364 §2 [確定]）。
+  > 【V-557-1 ループ継ぎ目＝EXE から決定不能 [確定負]】FUN_004106C0（docs/Oblivion_decompiled.c L9416-9462）は _BinkNextFrame とローカルフレーム加算 param_1[3]++ のみで、先頭へ戻す命令（先頭フレームへのセット／リセット／Rewind）は EXE に 1 件も無い。停止判定は『*(uint*)(*param_1 + 8) <= param_1[3] && cVar1==0』の1箇所。背景は描画ループ 0x57F170 が毎フレーム FUN_00410810(0,1) を呼び継続フラグ=1 で回し続ける。継ぎ目の実現は binkw32 内部（SDK 依存）＝EXE の命令からは決定できない。
+  > 【V-557-2 BinkOpen フラグ＝名称は [未確定]／条件は [確定(命令)]】名称は bink.h が必要（EXE に手掛かりなし）。条件: 0x2000＝ファイルサイズが [0xB030BC]=26,214,400 B（GMST iPreloadSizeLimit=25 MiB）超過時（＋0x983754 の返り値との AND）／0x08000000＝スレッド不一致時（0x983754 判定）に追加し SuspendThread/ResumeThread（IAT 0xA280F0）でガード／失敗時 "Could not open %s for playback."。BinkOpen import は _BinkOpen@8 のみ。
+  > 【移植への示唆】クレジット動画は原版に無い（同梱されるが再生されない）＝credits_menu.mp4 は独自演出で削除候補（U7⑤ の 1% 抽選と同根）。ループは『原版は binkw32 に任せている』と書くのが正確（『原版はこうしている』ではない）。フラグを移植する際は値と成立条件のみを根拠にする（SDK 名は使わない）。
+  > 【残点 V-568-1..3】1=BinkOpen フラグの SDK 名【低・bink.h があれば即決】／2=0x983754 の返り値の意味【低】／3=credits_rect 以外の描画元【低】。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2375,6 +2381,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2398,4 +2409,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 19:10:23
+**ai-todo** | Last Updated: 2026-11-19 19:41:35
