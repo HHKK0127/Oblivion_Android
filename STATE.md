@@ -3956,3 +3956,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v573 `521d38c6` →（本件 v574 を本 commit で push）＝**165裁定**。
 - **次**: V-574-1（HUD open 呼び出し元の絞り込み）／V-573-1（id98 message 配線）／V-565/566/567/568/571/572 系（V-566-1 は L2 ゲート待ち）。
 
+## 2026-11-19 (ln) — V-574-1 の絞込み② v575（U6/U4 フォロー）: **HUD/RaceSex の open slot＝共通 no-op で v574 訂正・`TileMenu::open` 実体と `&class;`(4002) を確定**（open 呼び出し元は entity 実行系へ）
+
+- **成果物**: `tmp/re/v575_common_open_noop_ruling.md`（probe **v575_1〜v575_6・6本 EXIT=0**）。台帳 **row551**・ai-todo **#166 追加 note**。
+- **① [確定負]（v574 訂正）HUDMainMenu は `TileMenu::open` 経由で開かない**: **HUDMainMenu vtable `0xA6BEE4` slot5(+0x14)＝`0x60CF60`＝`ret 8` no-op**（TileMenu `0xA6AF14` slot5＝`0x591C50` と別）。**RaceSexMenu[4]/[5] も no-op** → **v573 の「汎用ディスパッチ候補」も [確定負]＝空関数**（id98 の V-573-1 は別系統で継続）。v574 §1 の「open 総入口」記述は **TileMenu vtable 系限定**に訂正。`0x60CF60` の E8 6関数＝無役割。
+- **② [確定(命令)] `TileMenu::open 0x591C50` 実体**: `a1==0xFA2(4002)` 固定（不一致→0 返却）→ `f2i(a2)` → `0x587B20(1,id)` → **`0x587D20(ctx,id)` 生成 switch** → `[this+0x44]=menu`／NULL→`'ERROR: Cant find menu class!'`。**`0xFA2`＝XML エンティティ `&class;` の値**（`0x58A9A6` entity 定義）。
+- **③ [部分確定] 絞込み**: `push 0xFA2`＝1件のみ（entity 登録）／`mov reg,0xFA2`＝0／`E8 0x591C50`＝0／`call [reg+0x14]` 281件の head は **UI(0x57-0x5C) に0件**（全て 0x88-0x94）／`ff 14` SIB 19件も open なし → **a1 の渡し方は entity/変数経由と推定**。**次の入口＝`0x58A0A0` 系 entity 実行（XML→4002 メッセージ）＝V-575-1【中】**。
+- **④ [確定(命令)] HUD 生成経路**: `push 0x3EC` 25件＝取得のみ（v574 済）→ 生成＝`0x587D20` case1004 → ctor `0x5A6780`（唯一 caller）→ それを呼ぶのは `0x591C50` のみ → **HUD は TileMenu レイヤー経由か `&class;` メッセージ経由**。**chargen ゲートは open 呼び出し元側**（V-574-1 継続）。
+- **⑤ 教訓（再発型）**: **vtable slot の no-op 比較（複数クラスの同一 slot 並置）が経路誤同定の最短の訂正手段**（v574 の誤りを v575 が是正）／**push imm32・mov reg,imm・E8 の3系統が全0近ければ「引数は変数経由」と断定**（v573 negative 手法の継続）。
+- **残点**: **V-575-1【中】**（open 実呼び出し元＝entity 実行系）＝V-574-1 を再定義継承／V-575-2【中】（slot5 no-op 設計と実生成経路）／V-575-3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v574 `b0127de8` →（本件 v575 を本 commit で push）＝**166裁定**。
+- **次**: V-575-1（entity 実行系）／V-573-1（id98 message 配線）／低優先群（V-565/566/567/568/571/572/574-2/3/575-2/3）。
+
