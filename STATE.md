@@ -3843,3 +3843,22 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v564 →（本件 v565/v566 を本 commit で push）＝**157裁定**。
 - **次**: V-557-1..3（ループ継ぎ目／`BinkOpen` フラグ名／credits 再生箇所）／V-558-1→v563 でクローズ済／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-563-1（ページ順序の完全対応）。
 
+## 2026-11-19 (ke) — V-563-1 クローズ v567（U2 フォロー）: **RaceSexMenu のページ→Done 後の行き先の完全対応表**＋未同定ページ名 `sEyes` の確定＋v558「21 ページ」の補正
+
+- **成果物**: `tmp/re/v567_u2_page_order_ruling.md`（probe **v564_5 / v564_9 / v564_10 / v564_11**・4本 EXIT=0、v564_1..4 は試行錯誤分）。台帳 **row543**・ai-todo **#162 追加 note**。
+- **① [確定(命令)] 完全対応表（源19 → 行き先5 種）**: `0x5CC200`（`cmp ebx,0x5A` = id90）が現在ページと各ページの `user0` を比較し最初に一致した分岐へ飛ぶ。
+  - Main → `0x5CCA77` = **Main**（名前チェック→確認→Main 維持）
+  - Shape・Tone → `0x5CCA09` = **Face**
+  - General(Face) → `0x5CC9C4` = **Shape**
+  - 顔詳細（Brow／Cheeks／Chin／**Eyes**／Forehead／Jaw／Mouth／Nose）→ **Shape**
+  - 肌髪詳細（General(Skin)／Beard／Eye shades／Eyebrows／Mouth(Lips)／Nose shades）→ **Tone**
+  - Race／Hair／Face／Hair Color は連鎖に無く `0x5CC8BA` へフォールスルー
+- **② [確定負] v563 の訂正**: 「General(Face) → Face」は誤り（実測は **General(Face) → Shape**、`0x5CC37E` の次の分岐は `0x5CC3C1`）。Shape→Face・Tone→Face は正しい。
+- **③ [確定(命令)] 未同定 `0xB38F90` = `sEyes`（value "Eyes"）**（静的登録 `0x9F687A`）。
+- **④ [部分確定] v558 の「21 ページ」を補正**: 21 は **`AddPane` 呼出数（生成 pane 数）として正しい**が、静的登録バンド `0x9F6000..0x9F8000` には **155 件の名前登録**があり、ページ/セクション名は `sEyes`/`sAge`/`sComplexion`/`sGender`/`sSkin`/`sLips`/`sStyle` 等を含めて 21 より多い。残りはフェイスモーフィングのスライダーラベル（`sFacebrow`/`sCheekboneslow` 等・数十件）とヘアカラー GMST（`sHairColor0..15`/`iHairColor00..`）＝**ページではなく行ラベル**。
+- **⑤ [部分確定] 解釈**: 行き先は「1 階層上へ戻る」構造に見える（顔詳細→Shape、肌髪詳細→Tone、Shape/Tone→Face、Main→確認）。**Done は「次へ」ではなく「1 階層戻る／Main では確認」**。
+- **⑥ 教訓（ハーネスの罠・重要）**: **`capstone` の `op_str` は mnemonic を含まない**ため `re.match(r"mov +eax,...")` は**マッチ0件**になる（v564_4b/6 が無出力の原因）→「eax/edx, dword ptr [...]」で始まる正規表現に直すと解決。**hex 桁数は `{4,6}`**（`0xb38f70` は6桁、`{4}` 固定だと失敗）。**ページ名を引くときは「`mov ecx,<global>` の直前の push 列」を読めば value/name の2つが取れる**（`push value; push name; mov ecx,g; call 0x419A70`）。**行内に `|` を書かない**（`(?:eax|edx)` の縦棒が表を壊した→6本に修正）。
+- **残点 V-567-1..3**: 1=「1 階層上へ戻る」解釈の確認（表示順 XML／親子構造）【中】／2=Brow・Main の2 箇所目が同一コード内に重複する理由【低】／3=フォールスルー先 `0x5CC8BA` の完全 decode【低・V-563-2 と統合】。
+- **本日 push 累計（セッション）**: v405 → … → v566 `5b1bd1ad` →（本件 v567 を本 commit で push）＝**158裁定**。
+- **次**: V-557-1..3（ループ継ぎ目／`BinkOpen` フラグ名／credits 再生箇所）／V-559-2（p3/p5 行生成）／V-561-1（id 90 以外の通知）／V-562-3（chargen 中 HUD）／V-566-1（U9 の実測2行）。
+

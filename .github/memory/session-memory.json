@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-19T13:00:00Z",
+  "lastUpdated": "2026-11-19T14:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14550,14 +14550,30 @@
         "stale-source"
       ],
       "content": "2026-11-19 U9 裁定（tmp/re/v566_u9_left_top_blocks_ruling.md・ai-todo #156）の mechanism を**実測で反証**。v566 の主張: 『`UICharacterCreation` は setPosition()/setSize() を一度も呼ばれないので size=(0,0)・position=(0,0) → getContentSize()=(-20,-60)（負）→ タブ幅 tabW=-4 → 左上 x=0..30 に彩色帯が7〜8本積まれる』。**反証1（コード）**: 実コードは `ui_character_creation.h:34-43` の **setScreenSize(int,int) オーバーライドが setSize(panelWidth,panelHeight) と setPosition(...) を呼ぶ**（基底 setScreenSize は onScreenResize() への転送だが派生が**隠蔽（non-virtual shadow）**するため unique_ptr<UICharacterCreation> 経由では派生版が走る）。`renderer.cpp:911`（Renderer::init 内・screenWidth=1920 設定後）で実行され size=(1382,886)・position=(269,97) になる。**反証2（実測）**: worktree fix-chargen-ui-quality の APK（226.8MB・master e3d36f9e 相当）を emulator-5554 で起動しタイトル→NEW→キャラ作成を撮影（%TEMP%/opencode/s156_0_title.png・_1_name.png・_2_attr.png・_3_skills.png）。**左上の彩色ブロック群は再現しない**。パネルは正しい位置・幅で描画（タブ5枚 full-width）。タイトルも左上は Android 側 Debug Control Panel の『D』のみ。**v566 の行番号も現行と不一致**（v566 は characterCreationUI->render() を『5455・6043』と引用、現行 master は **5055・5643**＝約400行ずれ＝probe137 ブランチか古いスナップショット参照）。**結論**: #156 の chargen 側症状は現行 master で再現せず、2026-11-15 の起票以降のマージ（#127 character sheet・#149 name rejections・800439f6 text-collision・#160/#132 title overlay 等）で解消した可能性が高い。推測修正せず、gameplay 側の撮影と git bisect で判断する。"
+    },
+    {
+      "id": "opencode-v567-page-order-map-20261119",
+      "timestamp": "2026-11-19T14:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v567",
+        "u2",
+        "racesexmenu",
+        "todo-162",
+        "v563"
+      ],
+      "content": "2026-11-19 v567 裁定＝V-563-1 クローズ（RaceSexMenu のページ→Done 後の行き先の完全対応表・ai-todo #162 追加）。成果物 tmp/re/v567_u2_page_order_ruling.md・台帳 row543。probe v564_5/v564_9/v564_10/v564_11（4本 EXIT=0）。完全対応表（源19ページ→行き先5種）: Main→0x5CCA77=Main（名前チェック→確認→Main 維持）／Shape(0xB38FE0)・Tone(0xB38FE8)→0x5CCA09=Face／General(Face)(0xB39000)→0x5CC9C4=Shape／顔詳細 Brow(0xB39008)・Cheeks(0xB39010)・Chin(0xB39018)・Eyes(0xB38F90)・Forehead(0xB39020)・Jaw(0xB39028)・Mouth(0xB39030)・Nose(0xB39038)→Shape／肌髪詳細 General(Skin)(0xB39040)・Beard(0xB39050)・Eye shades(0xB39320)・Eyebrows(0xB39058)・Mouth(Lips)(0xB39060)・Nose shades(0xB39328)→Tone。Race/Hair/Face/Hair Color は比較連鎖に無く 0x5CC8BA へフォールスルー。v563 の訂正 [確定負]: 「General(Face)→Face」は誤りで実測は General(Face)→Shape（0x5CC37E の次の分岐は 0x5CC3C1）。Shape→Face・Tone→Face は正しい。未同定ページ名 0xB38F90 = sEyes（value \"Eyes\"）静的登録 0x9F687A。v558 の「21 ページ」を補正 [部分確定]: 21 は AddPane 呼出数（生成 pane 数）として正しいが、静的登録バンド 0x9F6000..0x9F8000 には 155 件の名前登録があり、ページ/セクション名は sEyes/sAge/sComplexion/sGender/sSkin/sLips/sStyle 等を含めて 21 より多い。残りはフェイスモーフィングのスライダーラベル（sFacebrow/sCheekboneslow 等・数十件）とヘアカラー GMST（sHairColor0..15/iHairColor00..）＝ページではなく行ラベル。解釈 [部分確定]: 行き先は「1 階層上へ戻る」構造（顔詳細→Shape、肌髪詳細→Tone、Shape/Tone→Face、Main→確認）。Done は「次へ」ではなく「1 階層戻る／Main では確認」。教訓（ハーネスの罠）: capstone の op_str は mnemonic を含まないため re.match(r\"mov +eax,...\") はマッチ0件（v564_4b/6 が無出力の原因）→「eax/edx, dword ptr [...]」で始める。hex 桁数は {4,6}。ページ名は mov ecx,<global> の直前の push 列を読めば value/name が取れる。行内に | を書かない（(?:eax|edx) の縦棒が表を壊した）。"
     }
   ],
   "metadata": {
-    "totalEntries": 986,
+    "totalEntries": 987,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-19T13:00:00Z",
-    "entry_count": 986,
-    "last_updated": "2026-11-19T13:00:00Z"
+    "lastUpdated": "2026-11-19T14:00:00Z",
+    "entry_count": 987,
+    "last_updated": "2026-11-19T14:00:00Z"
   }
 }

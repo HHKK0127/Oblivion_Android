@@ -28,6 +28,9 @@
   > 【結論】原版に「アセット展開」という工程は存在しない [確定]。①メニュー XML（menus\**）は Oblivion - Misc.bsa 内（BSA 実読で menus\ 配下 89 個の XML を確認）。②動画 .bik は BSA に入っていない [確定]＝主要 5 BSA（Misc 115 / Meshes 20182 / Sounds 1533 / Voices1 33198 / Voices2 44582 = 計 89,610 エントリ）に .bik も video\ も 0 件で、loose の Data\Video\*.bik のみ。③参照は FUN_00410160 が "Data\Video\" + 名前 を合成して _BinkOpen（v557 §2.2・GMST s* の値）。
   > 【移植への示唆】原版は BSA をランタイムでマウントする（展開しない）ので「展開順序」の正典は存在せず、移植 AssetExtractor の順序設計は独自実装。守るべきは順序ではなく配置（メニュー XML = アーカイブ内 / 動画 = 外部ディレクトリ）。移植の第3段（APK assets/videos/* → cacheDir）は、原版でいう「Data\Video\ にファイルが在る」状態を作る自己修復で、原版に対応物は無い（原版は最初から loose で存在する前提）。
   > 【残点 V-562-1..3】1=Oblivion - Textures.bsa の正式ファイル名とテクスチャ配置（本 probe では名前不一致で未走査）【低】／2=タイトル version の文字列キー【低】／3=chargen 中に HUD(0x3EC) が開かない命令的裏付け【中】。
+  > 【重要・運用事故と復旧（2026-11-19）】ユーザーから『タイトル画面が前のバージョンに戻っている』と指摘。**原因は作製セッション自身の操作**: #156/#96 の検証で **master 相当（e3d36f9e）の worktree `fix-chargen-ui-quality` の APK を emulator-5554 にインストール**したため、**#166（タイトル背景動画フォールバック）が失われた**。#166 は未マージブランチ `fix-title-video-assets-fallback`（600f1a58 + db995aac + 751dddaf）にのみ存在し、master には入っていない。
+  > 【復旧・実測 PASS】`fix-title-video-assets-fallback` の APK（226.9MB・testzip OK・assets/videos 8本）を `install -r -d` で再インストールし、cache の map_loop/oblivion_iv_logo/credits_menu を消して起動 → ログ実測: `Title video check: appContext=true, titleVideoInitAttempted=false` → `Title background selected: map_loop.mp4` → `Title video from cache: .../map_loop.mp4` → `Title video initialized: textureId=197, file=oblivion_iv_logo.mp4 -> map_loop.mp4` → `Title IV logo completed, holding minimized frame for 1200ms` → `Title IV logo hold done, switching to background: map_loop.mp4` → **`Title background playing: /data/user/0/com.example.oblivion/cache/map_loop.mp4`**。背景動画が復旧。
+  > 【再発防止の結論】**未マージ修正（5ブランチ）が master 検証で消えるのは構造的問題**。対処: ①マージ判断を出す（#159 IME / #166+#167 タイトル動画 / #165 ガード / #131 ドロップログ / #96 素材）②今後の emu 検証は『全修正を含む統合ビルド』で統一する。今回は②を守らず master ビルドを入れたのが直接原因。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -70,6 +73,22 @@
   > 【移植への示唆】原版のページ送りは「Done を押して次ページへ」のウィザード方式。移植がタブ UI を採るなら、原版の Done で次ページへ進む動作の再現手段が別途必要（タブ化は仕様変更）。ページ index を書くのは SetTrait(menuRoot, user0, index) の 1 点なので、移植側も「現在ページ」を 1 個の状態値に持つのが原版準拠。
   > 【手法メモ（重要）】mov ecx, edi が push 0xfae の直後にあるため、素朴な逆走査では書き込みを取り逃す。「push imm; mov ecx, reg; call SetFloat」の形を前方走査で拾う必要がある（v563_1 の逆走査だけでは「書き込み 0 件」と誤結論しかけた）。
   > 【残点 V-563-1..2】1=ページごとの target 全対応（Shape→Tone→…→Main の完全順序）【中】／2=id 98・id 10 の分岐内容【低】。
+  > V-563-1（RaceSexMenu のページ順序の完全対応）クローズ 2026-11-19 v567。成果物 tmp/re/v567_u2_page_order_ruling.md・台帳 row543。probe v564_5 / v564_9 / v564_10 / v564_11（4本・EXIT=0、v564_1..4 は試行錯誤分）。
+  > 【完全対応表（源19ページ → 行き先5種）】0x5CC200（cmp ebx,0x5A = id90 の通知ハンドラ）が現在ページ（[esi+4] の user0）と各ページの user0 を比較し、最初に一致した分岐へ飛ぶ。
+  > ・Main(0xB38F70) → 0x5CC2D0 → 0x5CCA77 = Main（名前チェック→確認ダイアログ→Main 維持）
+  > ・Shape(0xB38FE0) → 0x5CC324 → 0x5CCA09 = Face
+  > ・Tone(0xB38FE8) → 0x5CC378 → 0x5CCA09 = Face
+  > ・General(Face)(0xB39000) → 0x5CC3C1 → 0x5CC9C4 = **Shape**
+  > ・Brow(0xB39008)・Cheeks(0xB39010)・Chin(0xB39018)・Eyes(0xB38F90)・Forehead(0xB39020)・Jaw(0xB39028)・Mouth(0xB39030)・Nose(0xB39038) → 0x5CC9C4 = **Shape**
+  > ・General(Skin)(0xB39040)・Beard(0xB39050)・Eye shades(0xB39320)・Eyebrows(0xB39058)・Mouth(Lips)(0xB39060)・Nose shades(0xB39328) → 0x5CC97F = **Tone**
+  > ・Race／Hair／Face／Hair Color は比較連鎖に無く末尾 0x5CC8BA へフォールスルー。
+  > 【v563 の訂正】v563 は「Shape／Tone／General(Face) → Face」としたが、実測では **General(Face) → Shape**（0x5CC37E の次の分岐は 0x5CC3C1 → 0x5CC9C4）。Shape→Face・Tone→Face は正しい。[確定負] 訂正。
+  > 【未同定ページ名】0xB38F90 = **sEyes（value "Eyes"）**（静的登録 0x9F687A）。[確定(命令)]
+  > 【v558 の「21 ページ」を補正】21 は **AddPane の呼出数（生成 pane 数）として正しい**が、静的登録バンド 0x9F6000..0x9F8000 には **155 件の名前登録**があり、ページ/セクション名は sEyes／sAge／sComplexion／sGender／sSkin／sLips／sStyle 等を含めて 21 より多い。残りはフェイスモーフィングのスライダーラベル（sFacebrow「Face brow/nose/chin ratio」、sCheekboneslow「Cheekbones low/high」等・数十件）とヘアカラー GMST（sHairColor0..15／iHairColor00..）＝**ページではなく行ラベル**。[部分確定] 訂正。
+  > 【解釈 [部分確定]】行き先は「1 階層上へ戻る」構造に見える（顔詳細→Shape、肌/髪詳細→Tone、Shape/Tone→Face、Main→確認）。**Done は「次へ」ではなく「1 階層戻る／Main では確認」**。
+  > 【移植への示唆】ページ遷移は固定表（上記）で矢印キー等の直接移動は無い（v563 で確定）。タブ UI に写像するならこの前後関係が必要。ページ名 GMST とスライダーラベル GMST を混同しないこと。
+  > 【手法の罠（重要）】capstone の op_str は **mnemonic を含まない**ため、mov +eax で始まる正規表現は**マッチ0件**になる（v564_4b/6 が無出力の原因）→「eax/edx, dword ptr [...]」で始まる正規表現に直すと解決。hex 桁数は {4,6}（0xb38f70 は6桁、{4} 固定だと失敗）。ページ名を引くときは「mov ecx,<global> の直前の push 列」を読めば value/name の2つが取れる（push value; push name; mov ecx,g; call 0x419A70）。
+  > 【残点 V-567-1..3】1=「1 階層上へ戻る」解釈の確認（表示順 XML／親子構造）【中】／2=Brow・Main の2 箇所目が同一コード内に重複する理由【低】／3=フォールスルー先 0x5CC8BA の完全 decode【低・V-563-2 と統合】。
 ①【高】**`user0` の値とページ構成の対応表** — v351 §1.3-1 が明示的に未確定として残した点。各 `user0` 値がどの pane（Race / Face 系ページ群 / その他）に対応するか、**その並び順（＝port のタブ順の正典）**を、`race_sex_menu.xml` の `<eq src="RaceSexMenu" trait="user0"/>` とページ定義、および EXE 側のページ切替ハンドラ（slot1 `SetElement` id==0x0A 分岐や通知 id 帯、v363/v364 の RaceSexMenu 解析を踏襲）で確定。
 ②【高】**各ページに表示される要素の一覧と生成元** — どのページに race リスト・性別 toggle・どのスライダー群・名前入力・Done/Back が出るか。特に **v351 §1.3-2「レース/性別ごとに表示されるスライダー集合の決定規則」**（＝Face ページ群の内訳と並び順）。
 ③【中】**Done(id90)/Back の通知とキャンセル時の状態復元** — user5 の 1/2 切替、Back 時に何がリセットされるか（v363_racesex_cancel_exit_ruling.md の残点があれば引き継ぐ）。NAME のエンジン側保存先は **#123**／StatsMenu の表示仕様は **#157** で依頼中のため**対象外と明記**（重複しないこと）。
@@ -172,6 +191,12 @@
   > 【次の一手（推測実装を避けるため2段階）】A. renderer.cpp:5455 と 6043 の characterCreationUI->render(); をコメントアウト（2行）してビルド → 消えれば確定。B. 決定的：2D 矩形はすべて UIDrawHelper::drawColoredQuad に集まるので、その関数先頭に1行 LOGI("quad <- %p (%.0f,%.0f %.0fx%.0f)", __builtin_return_address(0), x, y, w, h) を追加し、x≈0..30 / y≈50..200 / 幅が負 の行のアドレスを addr2line で特定。
   > 【修正の方向性（未実施）】UICharacterCreation に onScreenResize() オーバーライドを追加して setSize()/setPosition() を呼ぶ（他 UI と同じ型）。少なくとも getContentSize().x > 0 と getConfirmButtonY() > 0 が満たされるようにする。
   > 【残点 V-566-1..3】1=§4-A/B の実測結果（当該候補の当否・実際のアドレス）【中＝本依頼の残る一手】／2=getTabY() の y（:675）とテキスト重なり【低】／3=showCharacterCreation=false の既定時に見える現象が別源でないか【中】。
+  > 【U9 回答受領＋移植側実測で **v566 の mechanism を反証**（2026-11-19）】**結論: v566 の『size=(0,0) のため左上に細い帯が 7〜8 本積まれる』という mechanism は成立しない。移植の実コードは setSize/setPosition を呼んでおり、実測でもパネルは正常描画。**
+  > 【v566 の主張】`UICharacterCreation` は `setPosition()`/`setSize()` を一度も呼ばれないので `size=(0,0)`・`position=(0,0)` → `getContentSize()=(-20,-60)`（負）→ タブ幅 `tabW=contentSize.x/5=-4`・各描画が負幅でクリップされ、左上 x=0..30 に 7〜8 本の彩色帯が積まれる。根拠として `characterCreationUI->render()` を『5455・6043』と引用。
+  > 【反証1・コード】実コードは `ui_character_creation.h:34-43` の **`setScreenSize(int,int)` オーバーライドが `setSize(panelWidth,panelHeight)` と `setPosition(...)` を呼ぶ**。`renderer.cpp:911`（`Renderer::init` 内・`screenWidth=1920` 設定後）で `characterCreationUI->setScreenSize(screenWidth, screenHeight)` が実行される。`setScreenSize` は基底では `onScreenResize()` への転送だが、派生が**隠蔽（non-virtual shadow）**しているため `unique_ptr<UICharacterCreation>` 経由の呼び出しでは派生版が走る。→ `size=(1382, 886)`・`position=(269, 97)` になり、`getContentSize()` は正値。
+  > 【反証2・実測】worktree `fix-chargen-ui-quality` の APK（226.8MB・master e3d36f9e 相当）を emulator-5554 にインストールし、タイトル→NEW→キャラ作成を撮影（`%TEMP%\opencode\s156_0_title.png` / `_1_name.png` / `_2_attr.png` / `_3_skills.png`）。**左上の彩色ブロック群は再現しない**。キャラ作成パネルは正しい位置・正しい幅で描画（タブ5枚は full-width・パネルは 1382×886 相当）。タイトルも左上は Android 側 Debug Control Panel の『D』ボタンのみで、native の彩色帯は無し。→ **v566 が説明しようとした症状そのものが現行ビルドでは出ていない**。
+  > 【v566 の行番号も現行と不一致】v566 は `characterCreationUI->render()` を『5455・6043』と引用したが、現行 master では **5055・5643**（約400行ずれ）。probe137 ブランチ（renderer.cpp +224行）か古いスナップショットを参照した可能性が高い。
+  > 【#156 の現状判断】症状は『chargen でも gameplay でも表示』と記録されているが、**chargen 側は現行ビルドで再現しない**。2026-11-15 の起票以降にマージされた何らかの変更で解消した可能性がある。gameplay 側は未撮影。**推測で修正せず**、ユーザーに『再現しない』事実を報告し、必要なら gameplay 撮影と git bisect（#156 起票以降の変更）で解消コミットを特定する。
 【依頼3件】（判定5段階・根拠は EXE 命令または原本アセットのみ・推測禁止）
 ①【高】**原版がゲームプレイ時に画面左上（とその周辺）に描画する要素の有無と内容・画面位置** — retail の HUD 構成（compass／health・magicka・fatigue／quickkeys／level 表示の有無／minimap の有無）を menu id 表と HUD 系メニュー XML、およびその**インスタンス化経路**で確定。左上に置く要素が無いなら **[確定(否定側)]** で構わない（＝port の左上描画は正典に無いことになり、除去/修復の根拠になる）。port 側は `hudRenderer.renderPlayerLevel` を (20,20) に置いており、**原版相当か否か**の判定が必要。出発点: `docs/RE_EXE_REPORT.md` L44（メニュー id 表・0x3f5 PauseMenu 等）と L1805-1815（OptionsMenu↔PauseMenu 背面関係）／ローカル BSA 抽出物 `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\main\`（`hud_main_menu.xml` / `hud_info_menu.xml` / `hud_reticle.xml` / `hud_subtitle_menu.xml` 等）／EXE 側でこの帯を Gamebryo メニューとして立ち上げる関数。
 ②【中】**原版のメニュー文字描画の正典** — メニュー XML の文字エレメントがどのフォント・サイズ・色で、どの関数経路で描画されるか（port 側でポーズメニューのラベルが**文字ではなく色ブロック**になる病理に対する「正しい描画」の定義）。text_renderer のフォント割当・GMST/INI の UI フォント指定・`fonts/*.dds` の食い違いも含む。①と併せれば #137 と #96（視覚品質）の両方に効く。
@@ -2350,11 +2375,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2378,4 +2398,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-19 18:22:16
+**ai-todo** | Last Updated: 2026-11-19 19:10:23
