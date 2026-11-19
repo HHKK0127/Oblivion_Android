@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-18T08:49:01Z",
+  "lastUpdated": "2026-11-19T05:28:42Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14094,14 +14094,34 @@
         "bst-refuted"
       ],
       "content": "2026-11-18 旧残点群消化第98弾 v554（probe v554_1..2 全2本 EXIT=0）＝V-554-1..3 完遂・旧 V-406-3 継続第84弾: 成果物 tmp/re/v554_tile_value_list_ruling.md・台帳 row530（bak379）・round_verify ALL OK（rows 31..530 / total 416 / done 411 / open 5）・STATE (jt)・ai-todo #151 note。[確定・訂正] 588BD0 は BST ではなくソート済み NiTList<Value@Tile*> の線形走査（v553 の『BST』は [確定負]）: mov eax,[ecx+0x18]（リスト head）→ mov edx,[eax+8]（payload）→ movzx ecx,word[edx+0x18]（key）→ cmp ecx,esi → mov eax,[eax]（next のみ前進）・jg で miss＝単方向線形走査（6AA320 の node[0]=head と一致）。payload は Value@Tile（+4=float／+8=pointer／+0x18=word key）。役割分担: 0xB3B0B0 バケット＝属性名→StringListElement@Tile（グローバル名前表）、Tile の +0x14 NiTList<Value@Tile*>＝インスタンス属性値（属性 ID→値）。[確定] 707530 の [ecx+0x9C]＝所有メニュー（TileMenu）の子要素リスト NiTList<Tile*>: 589D60 は [this+0x24]（所有メニュー）を取り [menu+0xB6]（配列要素数）>0 なら [menu+0xB0][0]（先頭要素）を edi に。707530(edi,6) は [edi+0x9C] を NiTList<Tile*> として走査し payload->vtable[+0x4C]() == 6 を返す。[確定] [this+0x34] 子要素リスト＝NiTList<Tile*>（vtable 0xA690AC）: TileImage ctor 581810: [esi+0x14]=0xA6909C（NiTList<Value@Tile*>・head=+0x18）／[esi+0x30]=0xA690AC（NiTList<Tile*>・head=+0x34）。589D60 は [this+0x34] を辿り 5A8260/5A8270/5A8280（singleton 3 種・0xB3B350/0xB3B354/0xB3B358）と比較しつつ各要素の vtable[+0x18]()（更新）を呼ぶ。RTTI: 0xA69110=.?AVTileImage@@／0xA6909C=NiTList<PAVValue@Tile>／0xA690AC=NiTList<PAVTile>。教訓: 『key 比較して jg で miss』でも mov eax,[eax]（next のみ前進）なら BST ではなくソート済み片方向リスト——左右 2 分岐（[eax]/[eax+4]）の有無で区別する（v553 の BST 説は [確定負]）／クラスの全フィールドは ctor の mov [reg+off],imm 列挙で機械確定できる（581810 で +0x14/+0x30 の 2 リスト vtable が判明）／singleton 定数（5A8260=[0xB3B350]）は比較相手の型を後から埋められる。残点 V-555-1..3（1=Value@Tile の完全レイアウト（+4=float／+8=pointer／+0x18=word key 以外）＋0x14 NiTList<Value@Tile*> への挿入箇所（属性値の設定側）【中】／2=TileMenu の +0xB0 配列（[+0xB6]=要素数）の要素型と [+0x9C] 子要素リストとの使い分け【中】／3=5A8260/5A8270/5A8280（singleton 3 種）の型と『子要素更新から除外する要素』の意味【低】）。本日 push: v405→v553（9bad54c6）149件＋本件 v554。v 採番 v554 消費（次=v555）。"
+    },
+    {
+      "id": "151-v555-ninode-property-2026-11-19",
+      "timestamp": "2026-11-19T05:28:42Z",
+      "priority": "low",
+      "category": "delivery",
+      "tags": [
+        "oblivion",
+        "todo-151",
+        "re",
+        "v555",
+        "tile",
+        "value-at-tile",
+        "ninode",
+        "niavobject",
+        "property-list",
+        "mapmenu",
+        "id-cache"
+      ],
+      "content": "2026-11-19 旧残点群消化第99弾 v555（probe v555_1..18 全18本 EXIT=0）＝V-555-1..3 完遂・旧 V-406-3 継続第85弾: 成果物 tmp/re/v555_ninode_property_ruling.md・台帳 row531（bak380）・round_verify ALL OK（rows 31..531 / total 417 / done 412 / open 5）・STATE (ju)・ai-todo #151 note。[確定] Value@Tile は 0x1C バイトの payload: ctor 589DF0 が +0x00=所有 Tile*（58B220 が *payload=this）／+0x04=float（0.0 初期化）／+0x08=ポインタ（0 初期化）／+0x0C=word 0／+0x0E=word 0／+0x18=word 属性 ID（引数）／+0x1A=byte 設定済みフラグ（58CA00 が 1 を立てる）。ctor は同時に 0x18 バイトのリストノード（+0=next／+4=prev／+8=payload／+0xC=tag 0x65）を確保。挿入は 58B220(this,id) GetOrCreate: [this+0x18] を線形走査し、初めて key が id を超えたノードの直前へ 589640（node[0]=at; node[4]=at[4]; at[4][0]=node or list[4]=node; at[4]=node; count++）、超えるノードが無ければ 5B1E20 で末尾 append（6AA320 の先頭 prepend とは別）。設定は 58CEB0→58B220＋58CA00(float)／58CED0→58B220＋58CA50。getter は 588B50(payload)／588BD0(float)／588B80(有無: フラグ0かつfloat0.0を未設定)／588C10(ポインタ・miss 0xA2F7EC)。[確定・訂正] 589D60 の [this+0x24] は NiNode（v554 の『所有メニュー』を [確定負]）: TileImage vtable 0xA69110 の +0x08=591600 と Tile3D vtable 0xA6AEEC の +0x08=590C20 が push 0xDC; call 401F00 → ctor 70B780（NiNode vtable 0xA7E38C）→ [this+0x24]=eax。NiNode の子配列は埋め込み NiTArray（base +0xB0／max +0xB4／size +0xB6・dtor 70B810 が [+0xB0]-4 ヘッダで解放）。[確定・訂正] 707530(obj,type) の [ecx+0x9C] は NiAVObject のプロパティリスト（v554 の『メニュー子要素リスト』を [確定負]）: NiAVObject ctor 708450 が +0x98=0xA7DF14（NiTPointerList<NiPointer<NiProperty>>）／+0x9C=0（head）／+0xA0=0。707530 は arg>=0xA で即0、payload の vtable[+0x4C]() を比較（NiTexturingProperty vtable 0xA7DB5C の +0x4C=mov eax,6; ret／NiMaterialProperty vtable 0xA7E1F4 は 2）＝型インデックスでプロパティ検索。よって 589D60 は『NiNode 先頭子の NiTexturingProperty(6) を取り 4057B0(tex,0) → [this+0x2C] に 0x20 を OR』。[確定] MapMenu（vtable 0xA6CC9C・ctor 5B7360・alloc 0x100・type-id 5B7480: mov eax,0x3FF）も同型 NiTArray を +0xB0/+0xB4/+0xB6 に持ち、vtable +0x0C=5BB880 が 588C10(tile,0xFB2)（=属性 user4 のポインタ）を 488810→4028D0 で配列へ追加、更新 5B7550 が size 回ループして menu->vtable[+0x88](menu,element,out) を呼ぶ。[確定・訂正] 0xB3B350/354/358 は『singleton 3 種』ではなく id 属性（0xFA8=id）1/2/3 の子キャッシュ: 5A8000(this) が 5894F0(this,1/2/3)（自ノードの id 一致なら自身、さもなくば [+0x34] 子を再帰＝id 深さ優先探索）の結果を 0xB3B350(1)/0xB3B358(2)/0xB3B354(3) に格納し、user3(0xFB1) を id1 から 0xB140BC、user9(0xFB7) を id2/id3 から 0xB140C0/0xB140C4 にキャッシュ。setter 5A8090(which,ptr)、getter 5A8260/70/80 は mov eax,[global]; ret。589D60 は 3 つを子更新ループから除外（二重更新防止）。BSS 初期値 0。591C50（TileMenu vtable +0x14）は属性 0xFA2=class の文字列を 587B20/587D20（1001–1051 switch）で生成し [this+0x44] に格納、失敗時 'ERROR: Cant find menu class!'（0xA6B178）。RTTI: 0xA7DF14=NiTPointerList<NiPointer<NiProperty>>／0xA7DB5C=NiTexturingProperty／0xA7E38C=NiNode／0xA6CC9C=MapMenu／0xA6AF14=TileMenu／0xA690E8=Tile／0xA69110=TileImage／0xA69138=TileRect／0xA6AEC4=TileText／0xA6AEEC=Tile3D／0xA696DC=Menu。文字列実読: 0xA6A49C=id／0xA6B178=ERROR: Cant find menu class!。名前表: class=0xFA2／id=0xFA8／stackingtype=0xFA5／user3=0xFB1／user4=0xFB2／user9=0xFB7。教訓: 『+0xB0 配列』だけでは所有者を決められない——同型 NiTArray を MapMenu と NiNode が別々に持つため [this+0x24] の書き手（591600/590C20 が 70B780 で生成）まで辿る／[+0x9C] がリスト head でも『メニューの子』とは限らず ctor の +0x98=vtable 実読で NiTPointerList<NiPointer<NiProperty>> と判明する／型 ID 検索の比較相手 vtable[+0x4C] は定数仮想（mov eax,6; ret）の実測で意味が確定する／ソート済みリスト挿入は『超えたノードの直前』と『末尾 append』の 2 経路で prepend とは別物。残点 V-556-1..3（1=589640/5B1E20/488810→4028D0 の実装差（prev 連結・grow 条件）【中】／2=MapMenu 要素の実型と vtable[+0x88] の実装＋+0xB4(max) の grow 契機【中】／3=4057B0(tex,0) の完全な意味と [this+0x2C] フラグの消費側【低】）。本日 push: v405→v554（4c775616）150件＋本件 v555。v 採番 v555 消費（次=v556）。"
     }
   ],
   "metadata": {
-    "totalEntries": 959,
+    "totalEntries": 960,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-18T08:49:01Z",
-    "entry_count": 959,
-    "last_updated": "2026-11-18T08:49:01Z"
+    "lastUpdated": "2026-11-19T05:28:42Z",
+    "entry_count": 960,
+    "last_updated": "2026-11-19T05:28:42Z"
   }
 }
