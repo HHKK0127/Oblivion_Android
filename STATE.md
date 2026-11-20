@@ -4014,3 +4014,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v578 `4bda07b1` →（本件 v579 を本 commit で push）＝**170裁定**。
 - **次**: V-580-1（第8系統 byte 列走査）／V-573-1（id98 message 配線）／低優先群。
 
+## 2026-11-20 (ls) — V-580-1 v580（U6/U4 フォロー）: **第8系統 negative 完了（open 到達＝vtable slot5 のみ）と矛盾解消の本命＝別 switch `0x587550` の特定**
+
+- **成果物**: `tmp/re/v580_open_eighth_system_ruling.md`（probe **v580_1・1本 EXIT=0**・冒頭 Test-Path）。台帳 **row556**・ai-todo **#166 追加 note**。
+- **① [確定(否定側)] 第8系統**: **dword `0x591C50` のファイル全体＝1件のみ＝`.rdata 0xA6AF28`＝TileMenu vtable slot5 本体**（ctx が slot4/5/6 並びで vtable 完全整合）。`.text` に `push`／`mov reg,imm`／`ff15`＝0件、**push+ret tail（`68 50 1c 59 00`）も0件** → **open への静的到達＝vtable slot5 の 1段(282件)／2段(408対) indirect のみ＝8系統すべて尽きた**（E8/E9/1段/2段/push-imm/mov-imm/`0x587D20` data ptr/`0x591C50` data ptr+push+ret）。
+- **② [部分確定] 矛盾解消の本命**: 「生成＝`0x587D20` switch（open 内のみ）」は**1経路**にすぎない → **v574 §1.2 の別 switch `0x587550`＝「窓 id → 生成ヘルパ」第2 switch が本命**（`0x3EC→0x5A6B00`／`0x3ED→0x5A4840`／`0x3F2→0x5A8E30`／`0x3EF→0x5ADCF0`／`0x414→0x5B6040`＋後続 id 判定列挙）。**`0x587550` の callers・name・id 判定続き・`0x5A6B00` 等 identity ＝ V-581-1【中】**。
+- **③ 矛盾5命題の現状**: ①open 成功＝`a1==0xFA2` ②即値2件 ③`0x587D20`＝open 内1件 ④成功呼び出し＝全8系統で不存在 ⑤それでも生成される → **⑤を支える第3経路の存在確認が残るだけ**。
+- **④ 副次**: vtable slot5 ctx（`e0005900 501c5900 401b5900`）で v550 の vtable 同定を正面から再確認。
+- **残点**: **V-581-1【中】**（第3経路）＝V-580-1 継承／V-581-2【低】（open 呼称の根拠）／V-581-3【低】（2段形式 reg push source）。
+- **本日 push 累計（セッション）**: v405 → … → v579 `252ecea6` →（本件 v580 を本 commit で push）＝**171裁定**。
+- **次**: V-581-1（`0x587550` callers＝矛盾解消の第3経路）／V-573-1（id98）／低優先群。
+
