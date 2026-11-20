@@ -464,6 +464,28 @@
   > 【素材の制約（重要）】リポジトリ内 `tools/BSAFileExtractor/extracted/menus/*.xml` は**破損**（main_menu/pause_menu/hud_main_menu の3ファイルが MD5 同一 72DF0B5E…・2620B・中身は `<!-- TextEditMenu.xml -->`）。**race_sex_menu.xml はリポジトリに存在しない**。正典 v367 が使ったのは外部の健全な抽出物 `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（22156B・89 XML 中 85 が非2620B の健全ツリー）。→ 移植が原版 XML をそのまま読むには (a) この外部ツリーからのコピー（gitignore 対象・再現性なし）か (b) BSA から正しく再抽出 が必要。
   > 【写像の未確定】原版メニュー座標（screen().height は 600〜960 の可変・v367 §1③ が『600 で y=-70 上端クリップ』と記載）から port の 1920×1110 への**写像規則が正典に無い**。推測実装は禁止のため、#96 を正典どおりに直すには写像規則の裁定が必要（RE 起票候補）。現時点で port 内に原版メニュー単位の写像前例があるのは loading_screen の kCanvasWidth/kCanvasHeight のみ（要確認）。
   > 【メニュー XML インタプリタの状況】M2 評価器（screen()/me()/parent()/strings()/&entity;・copy/add/sub/div/mul/max/min/onlyif/not/neg/rand）＋M4 ビルダー（resolveMenu/fillResolved/expandIncludes/findTemplate）が実装済み・`app/src/main/cpp/tests/menu_xml_tests.cpp` でテスト有り。ただし **assets/menus が存在せず**、race_sex_menu へは未配線。これを使えば正典どおりの再現が可能（素材の入手が前提）。
+  > 【RE レーン回答 2026-11-21: U10/U11 裁定（作製レーン依頼）】
+  > ■ U10 `screen()` の実体＝UI スケール基準 → `tmp/re/v596_u10_screen_virtual_resolution_ruling.md`（台帳 row572・probe u10_1〜u10_26）
+  > - [確定(命令)] ⒜ `screen()`＝InterfaceManager singleton `[0xB3A6E0]` の `[+0x68]`（MenuRoot）。source id `screen`=0x138E・ディスパッチャ 0x58B800 jump table 0x58BAB4 の case 0x58BA02（`push 1; push 0; call 0x582160; mov eax,[eax+0x68]`）。`strings()`=[+0x6c]。trait id: width=0xFCB／height=0xFCA／cropx=0xFDA／cropy=0xFD9（cropx=cropoffsetx・cropy=cropoffsety は同一 id）。
+  > - [確定(命令)] ⒝ 仮想解像度＝設計箱 **1280×960**。iSizeW=[0xB06C4C]（GMST iSize W:Display・初期640）／iSizeH=[0xB06C50]（iSize H:Display・初期480）から、横長(W≥H): height=960固定・width=960×W/H／縦長(W<H): width=1280固定・height=1280×H/W。4:3(800×600/1024×768/1280×960)→1280×960／1280×720→1706.67×960／1920×1080→1706.67×960／1080×607→1708.07×960。uVideoResolution/sVideoResolution/fMenuScale のリテラルは .rdata に0件 [確定負]。
+  > - [確定(命令)] ⒞ スケール写像＝直交投影（0x57E7C0）。±仮想W/2, ±仮想H/2 を張る ortho で実画面全域へ（倍率=実H/仮想H）。
+  > - [確定(命令)] ⒟ cropx/cropy 供給元＝widescreen?iSafeZoneXWide(0xB13608):iSafeZoneX(0xB135F8)／cropy 同様に Y/YWide（既定20・v550 再確認）。widescreen 判定=H/W<0.74（0xA68D08=0.74）。書き手は 0x581CC0（MenuRoot init）と 0x57D840（usz SafeZone/解像度適用）。
+  > - [確定負] v367 §1③ 訂正: 「screen 高600で y=-70 クリップ」は実画面高を仮想高と誤認（4:3 の仮想高は常に960→(960−740)/2=110 でクリップしない）。
+  > - **移植指針**: MenuEvalContext::screen_width/height に実解像度でなく仮想解像度を入れる。現行 menu_xml_interpreter.cpp:325-326 は素通し・screen().cropx/cropy は未実装（makeNumber(0)）・テストは 1280×720 直書き＝要修正。
+  > - 残点 V-596-1/2/3【低】。
+  > ■ U11 LoadingMenu の trait 供給元 → `tmp/re/v597_u11_loadingmenu_trait_suppliers_ruling.md`（台帳 row573・probe u11_1〜u11_14＋BSA抽出）
+  > - [確定(命令)] menu id=0x3EF（FindMenu 0x589B70・基底 0x5898F0・vtable 0xA6C40C・ローダ 0x5ADCF0）。
+  > - user0（スライドショー段数）: 書き手 0x5AD780（+1.0）／0x5AD440（0リセット）。0=タイトルページ・>0=ロード。
+  > - user1（背景画像）: 0x5AD780（0x5AD88E: 0xFAF←'Menus\Loading'+ロード対象名）＝対象ごとに変わる（XML既定 load_in_game_default.dds は初期値）。
+  > - user2（文字列）: 0x5AD780（0x5AD906: 0xFB0←対象レコードの DESC）＝sLoading 系 GMST ではない。
+  > - user3（進捗現在値）: 0x5AD980（0x5ADA89: 0xFB1←完了セクション数 0..100）＝ロード段階数ベース（実時間でない）。
+  > - user4（最大値）: XML既定 100 のまま（LoadingMenu に 0xFB2 書込0件）。
+  > - user5（デバッグ）: 0x5ADCF0（0x5ADE21: 0xFB3←' '）。
+  > - [確定(命令)（negative）] 3メニュー: 0x590420 の LoadingMenu 系 caller は 0x5ADCF0 のみで Data\Menus\loading_menu.xml のみをロード。loading_ingame_menu.xml/loading_bar_ingame_menu.xml の .rdata リテラル=0件＝原版は未使用。起動前・ゲーム内とも loading_menu.xml を使い user0 の 0/1 で切替。
+  > - [確定(XML)] strings()._missing=' Missing Text '（Oblivion - Misc.bsa 抽出 menus\strings.xml L190）・_loading=' Loading... '（L28）。INI [LoadingBar] GMST: fPercentageOfBar0..3=0.06/0.35/0.44/0.15・fLoadingSlideDelay=15。
+  > - **移植指針**: loading_menu.xml のみ実装・user3 は段階ベース・_missing/_loading 実文字列を使用。
+  > - 残点 V-597-1/2/3/4【低】。
+  > 両件とも台帳反映＋round_verify ALL OK（rows 31..573 / total 459 / done 454 / open 5）。push 9bc8c579（ls-remote MATCH）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2598,11 +2620,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2626,4 +2643,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 11:58:41
+**ai-todo** | Last Updated: 2026-11-20 12:17:28
