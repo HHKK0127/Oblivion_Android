@@ -106,6 +106,15 @@
   > 【[部分確定] 3薄ラッパの3点セット】0x5791A0 → jmp 0x583E60（begin）／0x5791E0 → **jmp FUN_005821F0**（execute＝第3経路本体）／0x579220 → jmp 0x583F40（end）。3本とも **0x582160(1,0)（＝[0xB3A6E0] lazy singleton）の [+0x1c] 初期化フラグ**を通過して mov ecx,eax。呼び出し側（#1/#2/#3）は**常に 0x5791A0→0x5791E0→0x579220 の3連呼**。[+0x1c] が未初期化なら何もしない（ret）＝「singleton 初期化済みなら begin→実行→end」の3段構造。
   > 【教訓（再発型）】①**「E8/E9 callers が0件」＝到達不能ではなく「callback/vtable 登録経由」の可能性が高い** → **`push <addr>` を引数に積む登録 API（0x579C10 型）を .text の dword 参照から逆引きすると解消する**（本件 0x5BB9B8 の dword ref＝`push 0x5b8dc0` が決定打）。②**GMST/ダイアログ文字列は登録バンドの逐語で**（sLoadingArea／sSaveGameContentIsMissing／sPlayerLeavingBorderRegion／sOk／sTravelQuestion／sYes／sNo の7件を確定）。③**発火タイミングの裏付けは「発火元の全列挙 × 各文脈の文字列/メニュー id」で機械化できる**（本裁定の8系統表がそう）。
   > 【残点】V-584-1【中】＝**chargen ゲートの positively な特定**（§4-4「どの条件でブロックするか」＝0x582160 singleton の [+0x1c] が chargen 中は0なのか、または発火元側の前置条件）＝**V-562-3 の最終クローズ条件**／V-584-2【低】＝0x583E60(begin)・0x583F40(end) の identity と FUN_005821F0(execute) との役割分担／V-584-3【低】＝menu 0x416(1046) の実名と通知 id 1..5 の意味・[0xB3B3D9] フラグ／V-584-4【低】＝0x578D70 の応答値契約の差（v570 の cb は al==2、本件 FUN_005B8DC0 は al==1）＝0x579C10 の flag 引数依存か。
+  > V-584-1（chargen ゲートの positively な特定）クローズ 2026-11-20 v584。成果物 tmp/re/v584_chargen_gate_ruling.md・台帳 row560。probe v584_1〜v584_12（12本・EXIT=0・冒頭 Test-Path）。
+  > 【[確定(命令)] positively ゲート＝InterfaceManager singleton [0xB3A6E0] のメニュースタック状態バイト [+8]】HUD 生成ヘルパ 0x5A6B00 を呼ぶ 0x5821F0（execute）が直前に **cmp byte ptr [esi+8],1; jne 0x582317（0x582256-0x58225A）** を持ち、**[+8]==1 のときのみ HUD を生成**。esi＝InterfaceManager singleton [0xB3A6E0]（0x582160(1,0) が malloc(0x134)＋ctor 0x5802B0、v582 済）。
+  > 【[確定(命令)] 状態バイト [+8] の書き手7種を完全同定】値 1＝ctor 0x5802B0（0x580353）＋0x57D480（0x57D51D・HUD push→idle 復帰）／値 2＝0x5ADCF0（0x5ADDF0・LoadingMenu 0x3EF 破棄→'Data\Menus\loading_menu.xml' ロード）＋0x583E60（0x583F2F）／値 3＝0x57D640（0x57D699/0x57D6EB）／値 4＝0x57CEE0（0x57CF3E）/0x57CFE0（0x57D16A・ロード中）／値 5＝0x583E60（begin・0x583E96）／値 1＝0x583F40（end・0x58428E）。
+  > 【[確定(命令)] 0x57D640＝メニュースタック push】cmp edi,3 → [ecx+0xe0]=3（スタック先頭）→ [ecx+0xe4..] の8スロットをシフトし空き探索 → 満杯で **'### Menu Stack Size is too small - a menu may have been ...'（0xA68D30→0x4A7A60）** → 成功時 **[ecx+8]=3** ＋ [0xB42D54]=1。callers＝0x5821F0×2（0x58376C＝push 3／0x583B0B＝push 1）・0x584880。
+  > 【[確定(命令)] 0x583E60（begin）が HUD を画面へ出す条件】**[esi+8]==3 かつ [esi+9]==0** のとき [esi+1c]（HUD root タイル）へ 0xFA1(listindex) 設定＋'Menus\Misc\cursor.dds' を 0xFE6 へ＋0x58E870 → 0x57D940 → 0x5A4980 → 0x585C10/0x585820 → 0x5A6040(0,1) → **0x589B70(0x3ED)（HUDInfoMenu）**＝state3 のときだけ HUD を画面へ。end 0x583F40 は [edi+9] を 0→1→0 と操作し終端で [edi+8]=1（idle 復帰）。
+  > 【[確定(命令)] 0x5A6B00（HUD 生成）の呼び出し元は3系統のみ】①0x57D480（HUD push・0x57D4A8・無条件・[+8]=1 に戻す／caller は 0x57E510 の1本のみ）②**0x5821F0（execute・0x582271・[+8]==1 ゲート）**③0x587550（0x587687・cmp edi,0x3EC＝reload &HUDMainMenu; 経由＝v581）。
+  > 【[部分確定] V-562-3 の最終帰結】HUD 生成の3呼び出し元すべてが『state1（アイドル）』または『明示 reload コマンド』由来。chargen は RaceSexMenu(0x40C) を別のメニュースタックに積むため **[+8] が 1 にならない** → HUD は生成されない → **V-562-3『chargen 中に HUD(0x3EC) が開かない』は、[+8]==1 ゲート（positively）＋発火源8系統が chargen 外（v583・negative）の両面で命令的に裏付けられた [確定(命令)]**。残るは『chargen 中の [+8] 実値』の実行時確認のみ＝V-585-1【低】。
+  > 【教訓（再発型）】①**positively ゲートは生成ヘルパの直前 cmp で一発**（0x5A6B00 の callers を全列挙→各サイト直前の cmp を読む＝0x582256 の cmp byte [esi+8],1）。②**状態機械バイトは『同じ head 内の mov byte [reg+8],imm を全 imm 値で走査』すると全遷移が一表になる**（本裁定で 1/2/3/4/5 の5状態を確定）。③**`[reg+8]` の書込み走査は reg≠esp/ebp を除外しないとスタック局所が大量混入**（4578→絞り込み）。
+  > 【残点】V-585-1【低】＝chargen 中の [+8] 実値の実行時確認（chargen フローが [+8] を何に固定するか＝RaceSexMenu 表示中の state 値）／V-585-2【低】＝0x57D940/0x5A4980/0x585820/0x5A6040（begin/end 内の HUD 表示サブヘルパ）の identity／V-585-3【低】＝0x584880（0x57D640 の第2 caller・[+0xFA5] trait の3値比較）の用途。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2498,6 +2507,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2521,4 +2535,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 09:37:43
+**ai-todo** | Last Updated: 2026-11-20 09:58:09

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-20T20:00:00Z",
+  "lastUpdated": "2026-11-20T22:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14837,14 +14837,33 @@
         "v582"
       ],
       "content": "2026-11-20 v583 裁定＝V-583-1（第3経路の実行時証拠＝発火タイミング全系統の確定・発火源8系統すべてがゲーム内イベントで chargen フロー外・ai-todo #166 追加 note）。成果物 tmp/re/v583_third_path_firing_ruling.md・台帳 row559。probe v583_1〜v583_6（6本 EXIT=0・冒頭 Test-Path）。①[確定(命令)] 発火源8系統: FUN_00440C40='Loading area...'（ローディング）／FUN_0040D4D0=cmp eax,0x3F4 SleepWaitMenu／FUN_00459A10=state3 2段チェック／FUN_0045C9C0=sSaveGameContentIsMissing+Yes/No／FUN_0045DBC0=同型／FUN_0066FF10=sPlayerLeavingBorderRegion+sOk／FUN_005ABBC0=0x589B70(0x416) menu 1046+通知id1..5／FUN_005B8DC0＝すべてゲーム内イベント。②[確定(命令)] FUN_005B8DC0（E8/E9 callers 0件の第4 caller）＝Fast Travel 確認の callback: FUN_005BB880（MapMenu 通知ハンドラ・cmp edi,21/43・vptr 0xA6CCA8）が sprintf('%s %s?',sTravelQuestion,…)→0x579C10(text,sYes,sNo,1,callback=0x5B8DC0)。本体＝0x578D70()==1→0x589B70(0x3FF)=MapMenu→vfunc+0x174→FUN_005821F0。callers 0件は callback 登録経由（v570 Random/Reset と同型）。③[確定(命令)（negative）]＋[部分確定] V-562-3 の裏付け成立: HUD 生成の実証経路は第3経路のみ（open は全8系統で不存在）×発火源8系統すべてが chargen フロー外 → chargen 中に HUD は生成されない。positively なゲート条件は未特定＝V-584-1【中】。④[部分確定] 3薄ラッパ: 0x5791A0→0x583E60(begin)／0x5791E0→FUN_005821F0(execute)／0x579220→0x583F40(end)、3本とも 0x582160 singleton の [+0x1c] ゲート・常に3連呼。教訓: E8/E9 callers 0件＝到達不能でなく callback/vtable 登録経由の可能性→push <addr> を積む登録 API を .text の dword 参照から逆引き（0x5BB9B8 が決定打）／発火タイミングは発火元全列挙×文脈の文字列/メニュー id で機械化。残点 V-584-1【中】（chargen ゲートの positively 特定）／V-584-2・3・4【低】。"
+    },
+    {
+      "id": "opencode-v584-chargen-gate-20261120",
+      "timestamp": "2026-11-20T22:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v584",
+        "u6",
+        "u4",
+        "menu",
+        "hud",
+        "chargen",
+        "todo-166",
+        "v583"
+      ],
+      "content": "2026-11-20 v584 裁定＝V-584-1 クローズ（chargen ゲートの positively な特定＝InterfaceManager singleton [0xB3A6E0] のメニュースタック状態バイト [+8]・HUD 生成は [+8]==1 のみ・ai-todo #166 追加 note）。成果物 tmp/re/v584_chargen_gate_ruling.md・台帳 row560。probe v584_1〜v584_12（12本 EXIT=0・冒頭 Test-Path）。①[確定(命令)] positively ゲート: HUD 生成 0x5A6B00 を呼ぶ 0x5821F0（execute）が直前に cmp byte ptr [esi+8],1; jne 0x582317（0x582256-0x58225A）を持ち [+8]==1 のときのみ HUD を生成。esi＝InterfaceManager singleton [0xB3A6E0]（0x582160(1,0) が malloc(0x134)＋ctor 0x5802B0）。②[確定(命令)] 状態 [+8] の書き手7種: 1=ctor 0x5802B0＋0x57D480（HUD push→idle 復帰）/2=0x5ADCF0（LoadingMenu loading_menu.xml）＋0x583E60/3=0x57D640（メニュースタック push・'### Menu Stack Size is too small...'）/4=0x57CEE0/0x57CFE0（ロード中）/5=0x583E60（begin）/1=0x583F40（end）。③[確定(命令)] 0x583E60（begin）が HUD を画面へ出す条件: [esi+8]==3 かつ [esi+9]==0 → [esi+1c]（HUD root）へ 0xFA1/cursor.dds/0x58E870/0x57D940/0x5A4980/0x5A6040(0,1)/0x589B70(0x3ED)＝state3 のときだけ。④[確定(命令)] 0x5A6B00 の呼び出し元は3系統のみ: 0x57D480（HUD push・無条件・[+8]=1 に戻す/caller 0x57E510 の1本）/0x5821F0（execute・[+8]==1 ゲート）/0x587550（cmp edi,0x3EC＝reload &HUDMainMenu;）。⑤[部分確定] V-562-3 の最終帰結: 3呼び出し元すべてが state1（アイドル）または明示 reload コマンド由来で、chargen（RaceSexMenu 0x40C を別スタックに積む）では [+8] が 1 にならない → HUD は生成されない → V-562-3 は [+8]==1 ゲート（positively）＋発火源8系統が chargen 外（v583・negative）の両面で命令的に裏付け＝[確定(命令)]。残るは chargen 中の [+8] 実値の実行時確認のみ＝V-585-1【低】。教訓: positively ゲートは生成ヘルパの直前 cmp で一発（生成ヘルパ callers を全列挙→各サイト直前 cmp）/状態機械バイトは同 head 内の mov byte [reg+8],imm を全 imm 値で走査すると全遷移が一表（5状態確定）/[reg+8] 書込み走査は reg!=esp/ebp 除外が必須（4578→絞り込み）。残点 V-585-1【低】（chargen 中 [+8] 実値）/V-585-2・3【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1003,
+    "totalEntries": 1004,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-20T20:00:00Z",
-    "entry_count": 1003,
-    "last_updated": "2026-11-20T20:00:00Z"
+    "lastUpdated": "2026-11-20T22:00:00Z",
+    "entry_count": 1004,
+    "last_updated": "2026-11-20T22:00:00Z"
   }
 }

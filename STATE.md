@@ -4061,3 +4061,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v582 `0fc944d7` →（本件 v583 を本 commit で push）＝**174裁定**。
 - **次**: V-584-1（chargen ゲート）／V-573-1（id98）／低優先群（V-561/562/565/567/568/571/572/574〜580 系の低優先）。
 
+## 2026-11-20 (lw) — V-584-1 クローズ v584（U6/U4 フォロー）: **chargen ゲートの positively な特定＝InterfaceManager singleton `[0xB3A6E0]` のメニュースタック状態バイト `[+8]`（HUD 生成は `[+8]==1` のみ）**
+
+- **成果物**: `tmp/re/v584_chargen_gate_ruling.md`（probe **v584_1〜v584_12・12本 EXIT=0**・冒頭 Test-Path）。台帳 **row560**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] positively ゲート**: **HUD 生成 `0x5A6B00` を呼ぶ `0x5821F0`（execute）が直前に `cmp byte ptr [esi+8],1; jne`（`0x582256`-`0x58225A`）を持ち `[+8]==1` のときのみ HUD を生成**。`esi`＝**InterfaceManager singleton `[0xB3A6E0]`**（`0x582160(1,0)` が `malloc(0x134)`＋ctor `0x5802B0`）。
+- **② [確定(命令)] 状態 `[+8]` の書き手7種**: **1**=ctor `0x5802B0`＋`0x57D480`（HUD push→idle 復帰）／**2**=`0x5ADCF0`（LoadingMenu `loading_menu.xml`）＋`0x583E60`／**3**=`0x57D640`（**メニュースタック push**・`'### Menu Stack Size is too small...'`）／**4**=`0x57CEE0`/`0x57CFE0`（ロード中）／**5**=`0x583E60`（begin）／**1**=`0x583F40`（end）。
+- **③ [確定(命令)] `0x583E60`（begin）が HUD を画面へ出す条件**: **`[esi+8]==3` かつ `[esi+9]==0`** → `[esi+1c]`（HUD root）へ `0xFA1`/`cursor.dds`/`0x58E870`/`0x57D940`/`0x5A4980`/`0x5A6040(0,1)`/`0x589B70(0x3ED)`＝**state3 のときだけ**。
+- **④ [確定(命令)] `0x5A6B00` の呼び出し元は3系統のみ**: `0x57D480`（HUD push・無条件・`[+8]=1` に戻す／caller は `0x57E510` の1本）／**`0x5821F0`（execute・`[+8]==1` ゲート）**／`0x587550`（`cmp edi,0x3EC`＝`reload &HUDMainMenu;`）。
+- **⑤ [部分確定] V-562-3 の最終帰結**: 3呼び出し元すべてが「**state1（アイドル）**」または「**明示 reload コマンド**」由来で、**chargen（RaceSexMenu 0x40C を別スタックに積む）では `[+8]` が 1 にならない** → **HUD は生成されない** → **V-562-3 は `[+8]==1` ゲート（positively）＋発火源8系統が chargen 外（v583・negative）の両面で命令的に裏付け＝[確定(命令)]**。残るは「chargen 中の `[+8]` 実値」の実行時確認のみ＝**V-585-1【低】**。
+- **⑥ 教訓（再発型）**: **positively ゲートは生成ヘルパの直前 cmp で一発**（生成ヘルパ callers を全列挙→各サイト直前 cmp）／**状態機械バイトは「同 head 内の `mov byte [reg+8],imm` を全 imm 値で走査」で全遷移が一表**（5状態確定）／**`[reg+8]` 書込み走査は reg≠esp/ebp 除外が必須**（4578→絞り込み）。
+- **残点**: **V-585-1【低】**（chargen 中 `[+8]` 実値）／V-585-2・3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v583 `0d4bc113` →（本件 v584 を本 commit で push）＝**175裁定**。
+- **次**: V-585-1（chargen 中 `[+8]` 実値）／V-573-1（id98・Lane B 進行中）／低優先群（V-561/562/565/567/568/571/572/574〜580 系の低優先）。
+
