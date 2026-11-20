@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T04:00:00Z",
+  "lastUpdated": "2026-11-22T06:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15238,14 +15238,31 @@
         "todo-162"
       ],
       "content": "2026-11-22 v603 裁定＝低優先残点クローズ（ai-todo #96/#157/#161/#162）。成果物 tmp/re/v603_low_priority_residuals_bundle_ruling.md・台帳 row579。probe u16_1〜u16_3（3本 EXIT=0）。①[確定(命令)] V-572-3: 0x4D7F80(this) は [vfunc+0x190]()!=0 かつ [vfunc+0x170](this) の [+4]==0x23 を検査（[obj+4]＝formType byte・0x23＝TESClass）。0x5E3320 は真なら [vfunc+0x170]+0x104 を返す＝player の class オブジェクト。②[確定(命令)] V-572-2: 0x51C090(class,skill) は [this+0xC]==[0xB37D00]（charactergen formID 0x230E6）なら即 false、そうでなければ [this+0x44..+0x5C] の 7 要素 dword 配列を線形探索。0x51C0F0(this,idx,av)＝av∈[0xC,0x20] で [this+idx*4+0x44]=av＝TESClass の majorSkills 7 個の AV 値リスト。[this+0xC]＝class の formID。③[確定(命令)] V-569-4: 0x565BE0(idx,base)＝idx(0..6) で base 加算値が変わる AV オフセット関数（jump table 0x565C30）: 0→base／1→base+8／2→base+0xC／3→base+0x21／4→base+0x25。引数 2＝base+0xC。0x565CC0(idx)＝idx<0x28/0x28<=idx<0x48 の 2 表引き。④[確定(命令)] V-571-3: [0xB3B5D4] の直接ストアは 0x5C4F3C（RaceSexMenu ctor 0x5C4E40）の imm 1 箇所のみ＝200 リセットは RaceSexMenu ctor だけ（他メニュー不使用）。⑤[確定(命令)] V-570-6: [0xB3B4C9] の書き手は3箇所＝0x5C9FB1（Reset 実行）／0x5CCCBC・0x5CD9CA（通知ハンドラ 0x5CC200）。⑥[確定(命令)] V-570-5: 通知 id（XML 1/2/10/20/90＋動的採番 201..428）は [0xB3B5D4] の単調増加で一意 → gt 閾値照合は誤爆しない。⑦[部分確定] V-567-2: 0x5CC580/0x5CC829 は異なるページ名 GMST（0xB39008/0xB38F70）を参照＝同一名が複数ページで使われるため重複に見える。Main の 2 命令は 0xFAE(user0)/0xFD0(listindex) の両方書込。⑧[確定(命令)] V-567-3: 0x5CC8BA は id98 判定→Random act／全ブロック不一致なら act なし epilogue（v602 補完）。⑨[部分確定] V-571-4: AddPane は 4 引数＝a5 は存在しない。⑩[未確定] V-558-4・[部分確定] V-559-1/4。残点 V-558-4/V-559-1,4/V-569-5/V-572-1/V-573-2【低】。"
+    },
+    {
+      "id": "opencode-v604-low-priority-residuals2-20261122",
+      "timestamp": "2026-11-22T06:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v604",
+        "residuals",
+        "singleton",
+        "dialog",
+        "todo-96",
+        "todo-161"
+      ],
+      "content": "2026-11-22 v604 裁定＝低優先残点クローズ バンドル2（ai-todo #96/#161）。成果物 tmp/re/v604_low_priority_residuals_bundle2_ruling.md・台帳 row580。probe u17_1（1本 EXIT=0）。①[確定(命令)] V-560-2: 0x582160(create,keep) は singleton [0xB3A6E0] の getter。arg1 が 0 でなく NULL なら生成。戻り値は常に singleton。前景判定の前段は [singleton+0x1c]（メニュースタック）。②[確定(命令)] V-561-3: 0x5CC8BA（全ブロック不一致）に落ちるのは Race/Hair/Face/Hair Color 等。0xFA8 一致なし→0x5CCBF4（id98 判定）→ act なし。これらページの Done は実質何もしない（Shape/Tone/General(Face) のみ Face/Shape へ戻す）。③[確定(命令)] V-565-1: 0x579C10 はダイアログ登録関数（0x5BC8B0・5引数）。成功 tail は無条件 jmp＝コールバック登録型（Yes/No 待ちではない）。④[確定(命令)] V-565-2: 0xB38660/0xB38668（a/an 冠詞）・0xB38CF0/0xB38CF8/0xB38D00（確認文）は .data の登録スロット（{value,name} 対の value 側）で、実文字列は静的登録ブロック（0x9F7xxx）の逐語から取得。⑤[確定(命令)] V-565-3: 0x5C2BA0＝確認ダイアログの Yes コールバック（FindMenu(0x40C)→cast→0x578D70() が al==2 なら 0x5C28F0 へ jmp＝名前確定後の処理）。⑥[部分確定] V-568-2: 0x983754 は CRT _stat64i32 系（ファイル stat）。返り値 eax==-1 で失敗。AND 条件の全形は [部分確定]。⑦[部分確定] V-557-5: 0x5B5CE4-0x5B5D52 で背景ムービー有無に応じ 0xFA1 を 1.0（前面）/2.0（背景）に設定。0xFA1(visible) は 0/1/2 の3状態（0x410425 の [movie+0x20]==2 と対応）。残点 V-565-2/V-568-1,2/V-562-1,2/V-566-2,3/V-569-5/V-572-1/V-573-2【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1026,
+    "totalEntries": 1027,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T04:00:00Z",
-    "entry_count": 1026,
-    "last_updated": "2026-11-22T04:00:00Z"
+    "lastUpdated": "2026-11-22T06:00:00Z",
+    "entry_count": 1027,
+    "last_updated": "2026-11-22T06:00:00Z"
   }
 }
