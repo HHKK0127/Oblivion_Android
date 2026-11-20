@@ -305,6 +305,20 @@
   > ■ V-570-2 [確定(命令)] RaceSexMenu act 本体
   > - `0x5C7070`＝Age/Main の確定実行系（`vfunc+0x130`/`+0x134`→`vfunc+0x170`→`0x521A10`＝年齢再計算）／`0x5C5C30`＝Style ページ切替。
   > 残点 V-558-4/V-567-2,3/V-570-5,6/V-571-3,4【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ（v603）】→ `tmp/re/v603_low_priority_residuals_bundle_ruling.md`（台帳 row579・probe u16_1〜u16_3）
+  > ■ V-572-3 [確定(命令)] formType 述語
+  > - `0x4D7F80(this)` は **`[vfunc+0x190]()!=0` かつ `[vfunc+0x170](this)` の `[+4]==0x23`** を検査（`[obj+4]`＝formType byte・`0x23`＝**TESClass**）。
+  > - `0x5E3320` は真なら `[vfunc+0x170]+0x104` を返す＝**player の class オブジェクト**。
+  > ■ V-572-2 [確定(命令)] majorSkills
+  > - `0x51C090(class, skill)` は **`[this+0xC]==[0xB37D00]`（charactergen formID 0x230E6）なら即 false**、そうでなければ **`[this+0x44..+0x5C]` の 7 要素 dword 配列を線形探索**。
+  > - `0x51C0F0(this,idx,av)`＝**`av∈[0xC,0x20]` で `[this+idx*4+0x44]=av`**＝**TESClass の majorSkills 7 個の AV 値リスト**。`[this+0xC]`＝class の formID。
+  > ■ V-571-3/4 [確定/部分確定]
+  > - **`[0xB3B5D4]` の直接ストアは `0x5C4F3C`（RaceSexMenu ctor）の imm 1 箇所のみ**＝200 リセットは RaceSexMenu ctor だけ。
+  > - AddPane は 4 引数（`this,strA,strB,prep`）＝a5 は存在しない。
+  > ■ V-567-2/3 [部分確定/確定]
+  > - `0x5CC580`/`0x5CC829` は異なるページ名 GMST（`0xB39008`/`0xB38F70`）参照＝同一名が複数ページで使われるため重複に見える。
+  > - `0x5CC8BA` は id98 判定→Random act／全ブロック不一致なら act なし epilogue。
+  > 残点 V-558-4/V-559-1,4/V-569-5/V-572-1/V-573-2【低】。台帳反映＋round_verify ALL OK（rows 31..579 / total 465 / done 460 / open 5）。
 ①【高】**`user0` の値とページ構成の対応表** — v351 §1.3-1 が明示的に未確定として残した点。各 `user0` 値がどの pane（Race / Face 系ページ群 / その他）に対応するか、**その並び順（＝port のタブ順の正典）**を、`race_sex_menu.xml` の `<eq src="RaceSexMenu" trait="user0"/>` とページ定義、および EXE 側のページ切替ハンドラ（slot1 `SetElement` id==0x0A 分岐や通知 id 帯、v363/v364 の RaceSexMenu 解析を踏襲）で確定。
 ②【高】**各ページに表示される要素の一覧と生成元** — どのページに race リスト・性別 toggle・どのスライダー群・名前入力・Done/Back が出るか。特に **v351 §1.3-2「レース/性別ごとに表示されるスライダー集合の決定規則」**（＝Face ページ群の内訳と並び順）。
 ③【中】**Done(id90)/Back の通知とキャンセル時の状態復元** — user5 の 1/2 切替、Back 時に何がリセットされるか（v363_racesex_cancel_exit_ruling.md の残点があれば引き継ぐ）。NAME のエンジン側保存先は **#123**／StatsMenu の表示仕様は **#157** で依頼中のため**対象外と明記**（重複しないこと）。
@@ -466,6 +480,12 @@
   > - `stat_misc_template` の `stat_misc_item` は **`<y> = me().height(32) × me().listindex`**＝**空白スロットは listindex×32 の空行**で正しい（動的追加行の予約枠）。
   > - `<id> 44 </id>`・width=600・height=32。
   > 残点 V-559-1,4/V-569-3,4,5【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ（v603・StatsMenu 派生）】→ `tmp/re/v603_low_priority_residuals_bundle_ruling.md`（台帳 row579・probe u16_1〜u16_3）
+  > ■ V-559-1 [部分確定] health(AV8) の p1 供給
+  > - 統計 builder の trait **`0xFB6`(current)/`0xFB7`/`0xFB8`/`0xFB9`/`0xFBA`/`0xFBB`/`0xFBC`** が AV 8/9/10 系の供給スロット。**health(AV8) は `0xFB6`(current)＋`0xFB8`/`0xFBA` 系**（magicka/fatigue と同型）。AV8 固有スロットの pin 留めは残。
+  > ■ V-559-4 [部分確定] `[item]+0x34` の bit フラグ
+  > - StatsMenu 帯（`0x5D9xxx`〜`0x5DAxxx`）で `[item+0x34]` は**表示要素の 4B フィールド**として読書き。**bit0/bit3 を faction hidden フラグとする直接証拠は未取得**。
+  > 残点 V-559-1,4【低】。台帳反映＋round_verify ALL OK（rows 31..579 / total 465 / done 460 / open 5）。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -605,6 +625,16 @@
   > - **V-559-3**（タブアイコン cropx=0/cropy=128）・**V-569-2**（misc y=height×listindex）
   > - **V-570-4**（0xFD3/0xFD4 は入力欄内部 trait・[部分確定]）
   > 残点 V-558-4/V-559-1,4/V-567-2,3/V-569-3,4,5/V-570-5,6/V-571-3,4/V-572-2,3【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ（v603）】→ `tmp/re/v603_low_priority_residuals_bundle_ruling.md`（台帳 row579・probe u16_1〜u16_3）
+  > ■ 消化残点
+  > - **V-572-3**（`0x4D7F80`＝formType 0x23=TESClass 述語）・**V-572-2**（`this+0x44`＝majorSkills 7個 AV リスト・`this+0xC`＝class formID）
+  > - **V-569-4**（`0x565BE0(idx,base)`＝AV オフセット関数・jump table `0x565C30`）
+  > - **V-571-3**（`[0xB3B5D4]` 直接ストアは RaceSexMenu ctor のみ）・**V-571-4**（AddPane 4引数）
+  > - **V-570-5**（通知 id 一意で `gt` 誤爆なし）・**V-570-6**（`[0xB3B4C9]` 書き手 3箇所）
+  > - **V-567-2/3**（重複分岐＝別ページ名 GMST・`0x5CC8BA`＝id98 act）
+  > - **V-559-1/4**（health AV8 供給スロット・`[item]+0x34` 4B フィールド）【部分確定】
+  > - **V-558-4**（GMST ESM 既定値）【未確定・ESM 依存】
+  > 残点 V-558-4/V-559-1,4/V-569-5/V-572-1/V-573-2【低】。台帳反映＋round_verify ALL OK（rows 31..579 / total 465 / done 460 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2739,6 +2769,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2762,4 +2797,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 16:13:20
+**ai-todo** | Last Updated: 2026-11-20 16:21:17

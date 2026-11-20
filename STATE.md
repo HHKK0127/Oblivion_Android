@@ -4284,3 +4284,19 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-558-4/V-559-1,4/V-567-2,3/V-569-3,4,5/V-570-5,6/V-571-3,4/V-572-2,3・V-573-2【低】。
 - **本日 push 累計（セッション）**: v405 → … → v601 `7a6a687f` →（本件 v602 を本 commit で push）＝**193裁定**。
 
+## 2026-11-22 (mo) — 低優先残点クローズ v603: **formType 0x23 述語・AV索引変換・AddPane 引数・カウンタ書手・`[item]+0x34`・Main/`0x5CC8BA` 分岐**
+
+- **成果物**: `tmp/re/v603_low_priority_residuals_bundle_ruling.md`（probe **u16_1〜u16_3・3本 EXIT=0**）。台帳 **row579**・`round_verify` **ALL OK（rows 31..579 / total 465 / done 460 / open 5）**・ai-todo **#96/#157/#161/#162 追加 note**。
+- **V-572-3 [確定(命令)]** `0x4D7F80(this)` は **`[vfunc+0x190]()!=0` かつ `[vfunc+0x170](this)` の `[+4]==0x23`** を検査（`[obj+4]`＝formType byte・`0x23`＝**TESClass**）。`0x5E3320` は真なら `[vfunc+0x170]+0x104` を返す＝**player の class オブジェクト**。
+- **V-572-2 [確定(命令)]** `0x51C090(class, skill)` は **`[this+0xC]==[0xB37D00]`（charactergen formID 0x230E6）なら即 false**、そうでなければ **`[this+0x44..+0x5C]` の 7 要素 dword 配列を線形探索**。`0x51C0F0(this,idx,av)`＝**`av∈[0xC,0x20]` で `[this+idx*4+0x44]=av`**＝**TESClass の majorSkills 7 個の AV 値リスト**。`[this+0xC]`＝class の formID。
+- **V-569-4 [確定(命令)]** `0x565BE0(idx,base)`＝**idx(0..6) で base 加算値が変わる AV オフセット関数**（jump table `0x565C30`）: 0→`base`／1→`base+8`／2→`base+0xC`／3→`base+0x21`／4→`base+0x25`。**引数 2＝`base+0xC`**。`0x565CC0(idx)`＝`idx<0x28`/`0x28<=idx<0x48` の 2 表引き。
+- **V-571-3 [確定(命令)]** **`[0xB3B5D4]` の直接ストアは `0x5C4F3C`（RaceSexMenu ctor `0x5C4E40`）の imm 1 箇所のみ**＝200 リセットは RaceSexMenu ctor だけ（他メニュー不使用）。
+- **V-570-6 [確定(命令)]** **`[0xB3B4C9]` の書き手は3箇所**＝`0x5C9FB1`（Reset 実行）／`0x5CCCBC`・`0x5CD9CA`（通知ハンドラ `0x5CC200`）。
+- **V-570-5 [確定(命令)]** 通知 id（XML 1/2/10/20/90＋動的採番 201..428）は **`[0xB3B5D4]` の単調増加で一意** → `gt` 閾値照合は誤爆しない。
+- **V-567-2 [部分確定]** `0x5CC580`/`0x5CC829` は異なるページ名 GMST（`0xB39008`/`0xB38F70`）を参照＝同一名が複数ページで使われるため重複に見える。Main の 2 命令は `0xFAE`(user0)/`0xFD0`(listindex) の両方書込。
+- **V-567-3 [確定(命令)]** `0x5CC8BA` は id98 判定→Random act／全ブロック不一致なら act なし epilogue（v602 補完）。
+- **V-571-4 [部分確定]** AddPane は 4 引数（`this,strA,strB,prep`）＝a5 は存在しない。
+- **V-558-4 [未確定]**／**V-559-1/4 [部分確定]**。
+- **残点**: V-558-4/V-559-1,4/V-569-5/V-572-1/V-573-2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v602 `f0aed8e2` →（本件 v603 を本 commit で push）＝**194裁定**。
+
