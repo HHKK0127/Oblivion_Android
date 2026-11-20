@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T22:00:00Z",
+  "lastUpdated": "2026-11-22T00:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15183,14 +15183,31 @@
         "todo-164"
       ],
       "content": "2026-11-21 v600 裁定＝V-599-1/2/3 クローズ（低優先バンドル・ai-todo #96/#164）。成果物 tmp/re/v600_input_state_mouse_renderbuf_ruling.md・台帳 row576。probe u13_1〜u13_7（7本 EXIT=0）。①[確定(命令)] V-599-1: 0x402FC0（slot≥2）は ecx=input+slot*0xA0 を基準に state（0..3）で4分岐。0x60＝現在状態バイト／0xB0＝直前状態バイト（0xA0 stride の現在/直前対）。state の意味は 0x4032D0（slot==0）と同一: 0=現在押下(bit7)／1=押下エッジ／2=離上エッジ／3=変化（現在 XOR 直前の bit7）（jump table 0x403054）。②[部分確定] V-599-2: マウスボタン名は 0x9F54D0 が 0x419A70 で登録（格納先 0xB39554..0xB39570・9個）: L-Button(sMouseLeftButton)／R-Button(sMouseRightButton)／Wheel(sMouseMiddleButton)／Button 3..8(sMouseButton3..8)。DirectInput コールバック 0x403DD0 がデバイス状態を [input+0x530+devidx*0x244]（0x91 dword=0x244B）へコピー。擬似アクション 0x1D/0x1E/0x1F は入力オブジェクトのマウスボタン状態バイト対（0x18f5/0x19f5・0x191d/0x1a1d・0x19ab/0x1aab）を読む＝3つのマウスボタン枠。左/右/中の厳密対応はデバイス状態ブロック内の絶対オフセット依存で静的には未ピン留め（実測=動的領域）→実装は「いずれかのマウスボタン＝スキップ」で等価（v598 の「タップでスキップ」を裏付け）。③[確定(命令)] V-599-3: 0xB350CC/0xB350D0 は .data の描画バッファ寸法（幅/高）で、.text 内の読み書きは 0x497E70 の4箇所のみ。直接ストア（mov [g],reg）は0件 → 0x497E70（描画バッファから iSize W/H:Display を同期する関数）自身が設定元。デバイス singleton [0xB350D8] は 0x497B20（レンダラ破棄・警告付き）で 0 にクリア。④移植指針: スキップ入力は「マウスボタン（タップ）または Space」で等価。残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-600-1【低】。"
+    },
+    {
+      "id": "opencode-v601-dinput-device-kinds-20261122",
+      "timestamp": "2026-11-22T00:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v601",
+        "v600",
+        "dinput",
+        "input",
+        "todo-96",
+        "todo-164"
+      ],
+      "content": "2026-11-22 v601 裁定＝V-600-1 クローズ（ai-todo #96/#164）。成果物 tmp/re/v601_dinput_device_kinds_ruling.md・台帳 row577。probe u14_1〜u14_2（2本 EXIT=0）。①[確定(命令)] V-600-1: 0x403DD0 は IDirectInput8::EnumDevices のコールバックで、DIDEVICEINSTANCE.dwDevType（+0x24）の下位バイトを 0x14／0x15 と比較＝DI8DEVTYPE_JOYSTICK(0x14)／DI8DEVTYPE_GAMEPAD(0x15)＝ジョイスティック/ゲームパッド。キーボード/マウスはこの callback では扱わない（CreateDevice で GUID 直接指定）。②[確定(命令)] デバイス GUID: 0x404150 が CreateDevice に渡す 0xA78EA4＝{6F1D2B61-D5A0-11CF-BFC7-444553540000}＝GUID_SysKeyboard／0xA78EB4＝{6F1D2B60-D5A0-11CF-BFC7-444553540000}＝GUID_SysMouse。0xA78F54＝{BF798031-483A-4DA2-AA99-5D64ED369700}＝IID_IDirectInput8。③[確定(命令)] 入力デバイス初期化: 0x404150: DirectInput8Create(0x800, IID_IDirectInput8, &[esi+4], 0)→EnumDevices(0, 0x403DD0, esi, DIEDFL_ATTACHEDONLY)→CreateDevice(GUID_SysKeyboard, &[esi+0x28], 0)→CreateDevice(GUID_SysMouse, &[esi+0x2c], 0)。④移植指針: キーボード/マウスは DirectInput のシステムデバイスを直接生成・ゲームパッドは EnumDevices。Android ではマウス相当＝タッチ・キーボード相当＝Space を割当てれば v598 のスキップ仕様と一致。残点 V-599-2【低】・V-598-4【低】・V-601-1【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1023,
+    "totalEntries": 1024,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T22:00:00Z",
-    "entry_count": 1023,
-    "last_updated": "2026-11-21T22:00:00Z"
+    "lastUpdated": "2026-11-22T00:00:00Z",
+    "entry_count": 1024,
+    "last_updated": "2026-11-22T00:00:00Z"
   }
 }

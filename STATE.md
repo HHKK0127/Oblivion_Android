@@ -4259,3 +4259,13 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-599-2【低】（継続・動的領域）・V-598-4【低】・V-600-1【低】。
 - **本日 push 累計（セッション）**: v405 → … → v599 `1abaa7c4` →（本件 v600 を本 commit で push）＝**191裁定**。
 
+## 2026-11-21 (mm) — V-600-1 クローズ v601: **DirectInput デバイス種別（GUID と EnumDevices コールバックの devtype）の同定**
+
+- **成果物**: `tmp/re/v601_dinput_device_kinds_ruling.md`（probe **u14_1〜u14_2・2本 EXIT=0**）。台帳 **row577**・`round_verify` **ALL OK（rows 31..577 / total 463 / done 458 / open 5）**・ai-todo **#96/#164 追加 note**。
+- **V-600-1 [確定(命令)]** `0x403DD0` は `IDirectInput8::EnumDevices` のコールバックで、`DIDEVICEINSTANCE.dwDevType`（`+0x24`）の下位バイトを **`0x14`／`0x15`** と比較＝**`DI8DEVTYPE_JOYSTICK`(0x14)／`DI8DEVTYPE_GAMEPAD`(0x15)`＝ジョイスティック/ゲームパッド**。**キーボード/マウスはこの callback では扱わない**（`CreateDevice` で GUID 直接指定）。
+- **デバイス GUID [確定(命令)]**＝`0x404150` が `CreateDevice` に渡す **`0xA78EA4`＝`{6F1D2B61-D5A0-11CF-BFC7-444553540000}`＝`GUID_SysKeyboard`**／**`0xA78EB4`＝`{6F1D2B60-D5A0-11CF-BFC7-444553540000}`＝`GUID_SysMouse`**。`0xA78F54`＝`{BF798031-483A-4DA2-AA99-5D64ED369700}`＝`IID_IDirectInput8`。
+- **入力デバイス初期化 [確定(命令)]**＝`0x404150`: `DirectInput8Create(0x800, IID_IDirectInput8, &[esi+4], 0)`→`EnumDevices(0, 0x403DD0, esi, DIEDFL_ATTACHEDONLY)`→`CreateDevice(GUID_SysKeyboard, &[esi+0x28], 0)`→`CreateDevice(GUID_SysMouse, &[esi+0x2c], 0)`。
+- **移植指針**: キーボード/マウスは DirectInput のシステムデバイスを直接生成・ゲームパッドは EnumDevices。Android ではマウス相当＝タッチ・キーボード相当＝Space を割当てれば v598 のスキップ仕様と一致。
+- **残点**: V-599-2【低】（継続・動的領域）・V-598-4【低】・V-601-1【低】。
+- **本日 push 累計（セッション）**: v405 → … → v600 `fb104ee7` →（本件 v601 を本 commit で push）＝**192裁定**。
+

@@ -244,6 +244,19 @@
   > ■ V-598-4 [未確定] ムービー実音量
   > - Bink 音量 API 不在は [確定負]（v598）。実音量が DirectSound 既定に従うことの**動的確認は未実施**（静的 RE では閉じられない）。
   > 残点 V-599-1/2/3【低】・V-598-4【低】。台帳反映＋round_verify ALL OK（rows 31..575 / total 461 / done 456 / open 5）。push（後述）。
+  > 【RE レーン回答 2026-11-22: V-600-1 クローズ（v601）】→ `tmp/re/v601_dinput_device_kinds_ruling.md`（台帳 row577・probe u14_1〜u14_2）
+  > ■ V-600-1 [確定(命令)] DirectInput デバイス種別の同定
+  > - `0x403DD0` は `IDirectInput8::EnumDevices` のコールバックで、`DIDEVICEINSTANCE.dwDevType`（`+0x24`）の下位バイトを **`0x14`／`0x15`** と比較＝**`DI8DEVTYPE_JOYSTICK`(0x14)／`DI8DEVTYPE_GAMEPAD`(0x15)`＝ジョイスティック/ゲームパッド**。
+  > - **キーボード/マウスはこの callback では扱わない**（`CreateDevice` で GUID 直接指定）。
+  > ■ デバイス GUID [確定(命令)]
+  > - `0x404150` が `CreateDevice` に渡す **`0xA78EA4`＝`{6F1D2B61-D5A0-11CF-BFC7-444553540000}`＝`GUID_SysKeyboard`**／**`0xA78EB4`＝`{6F1D2B60-D5A0-11CF-BFC7-444553540000}`＝`GUID_SysMouse`**。
+  > - `0xA78F54`＝`{BF798031-483A-4DA2-AA99-5D64ED369700}`＝`IID_IDirectInput8`（`DirectInput8Create` の引数）。
+  > ■ 入力デバイス初期化 [確定(命令)]
+  > - `0x404150`: `DirectInput8Create(0x800, IID_IDirectInput8, &[esi+4], 0)` → `EnumDevices(0, 0x403DD0, esi, DIEDFL_ATTACHEDONLY)`（ジョイスティック/ゲームパッド）→ `CreateDevice(GUID_SysKeyboard, &[esi+0x28], 0)` → `CreateDevice(GUID_SysMouse, &[esi+0x2c], 0)`。
+  > ■ 移植指針
+  > - キーボード/マウスは DirectInput のシステムデバイスを直接生成・ゲームパッドは EnumDevices。
+  > - Android ではマウス相当＝**タッチ**・キーボード相当＝**Space** を割当てれば v598 のスキップ仕様と一致。
+  > 残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-601-1【低】。台帳反映＋round_verify ALL OK（rows 31..577 / total 463 / done 458 / open 5）。
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
@@ -2694,11 +2707,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2722,4 +2730,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 14:01:28
+**ai-todo** | Last Updated: 2026-11-20 14:12:36
