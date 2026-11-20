@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-20T22:00:00Z",
+  "lastUpdated": "2026-11-20T23:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14856,14 +14856,47 @@
         "v583"
       ],
       "content": "2026-11-20 v584 裁定＝V-584-1 クローズ（chargen ゲートの positively な特定＝InterfaceManager singleton [0xB3A6E0] のメニュースタック状態バイト [+8]・HUD 生成は [+8]==1 のみ・ai-todo #166 追加 note）。成果物 tmp/re/v584_chargen_gate_ruling.md・台帳 row560。probe v584_1〜v584_12（12本 EXIT=0・冒頭 Test-Path）。①[確定(命令)] positively ゲート: HUD 生成 0x5A6B00 を呼ぶ 0x5821F0（execute）が直前に cmp byte ptr [esi+8],1; jne 0x582317（0x582256-0x58225A）を持ち [+8]==1 のときのみ HUD を生成。esi＝InterfaceManager singleton [0xB3A6E0]（0x582160(1,0) が malloc(0x134)＋ctor 0x5802B0）。②[確定(命令)] 状態 [+8] の書き手7種: 1=ctor 0x5802B0＋0x57D480（HUD push→idle 復帰）/2=0x5ADCF0（LoadingMenu loading_menu.xml）＋0x583E60/3=0x57D640（メニュースタック push・'### Menu Stack Size is too small...'）/4=0x57CEE0/0x57CFE0（ロード中）/5=0x583E60（begin）/1=0x583F40（end）。③[確定(命令)] 0x583E60（begin）が HUD を画面へ出す条件: [esi+8]==3 かつ [esi+9]==0 → [esi+1c]（HUD root）へ 0xFA1/cursor.dds/0x58E870/0x57D940/0x5A4980/0x5A6040(0,1)/0x589B70(0x3ED)＝state3 のときだけ。④[確定(命令)] 0x5A6B00 の呼び出し元は3系統のみ: 0x57D480（HUD push・無条件・[+8]=1 に戻す/caller 0x57E510 の1本）/0x5821F0（execute・[+8]==1 ゲート）/0x587550（cmp edi,0x3EC＝reload &HUDMainMenu;）。⑤[部分確定] V-562-3 の最終帰結: 3呼び出し元すべてが state1（アイドル）または明示 reload コマンド由来で、chargen（RaceSexMenu 0x40C を別スタックに積む）では [+8] が 1 にならない → HUD は生成されない → V-562-3 は [+8]==1 ゲート（positively）＋発火源8系統が chargen 外（v583・negative）の両面で命令的に裏付け＝[確定(命令)]。残るは chargen 中の [+8] 実値の実行時確認のみ＝V-585-1【低】。教訓: positively ゲートは生成ヘルパの直前 cmp で一発（生成ヘルパ callers を全列挙→各サイト直前 cmp）/状態機械バイトは同 head 内の mov byte [reg+8],imm を全 imm 値で走査すると全遷移が一表（5状態確定）/[reg+8] 書込み走査は reg!=esp/ebp 除外が必須（4578→絞り込み）。残点 V-585-1【低】（chargen 中 [+8] 実値）/V-585-2・3【低】。"
+    },
+    {
+      "id": "opencode-v585-racename-constants-20261120",
+      "timestamp": "2026-11-20T23:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v585",
+        "u5",
+        "racesexmenu",
+        "todo-161",
+        "v561"
+      ],
+      "content": "2026-11-20 v585 裁定＝V-561-2 クローズ（RaceSexMenu の既定名 [0xB39440]=sEnterName と確認文 [0xB39438]=sNoNameCharacter の実体・ai-todo #161 追加 note）。成果物 tmp/re/v585_racename_constants_ruling.md・台帳 row561。probe v561b_1〜v561b_3（3本 EXIT=0）。①[確定(命令)] [0xB39440]=sEnterName='Enter character name.'（登録 0x9F7B3B・.text 参照2件=0x5CCAE4/0x5CBC62=RaceSexMenu 専用の既定名定数）／[0xB39438]=sNoNameCharacter='You must first enter a valid name.'（登録 0x9F7B1B・参照1件）。②[確定(命令)] 名前チェックの実体: 0x5CCAE2 mov edi,[0xB39440]→push 0xFDE＋0x588C10(GetString)→0x98539F(__mbscmp) で入力名と既定名を比較＝既定のまま＝未入力判定（空判定ではなく既定名一致判定）。0x5CCBBE で sNoNameCharacter を警告に使用。③副次: [0xB39448]=sResetFace/[0xB39450]=sRandomizeFace（v570 と一致）/[0xB39458]=sJournalTitleActive。残点 V-585b-1・2【低】。"
+    },
+    {
+      "id": "opencode-v586-laneC-reconcile-20261120",
+      "timestamp": "2026-11-20T23:30:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v586",
+        "u6",
+        "u4",
+        "menu",
+        "todo-166",
+        "v584"
+      ],
+      "content": "2026-11-20 v586 裁定＝Lane C 統合＋矛盾解消（0x587550 は多分岐 switch＝Lane C negative を [確定負] に訂正・0x416=QuickKeysMenu・0x578D70/0x579C10 の契約・ai-todo #166 追加 note）。成果物 tmp/re/v586_laneC_reconcile_ruling.md・台帳 row562。Lane C probe v601_1〜v601_10＋検証 v586_1〜v586_3（全 EXIT=0）。①[最重要・矛盾解消] 0x587550 は多分岐 switch（v574/v581 が正しい）: Lane C の『35 命令で ret・switch ではない』は線形 decode を最初の ret 4 で打ち切ったアーティファクト。size 付き逐語では case ごとに個別 ret 4 の early-return 型 switch（0x3FF/0x3FE/0x3EA/0x3EB/0x3EC→0x5A6B00/0x3ED→0x5A4840/0x3F2→0x5A8E30/0x3EF→0x5ADCF0/0x414→0x5B6040/0x3F0…）。find_head(0x5875B3)=find_head(0x5876E8)=0x587550 を実測 → Lane C の negative を [確定負] に訂正。②[確定(命令)] 窓 id 0x416(1046)=QuickKeysMenu: 0x587D20 case 0x416→0x5886F7（new 0x50→ctor 0x5C0B50→vtable 0xA6D1F4）。'quickkeys_menu.xml'/'QuickKeysMenu;'。③[確定(命令)] 0x578D70: 0x582160(1,0)→bl=[eax+0xB0]（旧値）→[eax+0xB0]=0xFF クリア→al=bl。[+0xB0] は ctor 0x5802B0 の 0x58042B で 0xFF 初期化＝未応答。④[確定(命令)] 0x579C10 の引数契約（v570 サイト実測）: 6 引数=(text, callback, flag, yes, no, ?)（push 0; push sNo; push sYes; push 1; push 0x5C9FC0(cb); push sRandomizeFace; call 0x579C10; add esp,0x18）。内部は FUN_005BC8B0 を 5 引数 call。⑤[確定(命令)（negative）] FUN_005ABBC0 の通知 id は5分岐ではない: lea eax,[edi-1]; cmp eax,4; ja（＝id∈[1,5] の単一条件ブロック）→0x5AACF0(id)。v583 の『通知 id 1..5 の5分岐』を訂正。⑥[確定(命令)] V-584-2 begin/end: begin 0x583E60=[+8]==3→[+8]=5＋[+0x1c] メニューマネージャ＋cursor.dds/0x589B70(0x3ED)→0x584740 tail-jump／end 0x583F40=[+9]=0→[+0xE0]/[+0xE4] 評価→[+0x24]=4→[+8]=1（idle 復帰）。3連呼=0x5791A0→begin/0x5791E0→execute/0x579220→end。⑦新教訓: early-return 型 switch は『最初の ret 打ち切り』で関数を誤って短く見積もる → 関数境界は find_head（named_funcs bisect）で判定し、線形 decode の ret 打ち切りを使わない（Lane C の誤りを本レーンが size 付き逐語で是正）。残点 V-587-1【中】（0x578D70 al=1/2 の肯定否定＋[+0xB0] writer）／V-587-2【中】（0x579C10 flag 意味）／V-587-3・4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1004,
+    "totalEntries": 1006,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-20T22:00:00Z",
-    "entry_count": 1004,
-    "last_updated": "2026-11-20T22:00:00Z"
+    "lastUpdated": "2026-11-20T23:30:00Z",
+    "entry_count": 1006,
+    "last_updated": "2026-11-20T23:30:00Z"
   }
 }

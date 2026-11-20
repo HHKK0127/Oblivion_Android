@@ -4074,3 +4074,25 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v583 `0d4bc113` →（本件 v584 を本 commit で push）＝**175裁定**。
 - **次**: V-585-1（chargen 中 `[+8]` 実値）／V-573-1（id98・Lane B 進行中）／低優先群（V-561/562/565/567/568/571/572/574〜580 系の低優先）。
 
+## 2026-11-20 (lx) — V-561-2 クローズ v585（U5 フォロー）: **RaceSexMenu の既定名 `[0xB39440]`＝`sEnterName` と確認文 `[0xB39438]`＝`sNoNameCharacter` の実体**
+
+- **成果物**: `tmp/re/v585_racename_constants_ruling.md`（probe **v561b_1〜v561b_3・3本 EXIT=0**・冒頭 Test-Path）。台帳 **row561**・ai-todo **#161 追加 note**。
+- **① [確定(命令)] `[0xB39440]`＝`sEnterName`="Enter character name."**（登録 `0x9F7B3B`・`.text` 参照2件＝`0x5CCAE4`/`0x5CBC62`＝**RaceSexMenu 専用の既定名定数**）／**`[0xB39438]`＝`sNoNameCharacter`="You must first enter a valid name."**（登録 `0x9F7B1B`・参照1件）。
+- **② [確定(命令)] 「名前チェック」の実体**: `0x5CCAE2: mov edi,[0xB39440]` → `push 0xFDE`＋`0x588C10`（GetString）→ **`0x98539F`（`__mbscmp`）で入力名と既定名を比較**＝**「既定のまま＝未入力」判定**（空判定ではなく既定名一致判定）。
+- **③ 副次**: `[0xB39448]`=`sResetFace`／`[0xB39450]`=`sRandomizeFace`（v570 と一致）／`[0xB39458]`=`sJournalTitleActive`。
+- **残点**: V-585b-1・2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v584 `c813fbe5` →（本件 v585 を本 commit で push）＝**176裁定**。
+
+## 2026-11-20 (ly) — Lane C 統合＋矛盾解消 v586（U6/U4 フォロー）: **`0x587550` は多分岐 switch（Lane C の negative を [確定負] に訂正）・`0x416`=QuickKeysMenu・`0x578D70`/`0x579C10` の契約**
+
+- **成果物**: `tmp/re/v586_laneC_reconcile_ruling.md`（Lane C probe **v601_1〜v601_10**＋検証 **v586_1〜v586_3**・全 EXIT=0）。台帳 **row562**・ai-todo **#166 追加 note**。
+- **① [最重要・矛盾解消] `0x587550` は多分岐 switch（v574/v581 が正しい）**: Lane C の「35 命令で ret・switch ではない」は**線形 decode を最初の `ret 4` で打ち切ったアーティファクト**。size 付き逐語では **case ごとに個別 `ret 4`** の early-return 型 switch（`0x3FF`/`0x3FE`/`0x3EA`/`0x3EB`/**`0x3EC`→`0x5A6B00`**/`0x3ED`→`0x5A4840`/`0x3F2`→`0x5A8E30`/`0x3EF`→`0x5ADCF0`/`0x414`→`0x5B6040`/`0x3F0`…）。**`find_head(0x5875B3)=find_head(0x5876E8)=0x587550` を実測** → **Lane C の negative を [確定負] に訂正**。
+- **② [確定(命令)] 窓 id `0x416`(1046)＝`QuickKeysMenu`**: `0x587D20` case `0x416`→`0x5886F7`（`new 0x50`→ctor `0x5C0B50`→vtable `0xA6D1F4`）。`'quickkeys_menu.xml'`／`'QuickKeysMenu;'`。
+- **③ [確定(命令)] `0x578D70`**: `0x582160(1,0)`→`bl=[eax+0xB0]`（旧値）→**`[eax+0xB0]=0xFF` クリア**→`al=bl`。`[+0xB0]` は ctor `0x5802B0` の `0x58042B` で `0xFF` 初期化＝**未応答**。
+- **④ [確定(命令)] `0x579C10` の引数契約（v570 サイト実測）**: **6 引数**＝`(text, callback, flag, yes, no, ?)`（`push 0; push sNo; push sYes; push 1; push 0x5C9FC0(cb); push sRandomizeFace; call 0x579C10; add esp,0x18`）。内部は `FUN_005BC8B0` を 5 引数 call。
+- **⑤ [確定(命令)（negative）] `FUN_005ABBC0` の通知 id は5分岐ではない**: `lea eax,[edi-1]; cmp eax,4; ja`（＝`id∈[1,5]` の**単一条件ブロック**）→`0x5AACF0(id)`。**v583 の「通知 id 1..5 の5分岐」を訂正**。
+- **⑥ [確定(命令)] V-584-2 begin/end**: **begin `0x583E60`**＝`[+8]==3`→`[+8]=5`＋`[+0x1c]` メニューマネージャ＋`cursor.dds`/`0x589B70(0x3ED)`→`0x584740` tail-jump／**end `0x583F40`**＝`[+9]=0`→`[+0xE0]`/`[+0xE4]` 評価→`[+0x24]=4`→`[+8]=1`（idle 復帰）。3連呼＝`0x5791A0→begin`/`0x5791E0→execute`/`0x579220→end`。
+- **⑦ 新教訓（再発型）**: **early-return 型 switch は「最初の ret 打ち切り」で関数を誤って短く見積もる → 関数境界は `find_head`（named_funcs bisect）で判定し、線形 decode の ret 打ち切りを使わない**（Lane C の誤りを本レーンが size 付き逐語で是正）。
+- **残点**: **V-587-1【中】**（`0x578D70` al=1/2 の肯定否定＋`[+0xB0]` writer）／**V-587-2【中】**（`0x579C10` flag 意味）／V-587-3・4【低】。
+- **本日 push 累計（セッション）**: v405 → … → v585 を本 commit で push（v585/v586 同時）＝**177裁定**。
+
