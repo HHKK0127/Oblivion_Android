@@ -167,6 +167,14 @@
   > 【[確定(命令)] V-592-2】0x441920＝[ebx+0x14] を差し替える（旧値解放→新値 AddRef）＝スマートポインタ/参照カウント代入ヘルパ（notify と無関係）。
   > 【教訓】①オブジェクトのフィールド初期値は同クラスの ctor/init head（ここでは 0x5BC450）の mov byte [reg+off],imm を全走査すれば一発（実行時 base の値を静的に確定できる）。②byte フィールドの書込みは該当アドレス帯の全 opcode（C6/88）+ 全 modrm で走査（imm と reg の両形式）。
   > 【残点】V-595-1【低】＝0x5BC450（MessageMenu init）の全体と [+0x60] 以外の初期値（base が常に 1 かの確認）／V-595-2【低】＝0x5894F0（id trait 検索）の callers と id98 解決への寄与（notify ではないが id98 の解決候補）。
+  > V-595-1/2 クローズ 2026-11-21 v595。成果物 tmp/re/v595_messagemenu_init_idtrait_callers_ruling.md・台帳 row571。probe v595_1・v595_2（2本・EXIT=0・冒頭 Test-Path）。
+  > 【[確定(命令)] V-595-1 0x5BC450（MessageMenu init）の全体】0x584640（基底 init）→ [esi+0x28..+0x5c] を 0 クリア → [esi]=0xA6CE5C（vtable 設定）→ [esi+0x60]=1（base）→ ret。→ **[+0x60] は常に 1**（他に書き手なし・v594 で確認）。
+  > 【[確定(命令)（negative）] V-595-2 0x5894F0（id trait 検索）の callers は notify を送らない】callers は3関数のみ＝0x5894F0 自身／0x5A7CD0（0x5A7F7F）／0x5A8000（0x5A800C/0x5A8019/0x5A8026）。**いずれにも 4条件 notify（mov r2,[r+0xc]+2連 push+call r2）は存在しない** → 0x5894F0 は notify 送信元ではない。
+  > 【[確定(命令)] 0x5A8000】0x5894F0(tile,1/2/3) を3連呼して [0xB3B350]/[0xB3B358]/[0xB3B360] に保存＝id trait 1/2/3 のタイル検索・記録（notify ではない）。
+  > 【[確定(命令)] 0x5A7CD0】edi+0x7c の要素配列を edi+0x84 件走査（[+0x98]/[+0x58] 比較・0x65C620・0xFA7/0xFDB）＝要素リスト描画（notify なし）。
+  > 【[未確定]（静的 RE 打切り・確定）id98 の発生源】v589-v595 で全候補経路を否定（①静的定数なし v589 ②0xFA8 経由なし v590 ③0x5821F0 経由なし v591 ④0x5894F0 経由なし 本裁定）→ **『要素クリック→親メニュー vtable[3]』の汎用ループが実行時に生成する値で静的 RE では特定不能**（実装は v570 で act 確定済みのため影響なし）。
+  > 【[確定(命令)] 副次】0x5BCDD0 の id>=4 分岐が呼ぶ 0x57DE50＝**'MenuStart'/'MenuEnd' を 0x121 トレイトへ設定するメニュー開始/終了処理**（jump table 0x57E0C0）＝ダイアログ確定時のメニュー状態遷移。
+  > 【残点】V-596-1【低】＝[0xB3B350]/[0xB3B358]/[0xB3B360]（0x5A8000 が記録する id trait 1/2/3 のタイル）の読み手／V-596-2【低】＝0x5A7CD0 の [+0x98]/[+0x58] フラグの意味／V-596-3【低】＝id98 の発生源は動的解析領域（静的 RE では打切り・確定）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2587,11 +2595,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2615,4 +2618,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 10:42:17
+**ai-todo** | Last Updated: 2026-11-20 10:46:30

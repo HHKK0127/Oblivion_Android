@@ -4193,3 +4193,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-595-1【低】／V-595-2【低】。
 - **本日 push 累計（セッション）**: v405 → … → v593 `f64c9f54` →（本件 v594 を本 commit で push）＝**185裁定**。
 
+## 2026-11-21 (mh) — V-595-1/2 クローズ v595（U6/U4 フォロー）: **MessageMenu init `0x5BC450`（`[+0x60]=1` 確定）・`0x5894F0`（id trait 検索）の callers は notify を送らない＝id98 発生源は静的 RE 打切り確定**
+
+- **成果物**: `tmp/re/v595_messagemenu_init_idtrait_callers_ruling.md`（probe **v595_1・v595_2・2本 EXIT=0**・冒頭 Test-Path）。台帳 **row571**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] V-595-1 `0x5BC450`（MessageMenu init）**: `0x584640`（基底 init）→ `[esi+0x28..+0x5c]` を `0` クリア → **`[esi]=0xA6CE5C`（vtable）** → **`[esi+0x60]=1`（base）** → ret。**`[+0x60]` は常に 1**（唯一の書き手）。
+- **② [確定(命令)（negative）] V-595-2 `0x5894F0` の callers は notify を送らない**: callers は3関数のみ＝自身／`0x5A7CD0`／`0x5A8000`。**いずれにも 4条件 notify は存在しない**。
+- **③ [確定(命令)] `0x5A8000`**＝`0x5894F0(tile,1/2/3)` を3連呼して `[0xB3B350]`/`[0xB3B358]`/`[0xB3B360]` に保存＝id trait 1/2/3 のタイル検索・記録。`0x5A7CD0`＝要素リスト描画（`edi+0x7c` 配列走査）。
+- **④ [未確定]（静的 RE 打切り・確定）id98 の発生源**: v589-v595 で**全候補経路を否定**（静的定数／`0xFA8`／`0x5821F0`／`0x5894F0`）→ **汎用ループが実行時に生成する値で静的 RE では特定不能**（実装は v570 で act 確定済みのため影響なし）。
+- **⑤ [確定(命令)] 副次**: `0x57DE50`＝`'MenuStart'`/`'MenuEnd'` を `0x121` トレイトへ設定するメニュー開始/終了処理（jump table `0x57E0C0`）。
+- **残点**: V-596-1・2・3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v594 `379f9b64` →（本件 v595 を本 commit で push）＝**186裁定**。
+
