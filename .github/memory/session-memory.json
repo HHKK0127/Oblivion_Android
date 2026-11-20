@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T20:00:00Z",
+  "lastUpdated": "2026-11-21T22:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15165,14 +15165,32 @@
         "todo-164"
       ],
       "content": "2026-11-21 v599 裁定＝U10/U11/U12 残点クローズ（低優先バンドル・ai-todo #96/#164）。成果物 tmp/re/v599_u10_u11_u12_residuals_ruling.md・台帳 row575。probe u12_24〜u12_33（10本 EXIT=0）。①[確定(命令)] V-596-1 iSize W/H:Display の書き手＝0x497C10(width,height)（[0xB06C5C]=arg1／[0xB06C64]=arg2）と 0x497E70（[0xB350CC]/[0xB350D0] から同期＋widescreen [0xB350D7]=(H/W!=0.75)）。呼出は video メニュー適用（0x405090→0x405CE0）。②[確定(命令)（negative）] V-596-2: 0x581CC0 init は iSafeZoneX/Y で初期化するが 0x57D840 が同値20を再設定＝差なし・追加作業なし。③[確定(命令)] V-596-3: 0x57E7C0 は [MenuRoot+0x20..0x34]（原点±0.008＋±仮想/2）を書く＝直交投影の等価表現・追加 RE 不要。④[確定(命令)] V-597-1: 進捗の時間単位＝ms。0x5AD980 は [edi+0x10]（経過ms）を fdiv [0xA2FC70]=1000.0 で秒正規化。ステップ [esi+0x64] は [0xB14160]=2500ms 超ごとに +1＝段階ベース（0xB14168=100／0xB14170=10）。⑤[確定(命令)] V-597-2: 0x4F96F0＝'Textures\\Menus\\Loading\\'（0xA498F8）を返す定数関数（画像パス接頭辞）。0x5AD780 は 'Menus\\Loading'＋record 名を '%s%s' で合成。リスト構築は 0x5AD440 が 0x65C620。⑥[確定(命令)] V-597-3: セクションは順番に完了が必要。0x5ADEC0 は飛び越しで 'LoadingMenu sections loading out of order…'（0xA6C4D0）を警告し先行セクションを 100 で埋める。⑦[確定(命令)] V-597-4: 0x1771 trait＝「最後に表示したメインメニュー id」を保持する MenuRoot の永続数値 trait（0x57D530 が SetFloat・既定 0x3EB／0x581CC0 が 1003.0=0x3EB=StatsMenu に初期化）＝名前なし数値スロットをグローバル状態として流用。⑧[確定(命令)] V-598-1: 0x403520 arg2＝状態セレクタ。0x4032D0（slot==0）switch: 0=現在押下／1=押下エッジ／2=離上エッジ／3=変化。0x4031E0（slot==1）は [+0x1B2C]/[+0x1B40]/[+0x1B50] でエッジ/同時押し判定。⑨[部分確定] V-598-2: マウスボタン名表 sMouseLeftButton(L-Button)／sMouseRightButton(R-Button)／sMouseMiddleButton(Wheel)／sMouseButton3..8(Button 3..8)。擬似 0x1D→[0x18f5]/[0x19f5]／0x1E→[0x191d]/[0x1a1d]／0x1F→[0x19ab]/[0x1aab]。左/右/中の厳密対応は V-599-2 に継続。⑩[確定(命令)] V-598-3: [0xB33425] の書き手＝0x40FDD0（MoviePlayer スレッド [0xB33434] を join する直前=1／join 後=0＝「ムービースレッド終了待ち中」フラグ・0x410390 が skip 判定を抑止）。⑪[未確定] V-598-4: ムービー実音量（動的確認・静的 RE 範囲外）。残点 V-599-1/2/3【低】・V-598-4【低】。"
+    },
+    {
+      "id": "opencode-v600-input-state-mouse-renderbuf-20261121",
+      "timestamp": "2026-11-21T22:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v600",
+        "v599",
+        "input",
+        "mouse",
+        "renderbuf",
+        "todo-96",
+        "todo-164"
+      ],
+      "content": "2026-11-21 v600 裁定＝V-599-1/2/3 クローズ（低優先バンドル・ai-todo #96/#164）。成果物 tmp/re/v600_input_state_mouse_renderbuf_ruling.md・台帳 row576。probe u13_1〜u13_7（7本 EXIT=0）。①[確定(命令)] V-599-1: 0x402FC0（slot≥2）は ecx=input+slot*0xA0 を基準に state（0..3）で4分岐。0x60＝現在状態バイト／0xB0＝直前状態バイト（0xA0 stride の現在/直前対）。state の意味は 0x4032D0（slot==0）と同一: 0=現在押下(bit7)／1=押下エッジ／2=離上エッジ／3=変化（現在 XOR 直前の bit7）（jump table 0x403054）。②[部分確定] V-599-2: マウスボタン名は 0x9F54D0 が 0x419A70 で登録（格納先 0xB39554..0xB39570・9個）: L-Button(sMouseLeftButton)／R-Button(sMouseRightButton)／Wheel(sMouseMiddleButton)／Button 3..8(sMouseButton3..8)。DirectInput コールバック 0x403DD0 がデバイス状態を [input+0x530+devidx*0x244]（0x91 dword=0x244B）へコピー。擬似アクション 0x1D/0x1E/0x1F は入力オブジェクトのマウスボタン状態バイト対（0x18f5/0x19f5・0x191d/0x1a1d・0x19ab/0x1aab）を読む＝3つのマウスボタン枠。左/右/中の厳密対応はデバイス状態ブロック内の絶対オフセット依存で静的には未ピン留め（実測=動的領域）→実装は「いずれかのマウスボタン＝スキップ」で等価（v598 の「タップでスキップ」を裏付け）。③[確定(命令)] V-599-3: 0xB350CC/0xB350D0 は .data の描画バッファ寸法（幅/高）で、.text 内の読み書きは 0x497E70 の4箇所のみ。直接ストア（mov [g],reg）は0件 → 0x497E70（描画バッファから iSize W/H:Display を同期する関数）自身が設定元。デバイス singleton [0xB350D8] は 0x497B20（レンダラ破棄・警告付き）で 0 にクリア。④移植指針: スキップ入力は「マウスボタン（タップ）または Space」で等価。残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-600-1【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1022,
+    "totalEntries": 1023,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T20:00:00Z",
-    "entry_count": 1022,
-    "last_updated": "2026-11-21T20:00:00Z"
+    "lastUpdated": "2026-11-21T22:00:00Z",
+    "entry_count": 1023,
+    "last_updated": "2026-11-21T22:00:00Z"
   }
 }

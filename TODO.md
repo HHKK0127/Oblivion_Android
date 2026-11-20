@@ -546,6 +546,20 @@
   > ■ V-597-4 [確定(命令)] `0x1771` trait
   > - **「最後に表示したメインメニュー id」を保持する MenuRoot の永続数値 trait**（`0x57D530` が `SetFloat`・既定 `0x3EB`／`0x581CC0` が `1003.0`=`0x3EB`=StatsMenu に初期化）＝**名前なし数値スロットをグローバル状態として流用**。
   > 残点 V-599-1/2/3【低】。台帳反映＋round_verify ALL OK（rows 31..575 / total 461 / done 456 / open 5）。push（後述）。
+  > 【RE レーン回答 2026-11-21: V-599-1/2/3 クローズ（低優先バンドル v600）】→ `tmp/re/v600_input_state_mouse_renderbuf_ruling.md`（台帳 row576・probe u13_1〜u13_7）
+  > ■ V-599-1 [確定(命令)] `0x402FC0`（slot≥2）の状態セレクタ
+  > - `ecx=input+slot*0xA0` を基準に `state`（0..3）で4分岐。`0x60`＝現在状態バイト／`0xB0`＝直前状態バイト（`0xA0` stride の現在/直前対）。
+  > - **state の意味は `0x4032D0`（slot==0）と同一**: 0=現在押下(bit7)／1=押下エッジ／2=離上エッジ／3=変化（現在 XOR 直前の bit7）（jump table `0x403054`）。
+  > ■ V-599-2 [部分確定] マウスボタンの実体
+  > - マウスボタン名は `0x9F54D0` が `0x419A70` で登録（格納先 `0xB39554..0xB39570`・9個）: **`L-Button`(sMouseLeftButton)／`R-Button`(sMouseRightButton)／`Wheel`(sMouseMiddleButton)／`Button 3..8`(sMouseButton3..8)**。
+  > - DirectInput コールバック **`0x403DD0`** がデバイス状態を **`[input+0x530+devidx*0x244]`**（`0x91` dword=`0x244`B）へコピー。
+  > - 擬似アクション `0x1D`/`0x1E`/`0x1F` は入力オブジェクトのマウスボタン状態バイト対（`0x18f5`/`0x19f5`・`0x191d`/`0x1a1d`・`0x19ab`/`0x1aab`）を読む＝**3つのマウスボタン枠**。
+  > - 左/右/中の厳密対応はデバイス状態ブロック内の絶対オフセット依存で**静的には未ピン留め（実測=動的領域）** → **実装は「いずれかのマウスボタン＝スキップ」で等価**（v598 の「タップでスキップ」を裏付け）。
+  > ■ V-599-3 [確定(命令)] 描画バッファ寸法の供給元
+  > - `0xB350CC`/`0xB350D0` は **`.data` の描画バッファ寸法（幅/高）** で、**`.text` 内の読み書きは `0x497E70` の4箇所のみ**。
+  > - **直接ストア（`mov [g],reg`）は0件** → **`0x497E70`（描画バッファから iSize W/H:Display を同期する関数）自身が設定元**。
+  > - デバイス singleton `[0xB350D8]` は `0x497B20`（レンダラ破棄・警告付き）で `0` にクリア。
+  > 残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-600-1【低】。台帳反映＋round_verify ALL OK（rows 31..576 / total 462 / done 457 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2680,6 +2694,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2703,4 +2722,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 13:50:27
+**ai-todo** | Last Updated: 2026-11-20 14:01:28
