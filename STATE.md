@@ -4339,3 +4339,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-576-3/V-577-2/V-579-2/V-581-3/V-582-2/V-583-2/V-585-2/V-589-3/V-591-2,3/V-592-2/V-593-3,4/V-596-1,2,3【低】。
 - **本日 push 累計（セッション）**: v405 → … → v605 `0a9af80d` →（本件 v606 を本 commit で push）＝**197裁定**。
 
+## 2026-11-22 (ms) — 作製レーン依頼 U13 裁定 A/B/C: **前景ムービー fit 幾何（v607）・LoadingMenu ロード対象リスト＋時間単位（v608）・RaceSexMenu ページ送り入力経路（v609）**
+
+- **成果物**: `tmp/re/v607_u_handoffA_movie_fit_geometry_ruling.md`・`v608_u_handoffB_loadingmenu_loader_ruling.md`・`v609_u_handoffC_racesexmenu_input_ruling.md`（probe u20_1〜u20_6・u22_1/u23_1/u23_2・u21_1〜u27_1 全 EXIT=0）。台帳 **row583/584/585**・`round_verify` **ALL OK（rows 31..585 / total 471 / done 466 / open 5）**・U 節に **U13** 追記・ai-todo **#164/#96/#162 追加 note**。
+- **依頼 A [確定(命令)] v607**: `a6` は **アスペクト保存フィット**（基準軸ぴったり＋非基準軸は `(実寸−フレーム×scale)×0.5` 中央揃え＝正なら黒帯/負ならクロップ）。`640`/`480`（`0xB06C4C`/`0xB06C50`）は**静的初期値**で実行時は描画バッファ寸法へ上書き（scale は実画面基準）。**port の「16:9 仮定クロップ」は機構が異なる**（4:3 では原版は黒帯）。背景モードは常に高さ基準。
+- **依頼 B [確定(命令)] v608**: ロード対象＝**`[0xB33A98]+0x9C` のレコード linked list**（`FUN_005AD440` が formType 分岐＋乱択＋`[+0x4C]` へ追加）。時間単位＝**ms**（`fdiv [0xA2FC70]=1000.0`・しきい値 `0xB14160`=2500ms）。**v597 訂正**: user1 の接頭辞は `Textures\Menus\Loading\`（`Menus\Loading` は `_strstr` 判定用）。
+- **依頼 C [確定] v609**: **V-558-1/2/3 は v563/v602 で既クローズ**（再確認）。**v558 訂正**: `0x5C1B80` は **QuickKeysMenu(0x416)** であり RaceSexMenu のページ送りではない。Done/Back は同一 tile(id=90) の `<user5>`（1=Done/2=Back）で切替（`0x5CC81F push 0xFB3`）。`AddPane` は `0xFA8`/`0xFAA`/`0xFAE` を同一 index で三連書込。
+- **残点**: V-607-1/2・V-608-1/2/3・V-609-1/2・V-597-3・V-567-2/3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v606 `2f95b10e` →（本件 v607/v608/v609 を本 commit で push）＝**200裁定**。
+
