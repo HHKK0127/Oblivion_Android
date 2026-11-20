@@ -4269,3 +4269,18 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-599-2【低】（継続・動的領域）・V-598-4【低】・V-601-1【低】。
 - **本日 push 累計（セッション）**: v405 → … → v600 `fb104ee7` →（本件 v601 を本 commit で push）＝**192裁定**。
 
+## 2026-11-22 (mn) — 中優先残点クローズ v602: **`0x589930` シグネチャ・RaceSexMenu act 本体・AddPane id 採番・id98 特別 act・応答バイト・StatsMenu 派生残点**
+
+- **成果物**: `tmp/re/v602_mid_residuals_bundle_ruling.md`（probe **u15_1〜u15_3・3本 EXIT=0**）。台帳 **row578**・`round_verify` **ALL OK（rows 31..578 / total 464 / done 459 / open 5）**・ai-todo **#96/#161/#162/#157 追加 note**。
+- **V-571-2 [確定(命令)]** `0x589930(this=page, name)`＝**page の子ツリー（`[this+0x34]` BST）から name が完全一致（`__mbscmp`）する tile を返す探索関数**（`ret 4`）。`0x5C3440=GetPage(strB)→0x589930(page,strA)` の2段名検索 → v571 の 28 ブロック対応表は正しい。
+- **V-570-2 [確定(命令)]** `0x5C7070`＝**Age/Main の確定実行系**（`vfunc+0x130`/`+0x134`→`vfunc+0x170`→`0x521A10`＝年齢再計算）／`0x5C5C30`＝**Style ページ切替**（`0x5C3440`→`0x588BD0`→`SetFloat(user0)`）。
+- **V-558-2 [確定(命令)]** AddPane `0x5C4340` は **a4(id) が `-1` のときのみ `[0xB3B5D4]`(+1) 採番**・初期値 `0xC8(200)`・明示 id は非消費（Main のみ明示 0）。
+- **V-558-3 [確定(命令)]** Main ページの名前入力は **`TextEditMenu`(0x41B) ではなく `race_name` tile 内の内部 trait `0xFD3`/`0xFD4` 入力欄**。Done(90) は `0x5CCA77` で名前検証→確認ダイアログ。
+- **V-567-1 [確定(命令)]** `0x5CC8BA`＝**「id が全 28 ブロックより小さい」フォールスルー→`0x5CCBF4`（id==98 判定）→ id98 特別 act**。`0x5CC936`＝**id98＝Random の act**（`[0xB3B4C8]` 未確認→`sRandomizeFace` 確認／確認済→`0x5C9CD0` Random 実行）。
+- **V-593-2 [確定(命令)]** `0x5BCDD0` の `id>=4` 分岐で **`[singleton+0xB0] = base(常に1) + id − 4`** → **id4→al=1(No)／id5→al=2(Yes)**（v592 と整合）。
+- **V-559-3 [確定(XML)]** `stat_tabs_p1_icon`（`all_tabs_icons.dds`）**cropx=0/cropy=128・64×64**（p1..p5 は cropy 64 刻み）。
+- **V-569-2 [確定(XML)]** `stat_misc_template` の `stat_misc_item` は **`<y> = me().height(32) × me().listindex`**＝空白スロットは listindex×32 の空行。
+- **V-570-4 [部分確定]** `0xFD3`/`0xFD4` は race_name の入力欄内部 trait（コード側スロット・XML 非同定）。
+- **残点**: V-558-4/V-559-1,4/V-567-2,3/V-569-3,4,5/V-570-5,6/V-571-3,4/V-572-2,3・V-573-2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v601 `7a6a687f` →（本件 v602 を本 commit で push）＝**193裁定**。
+

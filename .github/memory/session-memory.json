@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T00:00:00Z",
+  "lastUpdated": "2026-11-22T02:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15200,14 +15200,33 @@
         "todo-164"
       ],
       "content": "2026-11-22 v601 裁定＝V-600-1 クローズ（ai-todo #96/#164）。成果物 tmp/re/v601_dinput_device_kinds_ruling.md・台帳 row577。probe u14_1〜u14_2（2本 EXIT=0）。①[確定(命令)] V-600-1: 0x403DD0 は IDirectInput8::EnumDevices のコールバックで、DIDEVICEINSTANCE.dwDevType（+0x24）の下位バイトを 0x14／0x15 と比較＝DI8DEVTYPE_JOYSTICK(0x14)／DI8DEVTYPE_GAMEPAD(0x15)＝ジョイスティック/ゲームパッド。キーボード/マウスはこの callback では扱わない（CreateDevice で GUID 直接指定）。②[確定(命令)] デバイス GUID: 0x404150 が CreateDevice に渡す 0xA78EA4＝{6F1D2B61-D5A0-11CF-BFC7-444553540000}＝GUID_SysKeyboard／0xA78EB4＝{6F1D2B60-D5A0-11CF-BFC7-444553540000}＝GUID_SysMouse。0xA78F54＝{BF798031-483A-4DA2-AA99-5D64ED369700}＝IID_IDirectInput8。③[確定(命令)] 入力デバイス初期化: 0x404150: DirectInput8Create(0x800, IID_IDirectInput8, &[esi+4], 0)→EnumDevices(0, 0x403DD0, esi, DIEDFL_ATTACHEDONLY)→CreateDevice(GUID_SysKeyboard, &[esi+0x28], 0)→CreateDevice(GUID_SysMouse, &[esi+0x2c], 0)。④移植指針: キーボード/マウスは DirectInput のシステムデバイスを直接生成・ゲームパッドは EnumDevices。Android ではマウス相当＝タッチ・キーボード相当＝Space を割当てれば v598 のスキップ仕様と一致。残点 V-599-2【低】・V-598-4【低】・V-601-1【低】。"
+    },
+    {
+      "id": "opencode-v602-mid-residuals-bundle-20261122",
+      "timestamp": "2026-11-22T02:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v602",
+        "residuals",
+        "racesexmenu",
+        "statsmenu",
+        "todo-96",
+        "todo-161",
+        "todo-162",
+        "todo-157"
+      ],
+      "content": "2026-11-22 v602 裁定＝中優先残点クローズ（ai-todo #96/#161/#162/#157）。成果物 tmp/re/v602_mid_residuals_bundle_ruling.md・台帳 row578。probe u15_1〜u15_3（3本 EXIT=0）＋実物 XML。①[確定(命令)] V-571-2: 0x589930(this=page,name)＝page の子ツリー（[this+0x34] BST）から name が完全一致（__mbscmp）する tile を返す探索関数（ret 4）。0x5C3440=GetPage(strB)→0x589930(page,strA) の2段名検索 → v571 の 28 ブロック対応表は正しい。②[確定(命令)] V-570-2: 0x5C7070＝Age/Main の確定実行系（vfunc+0x130/+0x134→vfunc+0x170→0x521A10＝年齢再計算）／0x5C5C30＝Style ページ切替（0x5C3440→0x588BD0→SetFloat(user0)）。③[確定(命令)] V-558-2: AddPane 0x5C4340 は a4(id) が -1 のときのみ [0xB3B5D4](+1) 採番・初期値 0xC8(200)・明示 id は非消費（Main のみ明示 0）。④[確定(命令)] V-558-3: Main ページの名前入力は TextEditMenu(0x41B) ではなく race_name tile 内の内部 trait 0xFD3/0xFD4 入力欄。Done(90) は 0x5CCA77 で名前検証→確認ダイアログ（'%s %s?' 0xA6B4D8）。⑤[確定(命令)] V-567-1: 0x5CC8BA＝「id が全 28 ブロックより小さい」フォールスルー→0x5CCBF4（id==98 判定）→ id98 特別 act。0x5CC936＝id98＝Random の act（[0xB3B4C8] 未確認→sRandomizeFace 確認／確認済→0x5C9CD0 Random 実行）。⑥[確定(命令)] V-593-2: 0x5BCDD0 の id>=4 分岐で [singleton+0xB0] = base(常に1) + id − 4 → id4→al=1(No)／id5→al=2(Yes)（v592 と整合）。⑦[確定(XML)] V-559-3: stat_tabs_p1_icon（all_tabs_icons.dds）cropx=0/cropy=128・64×64（p1..p5 は cropy 64 刻み）。⑧[確定(XML)] V-569-2: stat_misc_template の stat_misc_item は <y> = me().height(32) × me().listindex＝空白スロットは listindex×32 の空行。⑨[部分確定] V-570-4: 0xFD3/0xFD4 は race_name の入力欄内部 trait（コード側スロット・XML 非同定）。⑩残点: V-558-4/V-559-1,4/V-567-2,3/V-569-3,4,5/V-570-5,6/V-571-3,4/V-572-2,3・V-573-2【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1024,
+    "totalEntries": 1025,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T00:00:00Z",
-    "entry_count": 1024,
-    "last_updated": "2026-11-22T00:00:00Z"
+    "lastUpdated": "2026-11-22T02:00:00Z",
+    "entry_count": 1025,
+    "last_updated": "2026-11-22T02:00:00Z"
   }
 }

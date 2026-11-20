@@ -257,6 +257,7 @@
   > - キーボード/マウスは DirectInput のシステムデバイスを直接生成・ゲームパッドは EnumDevices。
   > - Android ではマウス相当＝**タッチ**・キーボード相当＝**Space** を割当てれば v598 のスキップ仕様と一致。
   > 残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-601-1【低】。台帳反映＋round_verify ALL OK（rows 31..577 / total 463 / done 458 / open 5）。
+  > 【C-1 実測 第1回（2026-11-20）＝ PASS ただし順序に問題を検出】導入動画は動作した（`Intro movie started: /data/user/0/com.example.oblivion/cache/oblivion_intro.mp4`・textureId=198・`Intro movie active: 1`）。タップ skip も動作（`Intro movie: tap - requesting skip` → `Intro movie: skip requested` → `Intro movie active: 0` → `Title theme BGM resumed after intro movie` → `Intro movie finished`）。BGM 停止/再開も v598 どおり動いた。ただし【問題】スクリーンショットが導入動画ではなく『Loading game data...』を写していた。ログの時系列: 06:39:47 `LoadingScreen shown: Loading game data...` → 06:40:23 `Menu selection: New Game` → 06:40:25.638 `Intro movie started` → 06:40:25.705 `createTestScenario() START`（ワールド生成14秒）→ 06:40:39.690 `LoadingScreen hidden (scenario built)` → 06:40:39.910 `Game started! Opening character creation`。**原因は2つ**: ①`renderer.cpp` のローディング画面ブロックが**早期 return** するため（4777-4791）、動画が描画されずローディング Art の下に隠れていた ②正典の順序（ワールド読込 → RaceSexMenu 生成 → 動画 → chargen）に対し、移植は NEW 時点で動画を要求していたため、ワールド生成と動画が同時に走っていた。【修正】①ローディング画面ブロックの return 手前に `renderIntroMovieOverlay()` を追加（動画をローディングより上に描く）②`introMovieRequested` を NEW 選択時ではなく **chargen を開く時点**（`renderer.cpp:5010` 付近の `characterCreationUI->open()` の直後・`requestIntroMovie()` 経由）へ移動＝正典の『RaceSexMenu 生成が先、動画が後』に一致。再ビルド中。
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
@@ -291,6 +292,19 @@
   > 【移植への示唆】ページ遷移は固定表（上記）で矢印キー等の直接移動は無い（v563 で確定）。タブ UI に写像するならこの前後関係が必要。ページ名 GMST とスライダーラベル GMST を混同しないこと。
   > 【手法の罠（重要）】capstone の op_str は **mnemonic を含まない**ため、mov +eax で始まる正規表現は**マッチ0件**になる（v564_4b/6 が無出力の原因）→「eax/edx, dword ptr [...]」で始まる正規表現に直すと解決。hex 桁数は {4,6}（0xb38f70 は6桁、{4} 固定だと失敗）。ページ名を引くときは「mov ecx,<global> の直前の push 列」を読めば value/name の2つが取れる（push value; push name; mov ecx,g; call 0x419A70）。
   > 【残点 V-567-1..3】1=「1 階層上へ戻る」解釈の確認（表示順 XML／親子構造）【中】／2=Brow・Main の2 箇所目が同一コード内に重複する理由【低】／3=フォールスルー先 0x5CC8BA の完全 decode【低・V-563-2 と統合】。
+  > 【RE レーン回答 2026-11-22: 中優先残点クローズ（v602）】→ `tmp/re/v602_mid_residuals_bundle_ruling.md`（台帳 row578・probe u15_1〜u15_3）
+  > ■ V-571-2 [確定(命令)] `0x589930` シグネチャ
+  > - `0x589930(this=page, name)`＝**page の子ツリー（`[this+0x34]` BST）から name が完全一致（`__mbscmp`）する tile を返す探索関数**（`ret 4`）。木ノードは `[node+8]`=tile・`[tile+8]`=名。
+  > - `0x5C3440=GetPage(strB)→0x589930(page,strA)` の2段名検索 → v571 の 28 ブロック対応表は正しい。
+  > ■ V-558-2 [確定(命令)] AddPane id 採番
+  > - `0x5C4340` は **a4(id) が `-1` のときのみ `[0xB3B5D4]`(+1) 採番**（`0x5C4385 cmp eax,-1`）・初期値 `0xC8(200)`・明示 id は非消費（Main のみ明示 0）。
+  > ■ V-558-3 [確定(命令)] Main ページ
+  > - 名前入力は **`TextEditMenu`(0x41B) ではなく `race_name` tile 内の内部 trait `0xFD3`/`0xFD4` 入力欄**。Done(90) は `0x5CCA77` で名前検証→確認ダイアログ（`'%s %s?'` `0xA6B4D8`）。
+  > ■ V-567-1 [確定(命令)] `0x5CC8BA`
+  > - **「id が全 28 ブロックより小さい」フォールスルー→`0x5CCBF4`（id==98 判定）→ id98 特別 act**。`0x5CC936`＝**id98＝Random の act**（`[0xB3B4C8]` 未確認→`sRandomizeFace` 確認／確認済→`0x5C9CD0` Random 実行）。
+  > ■ V-570-2 [確定(命令)] RaceSexMenu act 本体
+  > - `0x5C7070`＝Age/Main の確定実行系（`vfunc+0x130`/`+0x134`→`vfunc+0x170`→`0x521A10`＝年齢再計算）／`0x5C5C30`＝Style ページ切替。
+  > 残点 V-558-4/V-567-2,3/V-570-5,6/V-571-3,4【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
 ①【高】**`user0` の値とページ構成の対応表** — v351 §1.3-1 が明示的に未確定として残した点。各 `user0` 値がどの pane（Race / Face 系ページ群 / その他）に対応するか、**その並び順（＝port のタブ順の正典）**を、`race_sex_menu.xml` の `<eq src="RaceSexMenu" trait="user0"/>` とページ定義、および EXE 側のページ切替ハンドラ（slot1 `SetElement` id==0x0A 分岐や通知 id 帯、v363/v364 の RaceSexMenu 解析を踏襲）で確定。
 ②【高】**各ページに表示される要素の一覧と生成元** — どのページに race リスト・性別 toggle・どのスライダー群・名前入力・Done/Back が出るか。特に **v351 §1.3-2「レース/性別ごとに表示されるスライダー集合の決定規則」**（＝Face ページ群の内訳と並び順）。
 ③【中】**Done(id90)/Back の通知とキャンセル時の状態復元** — user5 の 1/2 切替、Back 時に何がリセットされるか（v363_racesex_cancel_exit_ruling.md の残点があれば引き継ぐ）。NAME のエンジン側保存先は **#123**／StatsMenu の表示仕様は **#157** で依頼中のため**対象外と明記**（重複しないこと）。
@@ -445,6 +459,13 @@
   > 【移植への示唆】『クラス選択前＝素のスキル順／クラス確定後＝管輪7個が先頭（間に1空白）』が原版の実挙動＝v569 §6 の分類グルーピングの正体。管輪7個は TESClass+0x44 の配列（クラス定義）。
   > 【手法の教訓（再発型）】**GMST の自動逆引き（push 窓）は隣接登録の混入で value/name を取り違えうる**。特に int GMST は value が文字列範囲外（0xA00000-0xC00000）で必ず欠ける → **静的登録ブロックの逐語ダンプが決定打**。前回の v567 教訓（op_str regex）と合わせ、正規表現はオペランドのみ・hex は {3,6}。
   > 【残点 V-572-1..3】1=0x663C50/0x666BB0/0x668070 の用途／2=+0x44 配列の並び（AV 順か定義順）と +0xC メンバ／3=0x5E3320/0x4D7F80 の型・formType 0x23 名・[vfunc+0x170(this)+0x104] の先。全て【低】。
+  > 【RE レーン回答 2026-11-22: 中優先残点クローズ（v602・StatsMenu 派生）】→ `tmp/re/v602_mid_residuals_bundle_ruling.md`（台帳 row578・probe u15_1〜u15_3）
+  > ■ V-559-3 [確定(XML)] タブアイコン UV crop
+  > - `stat_tabs_p1_icon`（`all_tabs_icons.dds`）**cropx=0/cropy=128・64×64**（p1..p5 は cropy が 64 刻み）。
+  > ■ V-569-2 [確定(XML)] p5 空白スロットの y 式
+  > - `stat_misc_template` の `stat_misc_item` は **`<y> = me().height(32) × me().listindex`**＝**空白スロットは listindex×32 の空行**で正しい（動的追加行の予約枠）。
+  > - `<id> 44 </id>`・width=600・height=32。
+  > 残点 V-559-1,4/V-569-3,4,5【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -573,6 +594,17 @@
   > - **直接ストア（`mov [g],reg`）は0件** → **`0x497E70`（描画バッファから iSize W/H:Display を同期する関数）自身が設定元**。
   > - デバイス singleton `[0xB350D8]` は `0x497B20`（レンダラ破棄・警告付き）で `0` にクリア。
   > 残点 V-599-2【低】（継続・動的領域）・V-598-4【低】・V-600-1【低】。台帳反映＋round_verify ALL OK（rows 31..576 / total 462 / done 457 / open 5）。
+  > 【RE レーン回答 2026-11-22: 中優先残点クローズ（v602）】→ `tmp/re/v602_mid_residuals_bundle_ruling.md`（台帳 row578・probe u15_1〜u15_3）
+  > ■ V-568-系・V-569-系・V-570-系・V-571-系・V-572-系の中優先残点を消化。
+  > - **V-571-2**（`0x589930`＝page の子ツリーから name 完全一致 tile を返す探索関数）
+  > - **V-570-2**（`0x5C7070`＝Age/Main 確定実行系・`0x5C5C30`＝Style ページ切替）
+  > - **V-558-2**（AddPane の id 採番＝-1 のときのみカウンタ）
+  > - **V-558-3**（Main 名前入力＝`race_name` 内部 trait 0xFD3/0xFD4）
+  > - **V-567-1**（`0x5CC8BA`＝id98 Random act フォールスルー）
+  > - **V-593-2**（応答バイト＝base(1)+id−4 → id4=No/id5=Yes）
+  > - **V-559-3**（タブアイコン cropx=0/cropy=128）・**V-569-2**（misc y=height×listindex）
+  > - **V-570-4**（0xFD3/0xFD4 は入力欄内部 trait・[部分確定]）
+  > 残点 V-558-4/V-559-1,4/V-567-2,3/V-569-3,4,5/V-570-5,6/V-571-3,4/V-572-2,3【低】。台帳反映＋round_verify ALL OK（rows 31..578 / total 464 / done 459 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2730,4 +2762,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 14:12:36
+**ai-todo** | Last Updated: 2026-11-20 16:13:20
