@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T18:00:00Z",
+  "lastUpdated": "2026-11-21T20:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15147,14 +15147,32 @@
         "canonical"
       ],
       "content": "2026-11-20 U12 裁定（tmp/re/v598_u12_intro_movie_playback_ruling.md・ai-todo #164）＝ 導入ムービー `OblivionIntro.bik` の再生仕様 [確定(命令)]。①**動画は全画面(前景)で chargen パネルを覆う**。`0x410BA0(path,1,1,0,0,1,0)` は a7=0＝前景モードで新規ムービーを作り、`0x410A70` が `FUN_004106C0` を**同期ブロック**でループ。`FUN_004106C0` は毎フレーム自前でレンダラのクリア＋全画面クアッド描画（`0x40FA20`・renderer_vtable[+0x104]）→ **ムービー中はメニュー描画ループ `0x57F170` が回らない**ため RaceSexMenu は生成済みでも**描画されない**。終了後に前面に出る。②**動画中は chargen UI を操作できない**（非描画・非操作）。v560 の『入力は塞がない』はムービー自身が PeekMessageA/TranslateMessage/DispatchMessageA で OS メッセージを空にする意味で、メニューへのクリック配送ではない。③**スキップ**: `5`/`0x1D` はキーコードではなく action 系識別子。`FUN_00403520(input, 5, 1)` と `(input, 0x1D, 1)`。action 5=`Activate`（Oblivion_default.ini の `Activate=0039FFFF`＝DIK 0x39=Space）、`0x1D`(=29) は action 表外の特殊擬似アクション＝**マウスボタン**（`0x40356B`→`0x4035A8` が `[input+0x19F5]`/`[input+0x18F5]` をテスト）。**タッチ端末ではタップ（マウス相当）で skip**。④**音声**: `_BinkSetSoundSystem(_BinkOpenDirectSound,0)` で既定トラックを再生。`BinkSetVolume`/`BinkSetAudioTrack`/`BinkSetSoundTrack` の import は 0件 [確定負]＝明示制御なし。ただし**前景ムービーの前後でゲーム音楽を停止/再開**（`0x66F2B0`-`0x66F2B9` で `0x6A8D00`+`0x6A9B40`（停止）→ ムービー → `0x66F2DB`-`0x66F2E2` で `0x6A8D50`+`0x6A9C00`（再開））。`0x410A70` 自身も前景で 0x6A9B40/0x6A9C00。→ BGM と競合しない。⑤**起動順**: `0x40EADB`(Bink音声初期化) → `0x40EAE0` `0x410E40`(CreateThread 'MoviePlayer'＝非同期で sIntroSequence プレイリスト＝法務/ロゴ4本) → `0x40F0AF` `0x410BA0(sMainMenuMovieIntro='Oblivion iv logo.bik',1,1,0,0,0,0)`(**a6=0＝高さ基準480**) → `0x40F0C3` メインメニュー。**OblivionIntro はここでは流れない**。NEW 確定後: `0x66EAF0` 末尾で `0x57B7E0`(RaceSexMenu 生成)→ `0x410BA0(sOblivionIntro,1,1,0,0,1,0)`(同期・前景・**a6=1＝幅基準640**)。**移植への指針**: `TitleScreen::setupIntroVideo`(タイトル初期化時) は位置が誤り。正しくは『NEW 確定→RaceSexMenu 生成→OblivionIntro を同期・全画面で再生→chargen を前面表示』。再生中は chargen を描画・操作しない。skip はタップ。音声は既定トラック再生＋BGM 停止/再開。"
+    },
+    {
+      "id": "opencode-v599-u10-u11-u12-residuals-20261121",
+      "timestamp": "2026-11-21T20:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v599",
+        "u10",
+        "u11",
+        "u12",
+        "residuals",
+        "todo-96",
+        "todo-164"
+      ],
+      "content": "2026-11-21 v599 裁定＝U10/U11/U12 残点クローズ（低優先バンドル・ai-todo #96/#164）。成果物 tmp/re/v599_u10_u11_u12_residuals_ruling.md・台帳 row575。probe u12_24〜u12_33（10本 EXIT=0）。①[確定(命令)] V-596-1 iSize W/H:Display の書き手＝0x497C10(width,height)（[0xB06C5C]=arg1／[0xB06C64]=arg2）と 0x497E70（[0xB350CC]/[0xB350D0] から同期＋widescreen [0xB350D7]=(H/W!=0.75)）。呼出は video メニュー適用（0x405090→0x405CE0）。②[確定(命令)（negative）] V-596-2: 0x581CC0 init は iSafeZoneX/Y で初期化するが 0x57D840 が同値20を再設定＝差なし・追加作業なし。③[確定(命令)] V-596-3: 0x57E7C0 は [MenuRoot+0x20..0x34]（原点±0.008＋±仮想/2）を書く＝直交投影の等価表現・追加 RE 不要。④[確定(命令)] V-597-1: 進捗の時間単位＝ms。0x5AD980 は [edi+0x10]（経過ms）を fdiv [0xA2FC70]=1000.0 で秒正規化。ステップ [esi+0x64] は [0xB14160]=2500ms 超ごとに +1＝段階ベース（0xB14168=100／0xB14170=10）。⑤[確定(命令)] V-597-2: 0x4F96F0＝'Textures\\Menus\\Loading\\'（0xA498F8）を返す定数関数（画像パス接頭辞）。0x5AD780 は 'Menus\\Loading'＋record 名を '%s%s' で合成。リスト構築は 0x5AD440 が 0x65C620。⑥[確定(命令)] V-597-3: セクションは順番に完了が必要。0x5ADEC0 は飛び越しで 'LoadingMenu sections loading out of order…'（0xA6C4D0）を警告し先行セクションを 100 で埋める。⑦[確定(命令)] V-597-4: 0x1771 trait＝「最後に表示したメインメニュー id」を保持する MenuRoot の永続数値 trait（0x57D530 が SetFloat・既定 0x3EB／0x581CC0 が 1003.0=0x3EB=StatsMenu に初期化）＝名前なし数値スロットをグローバル状態として流用。⑧[確定(命令)] V-598-1: 0x403520 arg2＝状態セレクタ。0x4032D0（slot==0）switch: 0=現在押下／1=押下エッジ／2=離上エッジ／3=変化。0x4031E0（slot==1）は [+0x1B2C]/[+0x1B40]/[+0x1B50] でエッジ/同時押し判定。⑨[部分確定] V-598-2: マウスボタン名表 sMouseLeftButton(L-Button)／sMouseRightButton(R-Button)／sMouseMiddleButton(Wheel)／sMouseButton3..8(Button 3..8)。擬似 0x1D→[0x18f5]/[0x19f5]／0x1E→[0x191d]/[0x1a1d]／0x1F→[0x19ab]/[0x1aab]。左/右/中の厳密対応は V-599-2 に継続。⑩[確定(命令)] V-598-3: [0xB33425] の書き手＝0x40FDD0（MoviePlayer スレッド [0xB33434] を join する直前=1／join 後=0＝「ムービースレッド終了待ち中」フラグ・0x410390 が skip 判定を抑止）。⑪[未確定] V-598-4: ムービー実音量（動的確認・静的 RE 範囲外）。残点 V-599-1/2/3【低】・V-598-4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1021,
+    "totalEntries": 1022,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T18:00:00Z",
-    "entry_count": 1021,
-    "last_updated": "2026-11-21T18:00:00Z"
+    "lastUpdated": "2026-11-21T20:00:00Z",
+    "entry_count": 1022,
+    "last_updated": "2026-11-21T20:00:00Z"
   }
 }

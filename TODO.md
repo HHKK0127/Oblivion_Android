@@ -176,6 +176,7 @@
   > 【[確定(命令)] 副次】0x5BCDD0 の id>=4 分岐が呼ぶ 0x57DE50＝**'MenuStart'/'MenuEnd' を 0x121 トレイトへ設定するメニュー開始/終了処理**（jump table 0x57E0C0）＝ダイアログ確定時のメニュー状態遷移。
   > 【残点】V-596-1【低】＝[0xB3B350]/[0xB3B358]/[0xB3B360]（0x5A8000 が記録する id trait 1/2/3 のタイル）の読み手／V-596-2【低】＝0x5A7CD0 の [+0x98]/[+0x58] フラグの意味／V-596-3【低】＝id98 の発生源は動的解析領域（静的 RE では打切り・確定）。
   > 【A: タイトル演出を v557 の正典に合わせて実装（2026-11-20・worktree fix-title-video-166・751dddaf 起点）】(1) credits_menu.mp4 の 1% 抽選を削除（GameRenderer.initTitleVideo）: v557 1-5 で『1% 抽選は原版に存在しない [確定負]』（0.01f は .text に10箇所あるが全て Havok/描画系 0x89A230〜0x94A630 帯で映画コードには0箇所）→ Random.nextInt(100) を廃止し backgroundName = map_loop.mp4 固定（Random import 削除）。(2) IV_LOGO_HOLD_MS=1200 を廃止: v557 1-2 で『1200ms に対応する定数・GMT は存在しない [確定負]』。原版の唯一の規定値は main_menu.xml の user4=3（コメント: how many seconds to fade from bink logo to real logo・コードは user3=255 を 0 へ 3 秒で補間）→ Java 側の postDelayed(1200ms) を削除し IV ロゴ完了時に即座に背景へ切替＋nativeSetTitleVideoLogoPhase(false) でネイティブのクロスフェード開始。(3) ネイティブの LOGO_BINK_FADE_DURATION を 1.2f → 3.0f（title_screen.h）＝ user4 の 3 秒に一致。差分 2ファイル +23/-19。
+  > 【A 完了（2026-11-20・コミット 6d7e038e・branch fix-title-video-166・751dddaf 起点）】#166 のタイトル演出を v557 の正典に合わせ、【emu 実測 PASS】。ログ: `Title background selected: map_loop.mp4 (sMainMenuMovie)` → `Title video initialized: textureId=197, file=oblivion_iv_logo.mp4 -> map_loop.mp4` → `Title IV logo completed, switching to the looping background` → 200ms 後に `Title background playing: /data/user/0/com.example.oblivion/cache/map_loop.mp4`。チェック: hold_1200=gone / immediate_switch=yes / credits_easter_egg=gone / background=map_loop。スクリーンショットは地図背景（Map loop.bik のフレーム）＋ロゴ＋メニューで正しい。差分 5ファイル +28/−24（title_screen.h の LOGO_BINK_FADE_DURATION 1.2→3.0／GameRenderer.kt の credits 1% 削除・IV_LOGO_HOLD_MS 廃止・Random import 削除／AssetExtractor.kt の CURRENT_VERSION コメント訂正／docs/ASSET_GUIDE.md 3箇所／plan.md に訂正追記）。verifier APPROVE（should-fix 1件＝docs が旧挙動のまま→反映済）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -229,6 +230,20 @@
   > 4. 音声は既定トラックを再生（音量制御なし）。再生前にタイトル BGM を停止し、終了後に再開する。
   > 5. `IntroVideoActivity`（起動スプラッシュ4本）は `sIntroSequence` に対応、iv ロゴは `sMainMenuMovieIntro`（別扱い）。
   > 残点 V-598-1/2/3/4【低】。台帳反映＋round_verify ALL OK（rows 31..574 / total 460 / done 455 / open 5）。push 69910138（ls-remote MATCH）。
+  > 【RE レーン回答 2026-11-21: U12 残点クローズ（低優先バンドル v599）】→ `tmp/re/v599_u10_u11_u12_residuals_ruling.md`（台帳 row575・probe u12_24〜u12_33）
+  > ■ V-598-1 [確定(命令)] `0x403520` arg2＝**状態セレクタ**
+  > - `0x403490(slot,keybyte,state)` → `0x4032D0`（slot==0）switch: **0=現在押下／1=押下エッジ／2=離上エッジ／3=変化**。
+  > - `0x4031E0`（slot==1）は `[+0x1B2C]`/`[+0x1B40]`/`[+0x1B50]` でエッジ/同時押し判定。
+  > - → スキップ判定（`0x410390`）は `0x403520(input, action, 1)`＝**押下エッジ**を問い合わせている。
+  > ■ V-598-2 [部分確定] マウスボタンの実体
+  > - 名前表: **`sMouseLeftButton`(L-Button)／`sMouseRightButton`(R-Button)／`sMouseMiddleButton`(Wheel)／`sMouseButton3..8`(Button 3..8)**。
+  > - 擬似 `0x1D`→`[input+0x18f5]`/`[0x19f5]`／`0x1E`→`[0x191d]`/`[0x1a1d]`／`0x1F`→`[0x19ab]`/`[0x1aab]`。
+  > - 左/右/中の厳密対応は **V-599-2 に継続**（`0x1D` が左クリック相当の主ボタンの可能性が高い）。
+  > ■ V-598-3 [確定(命令)] `[0xB33425]` の書き手
+  > - **`0x40FDD0`**（callers: `0x4053E0`／`0x40D4D0`／`0x66EAF0`）。MoviePlayer スレッド `[0xB33434]` を join（`WaitForSingleObject`）する直前=1／join 後=0＝**「ムービースレッド終了待ち中」フラグ**。`0x410390` はこれを見て skip 判定を抑止する。
+  > ■ V-598-4 [未確定] ムービー実音量
+  > - Bink 音量 API 不在は [確定負]（v598）。実音量が DirectSound 既定に従うことの**動的確認は未実施**（静的 RE では閉じられない）。
+  > 残点 V-599-1/2/3【低】・V-598-4【低】。台帳反映＋round_verify ALL OK（rows 31..575 / total 461 / done 456 / open 5）。push（後述）。
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
@@ -514,6 +529,23 @@
   > - **移植指針**: loading_menu.xml のみ実装・user3 は段階ベース・_missing/_loading 実文字列を使用。
   > - 残点 V-597-1/2/3/4【低】。
   > 両件とも台帳反映＋round_verify ALL OK（rows 31..573 / total 459 / done 454 / open 5）。push 9bc8c579（ls-remote MATCH）。
+  > 【RE レーン回答 2026-11-21: U10/U11/U12 残点クローズ（低優先バンドル v599）】→ `tmp/re/v599_u10_u11_u12_residuals_ruling.md`（台帳 row575・probe u12_24〜u12_33）
+  > ■ V-596-1 [確定(命令)] `iSize W/H:Display` の書き手
+  > - 2関数: **`0x497C10(width,height)`**（`[0xB06C5C]=arg1`／`[0xB06C64]=arg2` の直接セッタ）と **`0x497E70`**（`[0xB06C5C]=[0xB350CC]`／`[0xB06C64]=[0xB350D0]` から同期＋widescreen フラグ `[0xB350D7]=(H/W!=0.75)`）。
+  > - 呼出は video メニュー適用経路（`0x405090`→`0x405CE0`）。
+  > ■ V-596-2 [確定(命令)（negative）] init 時の cropx/cropy
+  > - `0x581CC0` は `iSafeZoneX/Y`（wide 側でない）で初期化するが `0x57D840`（usz）が同値20を再設定するため**差なし・追加作業なし**。
+  > ■ V-596-3 [確定(命令)] 投影行列
+  > - `0x57E7C0` が書くのは `[MenuRoot+0x20..0x34]`（原点±`0.008`＋`±仮想/2`）＝直交投影の等価表現。**追加 RE 不要**。
+  > ■ V-597-1 [確定(命令)] 進捗の時間単位＝**ms**
+  > - `0x5AD980` は `[edi+0x10]`（経過ms）を `fdiv [0xA2FC70]=1000.0` で秒正規化。ステップ `[esi+0x64]` は `[0xB14160]=2500` ms 超ごとに `+1`＝**段階（セクション）ベース**（`0xB14168`=100／`0xB14170`=10 ヒステリシス）。
+  > ■ V-597-2 [確定(命令)] ロード対象リスト
+  > - `0x4F96F0`＝**`'Textures\Menus\Loading\'`（`0xA498F8`）を返す定数関数**（画像パス接頭辞）。`0x5AD780` は `'Menus\Loading'`＋record 名を `'%s%s'` で合成。リスト構築は `0x5AD440` が `0x65C620`。
+  > ■ V-597-3 [確定(命令)] セクション順序
+  > - **順番に完了が必要**。`0x5ADEC0` は飛び越しで `'LoadingMenu sections loading out of order…'`（`0xA6C4D0`）を警告し先行セクションを `100` で埋める。
+  > ■ V-597-4 [確定(命令)] `0x1771` trait
+  > - **「最後に表示したメインメニュー id」を保持する MenuRoot の永続数値 trait**（`0x57D530` が `SetFloat`・既定 `0x3EB`／`0x581CC0` が `1003.0`=`0x3EB`=StatsMenu に初期化）＝**名前なし数値スロットをグローバル状態として流用**。
+  > 残点 V-599-1/2/3【低】。台帳反映＋round_verify ALL OK（rows 31..575 / total 461 / done 456 / open 5）。push（後述）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2648,11 +2680,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2676,4 +2703,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 12:52:47
+**ai-todo** | Last Updated: 2026-11-20 13:50:27
