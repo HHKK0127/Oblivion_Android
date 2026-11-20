@@ -4219,3 +4219,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-596-1/2/3【低】・V-597-1/2/3/4【低】。
 - **本日 push 累計（セッション）**: v405 → … → v595 `4413d4dc` →（本件 v596/v597 を本 commit で push）＝**188裁定**。
 
+## 2026-11-21 (mj) — 作製レーン依頼 U12 裁定 v598: **導入ムービー `OblivionIntro.bik` の再生仕様（chargen との表示関係・入力・スキップ・音声・起動順）**
+
+- **成果物**: `tmp/re/v598_u12_intro_movie_playback_ruling.md`（probe **u12_1〜u12_23・23本 EXIT=0**）。台帳 **row574**・`round_verify` **ALL OK（rows 31..574 / total 460 / done 455 / open 5）**・ai-todo **#164 追加 note**。
+- **⒜ [確定(命令)] chargen との表示関係**: 動画は**全画面（foreground）で chargen パネルを覆う**。`0x410BA0(path,1,1,0,0,1,0)` は `a7=0`＝前景で新規ムービーを作り、`0x410A70` が `0x4106C0` を**同期ブロックでループ**。`0x4106C0` は毎フレーム**自前で画面クリア＋全画面クアッド描画**（`0x40FA20`・`renderer[+0x104]`）→ **メニュー描画ループ `0x57F170` が回らない**ため RaceSexMenu は生成済み（`0x57B7E0` が先）だが**描画されない**。ムービー終了後に通常ループへ戻り chargen が前面に出る。
+- **⒝ [確定(命令)（negative）] chargen UI 操作**: **不可**。v560 の「入力は塞がない」は「ムービー自身が `PeekMessageA`/`TranslateMessage`/`DispatchMessageA` で OS メッセージを空にする」意味で、**メニューへのクリック配送ではない**。
+- **⒞ [確定(命令)] キー 5 / 0x1D の実キー**: **キーコードではなく action 系識別子**。`0x410390` が `FUN_00403520(input,5,1)` と `(input,0x1D,1)` を呼ぶ。`0x403520` の arg1 は**アクション id**（`<0x1D`）で `[input+0x1B7E]` の 29×3 バインド表（stride `0x1D`）を引く。**action 5=`Activate`**（`0x9F6040` action 表）＝既定 `Oblivion_default.ini` の `Activate=0039FFFF`＝**DIK 0x39=Space**。`0x1D`(29) は**特殊擬似アクション＝マウスボタン**（`0x4035A8` が `[input+0x19F5]`/`[0x18F5]` をテスト）→ **マウスクリックでもスキップ**。**タッチ端末の等価操作＝タップ**。
+- **⒟ [確定(命令)] 音声**: **既定トラックをそのまま再生**。`_BinkSetSoundSystem(_BinkOpenDirectSound,0)`（`0x410310`・起動時 `0x40EADB`）で接続。**`BinkSetVolume`/`BinkSetAudioTrack`/`BinkSetSoundTrack` の import は `.rdata` に0件 [確定負]**＝音量/トラックの明示制御なし。前景ムービーの前後で**ゲーム音楽を停止/再開**（`0x6A8D00`+`0x6A9B40`（`[+0xA4]=1`）→ムービー→`0x6A8D50`+`0x6A9C00`（`[+0xA4]=0`））＝**BGM と競合しない**。
+- **⒠ [確定(命令)] 起動順**: `0x40EADB`（Bink 音声初期化）→ `0x40EAE0` `0x410E40`（**`CreateThread` "MoviePlayer"＝非同期**で `sIntroSequence`＝法務/ロゴ4本）→ `0x40F0AF` `0x410BA0(sMainMenuMovieIntro="Oblivion iv logo.bik",1,1,0,0,0,0)`（**同期**・`a6=0`＝高さ基準480）→ `0x40F0C3` `0x5B5C90`（メインメニュー表示）。**`OblivionIntro.bik` はここでは流れず、NEW 確定後の世界ロード `0x66EAF0` 末尾（`0x57B7E0` chargen 生成→`0x66F2D1`）でのみ再生**。
+- **GMST 実値**（`0xB03084`〜）: `sIntroSequence`='bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik'／`sMainMenuMovieIntro`='Oblivion iv logo.bik'／`sMainMenuMovie`='Map loop.bik'／`sCreditsMenuMovie`='CreditsMenu.bik'／`sOblivionIntro`='OblivionIntro.bik'。
+- **移植指針**: `TitleScreen::setupIntroVideo`（タイトル初期化時）は**位置が誤り**→「NEW 確定→chargen 生成→OblivionIntro 同期・全画面再生→chargen 前面表示」に移す。再生中は chargen を描画・操作しない。スキップはタップ（Space 相当）。音声は既定トラック・BGM は前停止後再開。
+- **残点**: V-598-1/2/3/4【低】。
+- **本日 push 累計（セッション）**: v405 → … → v597 `e21747d6` →（本件 v598 を本 commit で push）＝**189裁定**。
+

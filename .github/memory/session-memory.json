@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T16:00:00Z",
+  "lastUpdated": "2026-11-21T18:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15077,14 +15077,31 @@
         "todo-96"
       ],
       "content": "2026-11-21 v597 裁定＝U11（LoadingMenu の trait 供給元 user0〜user5・ai-todo #96）。成果物 tmp/re/v597_u11_loadingmenu_trait_suppliers_ruling.md・台帳 row573。probe u11_1〜u11_14（14本 EXIT=0）＋実物 XML 抽出。①[確定(命令)] menu id=0x3EF（0x589B70 FindMenu・0x5898F0 基底取得・vtable 0xA6C40C・ローダ 0x5ADCF0）。②[確定(命令)] user0（スライドショー段数）: 書き手 0x5AD780（0x5AD914-0x5AD939: 0xFAE を読み +1.0 → SetFloat(0xFAE)）と 0x5AD440（0x5AD44E-0x5AD45C: 0.0 リセット）。0=タイトルページ・>0=ロード。遷移=0x5ADCF0(0)／0x5AD780(+1)。③[確定(命令)] user1（背景画像）: 書き手 0x5AD780（0x5AD88E: push 0xFAF→0x58CED0 SetString）。値='Menus\\Loading'(0xA6C4B8)+ロード対象名（0x5AD853 _strstr で含まなければ 0x5AD87E '%s%s' で合成）＝固定でなく対象ごとに変わる（XML 既定 load_in_game_default.dds は初期値）。④[確定(命令)] user2（表示文字列）: 書き手 0x5AD780（0x5AD906: push 0xFB0→0x58CED0）。値=ロード対象レコードの DESC（0x43534544='DESC' を 0x5AD8A1/0x5AD8BD で取得・0x5AD8EA-0x5AD8F7 で末尾 0x0a 除去）＝sLoading 系 GMST ではない（XML 既定 strings()._missing は初期値）。⑤[確定(命令)] user3（進捗バー現在値）: 書き手 0x5AD980（0x5ADA89: push 0xFB1→0x58CEB0）。値=[LoadingMenu+0x60]（完了セクション数 0..100）＝ロード段階数ベース（実時間でない・0x5ADB40 が 100 まで回す）。user4（最大値）=XML 既定 100 のまま（0xFB2 を書く LoadingMenu サイト=0件）。user5（デバッグ）=0x5ADCF0（0x5ADE21: push ' '(0xA36430)→0xFB3）＝ロード開始時 ' '。実行時 0x5ADEC0 が 'Loading Bar Section %d %d0%%' を 0x404EE0（コンソール）表示。⑥[確定(命令)（negative）] 3 メニュー: 0x590420 の LoadingMenu 系 caller は 0x5ADCF0 のみで Data\\Menus\\loading_menu.xml のみをロード。loading_ingame_menu.xml/loading_bar_ingame_menu.xml の .rdata リテラル=0件＝原版は未使用（起動前・ゲーム内とも loading_menu.xml を使い user0 の 0/1 で切替）。⑦[確定(XML)] strings()._missing=' Missing Text '（Oblivion - Misc.bsa 抽出 menus\\strings.xml L190）・_loading=' Loading... '（L28）。INI [LoadingBar] GMST（0xB14138〜）: fPercentageOfBar0..3=0.06/0.35/0.44/0.15・fLoadingSlideDelay=15。⑧移植指針: loading_menu.xml のみ実装・user3 は段階ベース・_missing/_loading 実文字列を使用。残点 V-597-1/2/3/4【低】。"
+    },
+    {
+      "id": "opencode-v598-u12-intro-movie-playback-20261121",
+      "timestamp": "2026-11-21T18:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v598",
+        "u12",
+        "intro-movie",
+        "oblivionintro",
+        "todo-164",
+        "chargen"
+      ],
+      "content": "2026-11-21 v598 裁定＝U12（導入ムービー OblivionIntro.bik の再生仕様・ai-todo #164）。成果物 tmp/re/v598_u12_intro_movie_playback_ruling.md・台帳 row574。probe u12_1〜u12_23（23本 EXIT=0）＋実物 XML/INI。①[確定(命令)] chargen との表示関係: 動画は全画面（foreground）で chargen パネルを覆う。0x410BA0(path,1,1,0,0,1,0) は a7=0＝前景で新規ムービーを作り、0x410A70 が 0x4106C0 を同期ブロックでループ。0x4106C0 は毎フレーム自前で画面クリア＋全画面クアッド描画（0x40FA20・renderer[+0x104]）→ メニュー描画ループ 0x57F170 が回らないため RaceSexMenu は生成済み（0x57B7E0 が先）だが描画されない。ムービー終了後に通常ループへ戻り chargen が前面に出る。②[確定(命令)（negative）] chargen UI 操作: 不可。v560 の「入力は塞がない」は「ムービー自身が PeekMessageA/TranslateMessage/DispatchMessageA で OS メッセージを空にする」意味でメニューへのクリック配送ではない。③[確定(命令)] キー 5/0x1D の実キー: キーコードではなく action 系識別子。0x410390 が FUN_00403520(input,5,1) と (input,0x1D,1) を呼ぶ。0x403520 の arg1 はアクション id（<0x1D）で [input+0x1B7E] の 29×3 バインド表（stride 0x1D）を引く。action 5=Activate（0x9F6040 action 表）＝既定 Oblivion_default.ini の Activate=0039FFFF＝DIK 0x39=Space。0x1D(29) は特殊擬似アクション＝マウスボタン（0x4035A8 が [input+0x19F5]/[0x18F5] をテスト）→ マウスクリックでもスキップ。タッチ端末の等価操作＝タップ。④[確定(命令)] 音声: 既定トラックをそのまま再生。_BinkSetSoundSystem(_BinkOpenDirectSound,0)（0x410310・起動時 0x40EADB）で接続。BinkSetVolume/BinkSetAudioTrack/BinkSetSoundTrack の import は .rdata に0件 [確定負]＝音量/トラックの明示制御なし。前景ムービーの前後でゲーム音楽を停止/再開（0x6A8D00+0x6A9B40（[+0xA4]=1）→ムービー→0x6A8D50+0x6A9C00（[+0xA4]=0））＝BGM と競合しない。⑤[確定(命令)] 起動順: 0x40EADB（Bink 音声初期化）→ 0x40EAE0 0x410E40（CreateThread MoviePlayer＝非同期で sIntroSequence＝法務/ロゴ4本）→ 0x40F0AF 0x410BA0(sMainMenuMovieIntro='Oblivion iv logo.bik',1,1,0,0,0,0)（同期・a6=0＝高さ基準480）→ 0x40F0C3 0x5B5C90（メインメニュー表示）。OblivionIntro.bik はここでは流れず、NEW 確定後の世界ロード 0x66EAF0 末尾（0x57B7E0 chargen 生成→0x66F2D1）でのみ再生。⑥GMST 実値（0xB03084〜）: sIntroSequence='bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik'／sMainMenuMovieIntro='Oblivion iv logo.bik'／sMainMenuMovie='Map loop.bik'／sCreditsMenuMovie='CreditsMenu.bik'／sOblivionIntro='OblivionIntro.bik'。⑦移植指針: TitleScreen::setupIntroVideo（タイトル初期化時）は位置が誤り→「NEW 確定→chargen 生成→OblivionIntro 同期・全画面再生→chargen 前面表示」に移す。再生中は chargen を描画・操作しない。スキップはタップ（Space 相当）。音声は既定トラック・BGM は前停止後再開。残点 V-598-1/2/3/4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1017,
+    "totalEntries": 1018,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T16:00:00Z",
-    "entry_count": 1017,
-    "last_updated": "2026-11-21T16:00:00Z"
+    "lastUpdated": "2026-11-21T18:00:00Z",
+    "entry_count": 1018,
+    "last_updated": "2026-11-21T18:00:00Z"
   }
 }
