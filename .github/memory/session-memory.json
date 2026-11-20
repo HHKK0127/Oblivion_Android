@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T06:00:00Z",
+  "lastUpdated": "2026-11-22T08:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15255,14 +15255,33 @@
         "todo-161"
       ],
       "content": "2026-11-22 v604 裁定＝低優先残点クローズ バンドル2（ai-todo #96/#161）。成果物 tmp/re/v604_low_priority_residuals_bundle2_ruling.md・台帳 row580。probe u17_1（1本 EXIT=0）。①[確定(命令)] V-560-2: 0x582160(create,keep) は singleton [0xB3A6E0] の getter。arg1 が 0 でなく NULL なら生成。戻り値は常に singleton。前景判定の前段は [singleton+0x1c]（メニュースタック）。②[確定(命令)] V-561-3: 0x5CC8BA（全ブロック不一致）に落ちるのは Race/Hair/Face/Hair Color 等。0xFA8 一致なし→0x5CCBF4（id98 判定）→ act なし。これらページの Done は実質何もしない（Shape/Tone/General(Face) のみ Face/Shape へ戻す）。③[確定(命令)] V-565-1: 0x579C10 はダイアログ登録関数（0x5BC8B0・5引数）。成功 tail は無条件 jmp＝コールバック登録型（Yes/No 待ちではない）。④[確定(命令)] V-565-2: 0xB38660/0xB38668（a/an 冠詞）・0xB38CF0/0xB38CF8/0xB38D00（確認文）は .data の登録スロット（{value,name} 対の value 側）で、実文字列は静的登録ブロック（0x9F7xxx）の逐語から取得。⑤[確定(命令)] V-565-3: 0x5C2BA0＝確認ダイアログの Yes コールバック（FindMenu(0x40C)→cast→0x578D70() が al==2 なら 0x5C28F0 へ jmp＝名前確定後の処理）。⑥[部分確定] V-568-2: 0x983754 は CRT _stat64i32 系（ファイル stat）。返り値 eax==-1 で失敗。AND 条件の全形は [部分確定]。⑦[部分確定] V-557-5: 0x5B5CE4-0x5B5D52 で背景ムービー有無に応じ 0xFA1 を 1.0（前面）/2.0（背景）に設定。0xFA1(visible) は 0/1/2 の3状態（0x410425 の [movie+0x20]==2 と対応）。残点 V-565-2/V-568-1,2/V-562-1,2/V-566-2,3/V-569-5/V-572-1/V-573-2【低】。"
+    },
+    {
+      "id": "opencode-v605-low-priority-residuals3-20261122",
+      "timestamp": "2026-11-22T08:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v605",
+        "residuals",
+        "skill-usage",
+        "bsa",
+        "todo-96",
+        "todo-156",
+        "todo-157",
+        "todo-166"
+      ],
+      "content": "2026-11-22 v605 裁定＝低優先残点クローズ バンドル3（ai-todo #96/#156/#157/#166）。成果物 tmp/re/v605_low_priority_residuals_bundle3_ruling.md・台帳 row581。probe u18_1〜u18_2（2本 EXIT=0）＋実物 XML/BSA。①[確定(命令)] V-572-1: 0x66xxxx 系3関数はすべてスキル一覧/使用量表示系（0x5E3320→0x6ECC80/0x51C090）: 0x663C50＝スキル難易度/習得速度計算（0x565C50(2,av)→0x446AF0→0x5F1910→0x548030）／0x666BB0＝スキル画面文字列レイアウト（'PLAYER CHARACTER'/'Skill Usage'）／0x668070＝スキル使用量差分計算（[esi+0x130]＝スキルポイント配列・0x65FAD0）。②[確定(命令)] V-569-5: 0x5DC8F3-5DC8FC は 0x5DC6F0 ループ末尾（cmp ebp,0x15/jl）の次イテレーション用構造体初期化（[esp+0x1c]=0・word[esp+0x22]/[esp+0x20]=0）。dead に見えるのは normal。エラー時 'Error creating skill item in Stats menu. Template not va…'（0xA6DB10）。③[確定(実測)] V-562-1: Data\\ の実 BSA 名は Oblivion - Textures - Compressed.bsa（旧記述 Oblivion - Textures.bsa は不存在）。DLC は DLCShiveringIsles - Textures.bsa。④[確定(XML)] V-562-2: title_main_menu.xml の <text name=\"version\">（id 9・x=10・y=935・zoom 75・<visible><not>&xenon;</not></visible>）の <string> は固定文字列 Version で strings() trait ではない → v562 の「strings() キー」は不存在 [確定負]。移植は \"Version\" 直書きで可（main_menu.xml にも同名要素）。⑤[部分確定] V-568-3: credits_menu.xml の <image name=\"credits_rect\"> はテキストスクロール窓のクリップ矩形で .bik 描画枠ではない。クレジット動画は再生されないため動画枠描画元は不存在。⑥[確定(移植側)] V-566-2/3: getContentSize() は UIComponent 宣言・UIPanel オーバーライド（EXE 側に相当物なし）。横断確認は移植側作業。残点 V-568-1【低】・V-573-2/V-599-2/V-598-4/V-601-1【低・動的領域】・V-566-2,3【低・移植側】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1027,
+    "totalEntries": 1028,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T06:00:00Z",
-    "entry_count": 1027,
-    "last_updated": "2026-11-22T06:00:00Z"
+    "lastUpdated": "2026-11-22T08:00:00Z",
+    "entry_count": 1028,
+    "last_updated": "2026-11-22T08:00:00Z"
   }
 }

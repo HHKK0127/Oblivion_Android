@@ -4313,3 +4313,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-565-2/V-568-1,2/V-562-1,2/V-566-2,3/V-569-5/V-572-1/V-573-2【低】。
 - **本日 push 累計（セッション）**: v405 → … → v603 `2af1a117` →（本件 v604 を本 commit で push）＝**195裁定**。
 
+## 2026-11-22 (mq) — 低優先残点クローズ v605: **`0x66xxxx` 使用量系・`0x5DC8F3` 初期化・Textures BSA 正式名・title `version` 文字列・credits 描画元**
+
+- **成果物**: `tmp/re/v605_low_priority_residuals_bundle3_ruling.md`（probe **u18_1〜u18_2・2本 EXIT=0**）。台帳 **row581**・`round_verify` **ALL OK（rows 31..581 / total 467 / done 462 / open 5）**・ai-todo **#96/#156/#157/#166 追加 note**。
+- **V-572-1 [確定(命令)]** `0x66xxxx` 系3関数はすべて**スキル一覧/使用量表示**系（`0x5E3320`→`0x6ECC80`/`0x51C090`）: `0x663C50`＝スキル難易度/習得速度計算（`0x565C50(2,av)`→`0x446AF0`→`0x5F1910`→`0x548030`）／`0x666BB0`＝スキル画面文字列レイアウト（`'PLAYER CHARACTER'`/`'Skill Usage'`）／`0x668070`＝スキル使用量差分計算（`[esi+0x130]`＝スキルポイント配列）。
+- **V-569-5 [確定(命令)]** `0x5DC8F3-5DC8FC` は **`0x5DC6F0` ループ末尾**（`jl`）の**次イテレーション用構造体初期化**。**dead に見えるのは normal**（ループ先頭で再設定）。エラー時 `'Error creating skill item in Stats menu…'`（`0xA6DB10`）。
+- **V-562-1 [確定(実測)]** `Data\` の実 BSA 名は **`Oblivion - Textures - Compressed.bsa`**（旧記述 `Oblivion - Textures.bsa` は**不存在**）。
+- **V-562-2 [確定(XML)]** `title_main_menu.xml` の `<text name="version">`（id 9・x=10・y=935・zoom 75）の `<string>` は **固定文字列 `Version`** で **`strings()` trait ではない** → v562 の「strings() キー」は**不存在 [確定負]**。移植は "Version" 直書きで可。
+- **V-568-3 [部分確定]** `credits_menu.xml` の `<image name="credits_rect">` はテキストスクロール窓のクリップ矩形で **`.bik` 描画枠ではない**（クレジット動画は再生されないため動画枠描画元は不存在）。
+- **V-566-2/3 [確定(移植側)]** `getContentSize()` は `UIComponent` 宣言・`UIPanel` オーバーライド（EXE 側に相当物なし）。横断確認は移植側作業。
+- **残点**: V-568-1【低】・V-573-2/V-599-2/V-598-4/V-601-1【低・動的領域】・V-566-2,3【低・移植側】。
+- **本日 push 累計（セッション）**: v405 → … → v604 `7b15c5cf` →（本件 v605 を本 commit で push）＝**196裁定**。
+

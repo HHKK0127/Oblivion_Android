@@ -177,6 +177,11 @@
   > 【残点】V-596-1【低】＝[0xB3B350]/[0xB3B358]/[0xB3B360]（0x5A8000 が記録する id trait 1/2/3 のタイル）の読み手／V-596-2【低】＝0x5A7CD0 の [+0x98]/[+0x58] フラグの意味／V-596-3【低】＝id98 の発生源は動的解析領域（静的 RE では打切り・確定）。
   > 【A: タイトル演出を v557 の正典に合わせて実装（2026-11-20・worktree fix-title-video-166・751dddaf 起点）】(1) credits_menu.mp4 の 1% 抽選を削除（GameRenderer.initTitleVideo）: v557 1-5 で『1% 抽選は原版に存在しない [確定負]』（0.01f は .text に10箇所あるが全て Havok/描画系 0x89A230〜0x94A630 帯で映画コードには0箇所）→ Random.nextInt(100) を廃止し backgroundName = map_loop.mp4 固定（Random import 削除）。(2) IV_LOGO_HOLD_MS=1200 を廃止: v557 1-2 で『1200ms に対応する定数・GMT は存在しない [確定負]』。原版の唯一の規定値は main_menu.xml の user4=3（コメント: how many seconds to fade from bink logo to real logo・コードは user3=255 を 0 へ 3 秒で補間）→ Java 側の postDelayed(1200ms) を削除し IV ロゴ完了時に即座に背景へ切替＋nativeSetTitleVideoLogoPhase(false) でネイティブのクロスフェード開始。(3) ネイティブの LOGO_BINK_FADE_DURATION を 1.2f → 3.0f（title_screen.h）＝ user4 の 3 秒に一致。差分 2ファイル +23/-19。
   > 【A 完了（2026-11-20・コミット 6d7e038e・branch fix-title-video-166・751dddaf 起点）】#166 のタイトル演出を v557 の正典に合わせ、【emu 実測 PASS】。ログ: `Title background selected: map_loop.mp4 (sMainMenuMovie)` → `Title video initialized: textureId=197, file=oblivion_iv_logo.mp4 -> map_loop.mp4` → `Title IV logo completed, switching to the looping background` → 200ms 後に `Title background playing: /data/user/0/com.example.oblivion/cache/map_loop.mp4`。チェック: hold_1200=gone / immediate_switch=yes / credits_easter_egg=gone / background=map_loop。スクリーンショットは地図背景（Map loop.bik のフレーム）＋ロゴ＋メニューで正しい。差分 5ファイル +28/−24（title_screen.h の LOGO_BINK_FADE_DURATION 1.2→3.0／GameRenderer.kt の credits 1% 削除・IV_LOGO_HOLD_MS 廃止・Random import 削除／AssetExtractor.kt の CURRENT_VERSION コメント訂正／docs/ASSET_GUIDE.md 3箇所／plan.md に訂正追記）。verifier APPROVE（should-fix 1件＝docs が旧挙動のまま→反映済）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ バンドル3（v605）】→ `tmp/re/v605_low_priority_residuals_bundle3_ruling.md`（台帳 row581・probe u18_1〜u18_2）
+  > ■ V-568-3 [部分確定] クレジット描画元
+  > - `credits_menu.xml` の `<image name="credits_rect">`（id 1・clipwindow・width 0・x 640）はテキストスクロール窓の**クリップ矩形**で **`.bik` 描画枠ではない**。
+  > - クレジット動画 `CreditsMenu.bik` は v557/v568 のとおり**再生されない**（`.text` 参照 0 件）ため、動画枠描画元は**存在しない**。
+  > 台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -498,6 +503,15 @@
   > ■ V-559-4 [部分確定] `[item]+0x34` の bit フラグ
   > - StatsMenu 帯（`0x5D9xxx`〜`0x5DAxxx`）で `[item+0x34]` は**表示要素の 4B フィールド**として読書き。**bit0/bit3 を faction hidden フラグとする直接証拠は未取得**。
   > 残点 V-559-1,4【低】。台帳反映＋round_verify ALL OK（rows 31..579 / total 465 / done 460 / open 5）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ バンドル3（v605）】→ `tmp/re/v605_low_priority_residuals_bundle3_ruling.md`（台帳 row581・probe u18_1〜u18_2）
+  > ■ V-572-1 [確定(命令)] `0x66xxxx` 系3関数＝スキル一覧/使用量表示系
+  > - `0x663C50`＝スキル難易度/習得速度計算（`0x565C50(2,av)`→`0x446AF0`→`0x5F1910`→`0x548030`）
+  > - `0x666BB0`＝スキル画面文字列レイアウト（`'PLAYER CHARACTER'`/`'Skill Usage'`）
+  > - `0x668070`＝スキル使用量差分計算（`[esi+0x130]`＝スキルポイント配列・`0x65FAD0`）
+  > - 3関数とも `0x5E3320([0xB333C4])`→`0x6ECC80`/`0x51C090`（管輪スキル判定）を使う。
+  > ■ V-569-5 [確定(命令)] `0x5DC8F3-5DC8FC`
+  > - `0x5DC6F0` ループ末尾（`cmp ebp,0x15`/`jl`）の**次イテレーション用構造体初期化**。**dead に見えるのは normal**（ループ先頭で再設定）。エラー時 `'Error creating skill item in Stats menu. Template not va…'`（`0xA6DB10`）。
+  > 残点 V-568-1【低】。台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
 ①【高】**5タブの表示行・ラベル・値供給の完全対応表** — 各タブの表示項目、ラベルの `strings()` キー（menus\strings.xml）、値を供給する getter/関数、行の生成元を確定。特に **V-364-3: 通知 id4（tab p4）`0x5DC950` が `__RTDynamicCast(TESBoundObject→TESNPC)` の上で `[esi+0x3C]` リストを walk して行生成している「NPC の何のリストか」**（major/minor skills か、それ以外か）と **V-364-4: XML trait ↔ EXE trait の完全対応表**、および `stat_p2_strength_layout`(id24) の `<copy src="stat_p2" trait="user1"/>` と色条件 `onlyif user1 lt user9` が指す **user1..user9 の意味（user9＝base 比較値 [推定] の裏取り）**。
 ②【中】**値 vs base の色分岐の正典** — `_red/_green/_blue` の `_under/_even/_over` が「現在値・修正後値・base」のどの比較で使われるか（例: `onlyif user1 lt user9 → _red_under / eq → _red_even / over → _red_over`）を命令で確定。＝port の「表示値と色が正しいか」の判定基準になる。
 ③【低】**tab p1 の3つの文字列の正体** — 通知 id1（`0x5DBB00`）が SetString する 0xFAF（`0x4DA2A0(player)` 由来）／0xFB0（`0x5EA720` 由来＝TESFullName 契約の名前 getter）／vfunc+0x268→[+0x18+4]（''=0xA2F7EC fallback）のうち、**どれが name / class / race のどれか**の確定。
@@ -529,6 +543,14 @@
   > 【反証2・実測】worktree `fix-chargen-ui-quality` の APK（226.8MB・master e3d36f9e 相当）を emulator-5554 にインストールし、タイトル→NEW→キャラ作成を撮影（`%TEMP%\opencode\s156_0_title.png` / `_1_name.png` / `_2_attr.png` / `_3_skills.png`）。**左上の彩色ブロック群は再現しない**。キャラ作成パネルは正しい位置・正しい幅で描画（タブ5枚は full-width・パネルは 1382×886 相当）。タイトルも左上は Android 側 Debug Control Panel の『D』ボタンのみで、native の彩色帯は無し。→ **v566 が説明しようとした症状そのものが現行ビルドでは出ていない**。
   > 【v566 の行番号も現行と不一致】v566 は `characterCreationUI->render()` を『5455・6043』と引用したが、現行 master では **5055・5643**（約400行ずれ）。probe137 ブランチ（renderer.cpp +224行）か古いスナップショットを参照した可能性が高い。
   > 【#156 の現状判断】症状は『chargen でも gameplay でも表示』と記録されているが、**chargen 側は現行ビルドで再現しない**。2026-11-15 の起票以降にマージされた何らかの変更で解消した可能性がある。gameplay 側は未撮影。**推測で修正せず**、ユーザーに『再現しない』事実を報告し、必要なら gameplay 撮影と git bisect（#156 起票以降の変更）で解消コミットを特定する。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ バンドル3（v605）】→ `tmp/re/v605_low_priority_residuals_bundle3_ruling.md`（台帳 row581・probe u18_1〜u18_2）
+  > ■ V-562-1 [確定(実測)] Textures BSA 正式名
+  > - `Data\` の実 BSA 名は **`Oblivion - Textures - Compressed.bsa`**（旧記述 `Oblivion - Textures.bsa` は**不存在**）。DLC は `DLCShiveringIsles - Textures.bsa`。
+  > ■ V-562-2 [確定(XML)] title `version` の文字列キー
+  > - `title_main_menu.xml` の `<text name="version">`（id 9・x=10・y=935・zoom 75・`<visible><not>&xenon;</not></visible>`）の `<string>` は **固定文字列 `Version`** で **`strings()` trait ではない** → v562 の「strings() キー」は**不存在 [確定負]**。移植は "Version" 直書きで可（`main_menu.xml` にも同名要素）。
+  > ■ V-566-2/3 [確定(移植側)]
+  > - `getContentSize()` は `UIComponent` 宣言・`UIPanel` オーバーライド（EXE 側に相当物なし）。横断確認は移植側作業。
+  > 台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
 【依頼3件】（判定5段階・根拠は EXE 命令または原本アセットのみ・推測禁止）
 ①【高】**原版がゲームプレイ時に画面左上（とその周辺）に描画する要素の有無と内容・画面位置** — retail の HUD 構成（compass／health・magicka・fatigue／quickkeys／level 表示の有無／minimap の有無）を menu id 表と HUD 系メニュー XML、およびその**インスタンス化経路**で確定。左上に置く要素が無いなら **[確定(否定側)]** で構わない（＝port の左上描画は正典に無いことになり、除去/修復の根拠になる）。port 側は `hudRenderer.renderPlayerLevel` を (20,20) に置いており、**原版相当か否か**の判定が必要。出発点: `docs/RE_EXE_REPORT.md` L44（メニュー id 表・0x3f5 PauseMenu 等）と L1805-1815（OptionsMenu↔PauseMenu 背面関係）／ローカル BSA 抽出物 `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\main\`（`hud_main_menu.xml` / `hud_info_menu.xml` / `hud_reticle.xml` / `hud_subtitle_menu.xml` 等）／EXE 側でこの帯を Gamebryo メニューとして立ち上げる関数。
 ②【中】**原版のメニュー文字描画の正典** — メニュー XML の文字エレメントがどのフォント・サイズ・色で、どの関数経路で描画されるか（port 側でポーズメニューのラベルが**文字ではなく色ブロック**になる病理に対する「正しい描画」の定義）。text_renderer のフォント割当・GMST/INI の UI フォント指定・`fonts/*.dds` の食い違いも含む。①と併せれば #137 と #96（視覚品質）の両方に効く。
@@ -657,6 +679,14 @@
   > - **V-568-2**（`0x983754`＝CRT `_stat64i32`）【部分確定】
   > - **V-557-5**（`0xFA1` visible は 0/1/2 の3状態）【部分確定】
   > 残点 V-565-2/V-568-1,2/V-562-1,2/V-566-2,3/V-569-5/V-572-1/V-573-2【低】。台帳反映＋round_verify ALL OK（rows 31..580 / total 466 / done 461 / open 5）。
+  > 【RE レーン回答 2026-11-22: 低優先残点クローズ バンドル3（v605）】→ `tmp/re/v605_low_priority_residuals_bundle3_ruling.md`（台帳 row581・probe u18_1〜u18_2）
+  > ■ 消化残点
+  > - **V-572-1**（`0x66xxxx`＝スキル使用量系）・**V-569-5**（`0x5DC8F3`＝ループ末尾初期化）
+  > - **V-562-1**（Textures BSA 正式名＝`Oblivion - Textures - Compressed.bsa`）
+  > - **V-562-2**（title version＝固定文字列 "Version"）【確定負】
+  > - **V-568-3**（credits_rect はクリップ矩形・動画枠でない）【部分確定】
+  > - **V-566-2/3**（移植側の話）【確定(移植側)】
+  > 残点 V-568-1【低】・V-573-2/V-599-2/V-598-4/V-601-1【低・動的領域】。台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2819,4 +2849,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 16:27:22
+**ai-todo** | Last Updated: 2026-11-20 16:34:27
