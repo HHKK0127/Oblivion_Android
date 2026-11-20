@@ -4109,3 +4109,28 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-587b-1・2【低】**。
 - **本日 push 累計（セッション）**: v405 → … → v586 `0f41a5bd` →（本件 v587 を本 commit で push）＝**178裁定**。
 
+## 2026-11-21 (ma) — V-587-2 クローズ v588（U6/U4 フォロー）: **`0x5BCDD0` は MessageMenu の通知ハンドラ（vtable slot3）で `id==2` のとき応答バイトを確定**
+
+- **成果物**: `tmp/re/v588_messagemenu_notify_ruling.md`（probe **v588_1・1本 EXIT=0**・冒頭 Test-Path）。台帳 **row564**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] `0x5BCDD0` の呼び出し元＝`MessageMenu` vtable `0xA6CE5C` slot3（`+0x0C`）＝通知ハンドラ**: `0x5BCDD0` の dword は **`.rdata 0xA6CE68`（＝`0xA6CE5C+0x0C`）に1件のみ** → E8/E9 callers 0件は vtable 経由だから（v583/v587 の再現）。
+- **② [確定(命令)] `id==2` の意味**: `0x5BCDD0(id,?)` は `id==2` のときのみ `0x5BCCB0`→`0x5BC6B0`（応答バイトへ flag コピー）。`id!=2` は `0x5BCDE7` へ分岐 → **id2 が「ダイアログ確定」通知**。
+- **③ [確定(命令)] MessageMenu vtable `0xA6CE5C`**: `[0]=0x5BC690`／`[1]=0x5BC510`／`[2]=0x60CF60`（no-op）／**`[3]=0x5BCDD0`（通知）**／`[4]=[5]=0x5BC770`／`[6]=[7]=0x890B90`／`[8]=0x60CF60`。
+- **④ [確定(命令)] 経路確定**: `MessageMenu` 通知 `id==2`→`0x5BCDD0`→`0x5BCCB0`→`0x5BC6B0`（`[singleton+0xB0]=[entry+0x60]`＝登録 flag）。
+- **⑤ 教訓**: **vtable に載る関数は「dword の `.rdata` 出現位置＝vtable オフセット」で slot が即断できる**（`0xA6CE68 = 0xA6CE5C + 0x0C` → slot3＝通知）。
+- **残点**: V-588-1（`id!=2` 分岐＝1/2 の Yes/No 最終対応・低）／V-588-2（`0x5BCCB0` 本体・低）。
+- **本日 push 累計（セッション）**: v405 → … → v587 `18db6c7d` →（本件 v588 を本 commit で push）＝**179裁定**。
+
+## 2026-11-21 (mb) — Lane B 統合 v589（U5 フォロー）: **id98 送信元は静的定数として不存在（v573 の「`call [reg+0x0c]` 247件＝通知入口」を [確定負] に訂正）・真の通知ディスパッチ形式の確定**
+
+- **成果物**: `tmp/re/v589_laneB_notify_dispatch_ruling.md`（Lane B probe **v600_1〜v600_21・全 EXIT=0**・`.text` 全域 linear 2,258,077 命令）。台帳 **row565**・ai-todo **#161 追加 note**。
+- **① [確定(命令)] 通知 id は call 直前に push される第1引数**（メッセージ構造体のメンバではない）。`0x5CC200` は `ret 8`（2引数）で id は `[ebp+8]`。
+- **② [確定負（v573 訂正）] v573 の「`call [reg+0x0c]` 247件＝通知入口」は誤り**: 直接形 247件は**すべて 0x80xxxx〜0x9Axxxx 帯**（別クラス群）で **UI 帯 0x500000〜0x610000 には0件**。
+- **③ [確定(命令)] 真の通知ディスパッチ＝2段形式**: `mov reg,[obj]; mov reg2,[reg+0xc]; push <arg2>; push <id>; mov ecx,obj; call reg2`（全695サイト）。実例 `0x5A1349`=id0x16／`0x59DA1D`=id4／`0x46576C`=変数／`0x583929`=menu 0x40E へ id0／`0x5C0940`=menu 0x3EA へ id=ebp。
+- **④ [確定(命令)（negative）] id98 は静的定数として不存在**: 695 notify サイトの id 引数に即値 `0x62` は0件。`push 0x62`=3件・`push imm32 0x62`=0件・`mov reg,0x62`=0件。
+- **⑤ [確定(命令)（negative）] RaceSexMenu(0x40C) へ id98 を送る静的サイトは0件**: `push 0x40C` 20件すべて前方45命令以内に通知 call へ到達しない。到達するのは menu `0x40E`（id0）と `0x3EA`（id=ebp）のみ。**`0x5CC200` の E8 caller 0件＋他11 notify エントリも全て E8 caller 0件**＝通知は必ず間接呼び出しのみ。`0x5CC200` dword は `.rdata 0xA6D398`（RaceSexMenu vtable slot3）1件のみ。
+- **⑥ [確定(命令)] 副次＝汎用 notify ヘルパ群**: `0x57CDE0`（→0x3EB）/`0x57CE20`（→0x3EA）/`0x57CE60`（→0x3FE）/`0x57CEA0`（→0x3FF）で **id は `bl`（呼び出し元変数）**。`mov bl,0x62` は `.text` 全域で `0x5F6320` の1件のみでこの系には無い。
+- **⑦ [未確定]（絞込み済）id98 の発生源＝実行時に決まる id（要素クリック→親メニュー通知の中央ループ由来）** → **V-589-1【中】**（候補＝`0x579970`／`0x5821F0`／`0x5A5E00`〜`0x5A6040`）。
+- **⑧ 教訓（再発型）**: **「間接 call の直接形＝通知入口」と早合点しない**（UI では0件・帯域分布で判別）／真の形式は 2段で **id は call 直前 push**／**「送信元なし」断定には (a) notify サイト全列挙×id 即値全走査 (b) `push <menuid>` 前方走査 (c) dword 帯域確認 の3手**。
+- **残点**: **V-589-1【中】**／V-589-2・3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v588 を本 commit で push（v588/v589 同時）＝**180裁定**。
+
