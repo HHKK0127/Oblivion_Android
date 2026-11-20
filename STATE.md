@@ -4037,3 +4037,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v580 `c9f5e774` →（本件 v581 を本 commit で push）＝**172裁定**。
 - **次**: V-582-1（`FUN_00586000` callers＝実行時証拠）／V-573-1（id98）／低優先群。
 
+## 2026-11-20 (lu) — V-582-1 第3経路の callers chain 4本まで v582（U6/U4 フォロー）: **`reload` コマンド→`&name` 解決の構造と `0x582160` の identity**
+
+- **成果物**: `tmp/re/v582_command_chain_ruling.md`（probe **v582_1〜v582_3・3本 EXIT=0**・冒頭 Test-Path）。台帳 **row558**・ai-todo **#166 追加 note**。
+- **① [確定(命令)（4段目まで)] chain**: **`FUN_00586000` の callers＝1関数 `FUN_005821F0`** → **`FUN_005821F0` の callers＝4関数**: **`FUN_005791E0`（E9 tail-jmp 薄ラッパ）／`FUN_00579CF0`（3段チェック型）／`FUN_005AB980`（`0x57CFE0`→`0x583E60` 通過型）／`FUN_005B8DC0`（同一パターン）**。4本とも `0x582160(1,0)`→条件→`ecx=eax` で this 渡し。
+- **② [確定(命令)] `'&xxx'`＝`reload` コマンド**: `'reload '` 比較 → `'reload %s'`(`sscanf`) 引数取得 → 先頭 `&` 直行／非 `&` は**末尾 `';'`＋先頭 `'&'` 書込み** → **`"&<name>;"` を `0x588EF0` 解決ヘルパへ** → `0x587B20` → `FUN_00587550(id)`。**`reload`＝`&HUDMainMenu;` 等のエンティティ名解決で窓 id を得る仕組み**（v576 entity 機構と直結）。同関数に `'delete '` 系と **`push 0xFA1(4001)`** ブロックも実測。
+- **③ [部分確定] `0x582160`＝`[0xB3A6E0]` lazy 初期化**: `malloc(0x134)`＋`0x5802B0`（ctor）→ 保存 → 返す＝**型オブジェクト取得（未生成なら生成）**＝`0x587B20` と対になる**型別 singleton グループ**。
+- **④ [部分確定] 第3経路の全体像**: 4 callers → `FUN_005821F0` → **コマンドパーサ** → `&name;` 解決 → `0x587B20` → **窓 id switch** → 生成ヘルパ（HUD＝破棄→`hud_main_menu.xml` ロード）＝**v580 矛盾⑤を支える経路の静的構造は確定**（残るは発火タイミング）。
+- **⑤ 教訓**: **E9 tail-jmp を callers に含めないと薄ラッパを取りこぼす**（v577 教訓の再現＝E8+E9 併走査の妥当性を実証）／**`__mbsnbicmp`＋format `sscanf` でコマンド名・引数形式が一発**／named が番号のみなら identity は機能記述で。
+- **残点**: **V-583-1【中】**（4 callers 上流＝実行時証拠の最終段）＝V-582-1 継承／V-583-2【低】（各ヘルパ identity）／V-583-3【低】（type4001 trait）。
+- **本日 push 累計（セッション）**: v405 → … → v581 `5f55aad8` →（本件 v582 を本 commit で push）＝**173裁定**。
+- **次**: V-583-1（4 callers 上流）／V-573-1（id98）／低優先群。
+

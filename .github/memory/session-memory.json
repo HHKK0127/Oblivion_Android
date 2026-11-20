@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-20T16:00:00Z",
+  "lastUpdated": "2026-11-20T18:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14801,14 +14801,32 @@
         "v580"
       ],
       "content": "2026-11-20 v581 裁定＝V-581-1 矛盾解消の第3経路ほぼ確定（FUN_00586000 コマンドパーサ→FUN_00587550 窓 id switch→生成ヘルパ・0x5A6B00＝HUD の XML ロード再構築・ai-todo #166 追加 note）。成果物 tmp/re/v581_third_path_ruling.md・台帳 row557。probe v581_1・v581_2（2本 EXIT=0・冒頭 Test-Path）。①[確定(命令)] 別 switch FUN_00587550: E8+E9 callers は1関数のみ＝FUN_00586000（@0x5866DC）・id 引数は a1。中身＝窓 id 連番 cmp chain: 0x3EC→0x5A6B00／0x3ED→0x5A4840／0x3F2→0x5A8E30／0x3EF→0x5ADCF0／0x414→0x5B6040／0x3F0＝取得+キャスト+0x599EE0／0x402＝0x589B70(0x3F0)+RTTI キャスト＝統合ヘルパ。②[確定(命令)機能] FUN_00586000＝コマンド/コンソールパーサ型: alloca(0x1F70)＋'delete '(__mbsnbicmp)＋'delete %s'(sscanf)。経路＝'&'(0x26) 文字列構築→0x588EF0（名前/式解決＝v576 同一）→0x587B20(1,値)（v579 準備）→FUN_00587550(id)→free→al=1。③[確定(命令)] 0x5A6B00＝HUD 生成ヘルパ: 既存 HUD は vtable[0] で破棄→0x590420('Data\\\\Menus\\\\Main\\\\hud_main_menu.xml') ロード→vtable[+0x34] 採番→構築。&HUDMainMenu; 実行系の着地点（v574 XML 機構と接続）。④[部分確定] 矛盾解消状況: open(0x591C50) を経由しない第3経路の存在を実測 → v580 矛盾5命題の⑤『それでも生成される』を支える経路を発見。残り＝(a) FUN_00586000 の callers（実行時証拠）(b) '&xxx' 文字列内容 (c) 0x582160 identity ＝ V-582-1【中】。⑤副次: id dispatch 続き2型（0x3F0/0x402）実測＝V-574-2 の一部。残点 V-582-1【中】（第3経路の実行時証拠）／V-582-2・3【低】。"
+    },
+    {
+      "id": "opencode-v582-command-chain-20261120",
+      "timestamp": "2026-11-20T18:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v582",
+        "u6",
+        "u4",
+        "menu",
+        "reload",
+        "todo-166",
+        "v581"
+      ],
+      "content": "2026-11-20 v582 裁定＝V-582-1（第3経路の callers chain 4本まで確定・reload コマンド→&name 解決の構造と 0x582160 の identity・ai-todo #166 追加 note）。成果物 tmp/re/v582_command_chain_ruling.md・台帳 row558。probe v582_1〜v582_3（3本 EXIT=0・冒頭 Test-Path）。①[確定(命令)4段目まで] FUN_00586000 の callers＝1関数 FUN_005821F0 → FUN_005821F0 の callers＝4関数: FUN_005791E0（E9 tail-jmp 薄ラッパ）／FUN_00579CF0（3段チェック型）／FUN_005AB980（0x57CFE0→0x583E60 通過型）／FUN_005B8DC0（同一パターン）。4本とも 0x582160(1,0)→条件→ecx=eax で this 渡し。named_funcs は全 FUN_ 番号のみ。②[確定(命令)] '&xxx'＝reload コマンド: 'reload ' 比較→'reload %s'(sscanf) 引数取得→先頭 '&' 直行/非 '&' は末尾 ';'＋先頭 '&' 書込み→\"&<name>;\" を 0x588EF0 解決ヘルパへ→0x587B20→FUN_00587550(id)。reload＝&HUDMainMenu; 等のエンティティ名解決で窓 id を得る仕組み（v576 entity 機構と直結）。同関数に 'delete ' 系と push 0xFA1(4001) ブロックも実測。③[部分確定] 0x582160＝[0xB3A6E0] lazy 初期化: malloc(0x134)＋0x5802B0（ctor）→保存→返す＝型オブジェクト取得（未生成なら生成）＝0x587B20 と対になる型別 singleton グループ。④[部分確定] 第3経路の全体像: 4 callers→FUN_005821F0→コマンドパーサ→&name; 解決→0x587B20→窓 id switch→生成ヘルパ（HUD＝破棄→hud_main_menu.xml ロード）＝v580 矛盾⑤を支える経路の静的構造は確定（残るは発火タイミング）。教訓: E9 tail-jmp を callers に含めないと薄ラッパを取りこぼす（v577 教訓の再現）／__mbsnbicmp＋format sscanf でコマンド名・引数形式が一発／named が番号のみなら identity は機能記述で。残点 V-583-1【中】（4 callers 上流＝実行時証拠の最終段）／V-583-2・3【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1001,
+    "totalEntries": 1002,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-20T16:00:00Z",
-    "entry_count": 1001,
-    "last_updated": "2026-11-20T16:00:00Z"
+    "lastUpdated": "2026-11-20T18:00:00Z",
+    "entry_count": 1002,
+    "last_updated": "2026-11-20T18:00:00Z"
   }
 }
