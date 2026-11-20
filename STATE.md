@@ -4096,3 +4096,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-587-1【中】**（`0x578D70` al=1/2 の肯定否定＋`[+0xB0]` writer）／**V-587-2【中】**（`0x579C10` flag 意味）／V-587-3・4【低】。
 - **本日 push 累計（セッション）**: v405 → … → v585 を本 commit で push（v585/v586 同時）＝**177裁定**。
 
+## 2026-11-20 (lz) — V-587-1 クローズ v587（U6/U4 フォロー）: **ダイアログ応答 `[+0xB0]` の書き手＝`0x5BC6B0`（登録 flag `[entry+0x60]` をコピー）＝`al` の 1/2 は登録 flag 由来**
+
+- **成果物**: `tmp/re/v587_dialog_response_writer_ruling.md`（probe **v587_1・v587_2・2本 EXIT=0**・冒頭 Test-Path）。台帳 **row563**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] `[+0xB0]` に 1/2 を書く唯一の実体＝`0x5BC6B0`**: `0x589B70(0x3E9)`（MessageMenu）→`0x5898F0`→`[0xB143AE]=1`（応答待ち）→`0x582160` singleton→**`cmp byte [eax+0xB0],0xFF; jne`（未応答のときだけ）→`cl=[esi+0x60]`→`[eax+0xB0]=cl`**。
+- **② [確定(命令)] `[entry+0x60]`＝登録 API `0x579C10` の `flag`（arg3）**: `FUN_005BC8B0` の `0x5BCB3F: mov byte [ebp+0x60],al`。→ **`[+0xB0]` の値＝登録時 flag**。
+- **③ [部分確定] `0x578D70` の `al` の 1/2＝登録 flag の値**（flag＝どちらの応答でコールバックを起動するかのセレクタと整合）。1/2 の Yes/No 対応は押下側と flag の対応が未読のため [部分確定]。
+- **④ [確定(命令)] 書込み経路**: `0x5BCDD0(arg,?)`＝`arg==2` のとき `0x5BCCB0`→`0x5BC6B0`。`0x5BCDD0` の callers＝0＝vtable/登録経由。
+- **⑤ [確定(命令)] `[+0xB0]` writer の限定**: `.text` 全体で imm 7件/reg 4件のみ、singleton 経由は5関数に限定 → **1/2 を書く実体は `0x5BC6B0` のみ**。
+- **⑥ [確定(命令)] 副次（Lane C 推定の確定）**: `0x8DF420`（imm=1）はレンダラ系構造体初期化でダイアログ無関係／`0x5A3D00`（`0x3F3` 系）は別クラス。
+- **⑦ 教訓（再発型）**: **応答バイトのような状態変数の writer は「値を書く命令の全走査（imm/reg 両形式＋disp32）× singleton 取得 head との交差」で一意に絞れる**／**callers 0件の関数は vtable/登録経由**（v583 の再現）。
+- **残点**: **V-587b-1・2【低】**。
+- **本日 push 累計（セッション）**: v405 → … → v586 `0f41a5bd` →（本件 v587 を本 commit で push）＝**178裁定**。
+
