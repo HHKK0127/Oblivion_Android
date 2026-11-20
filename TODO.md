@@ -302,6 +302,12 @@
   > 【[未確定]（絞込み・継続）id98 の発生源】静的コードに『id98 を RaceSexMenu へ送る』サイトは存在しない（v589 で確定）→ 実行時に決まる id。本裁定で『0xFA8 経由』『push 0x40C 経由』の2仮説をいずれも否定 → **残る経路＝『要素クリック→親メニュー vtable[3]』の中央ループ本体**（0x5821F0 内 notify 0x5827D0 を起点に、id を計算する箇所の完全 decode）＝V-591-1【中】。
   > 【教訓（再発型）】mov r2,[r+0xc]; call r2 を『notify ディスパッチ』と判定するヒューリスティックは、**『直前に push <id> があるか』を必須条件にしないと vtable[3] の一般読取と衝突する**（本裁定で false positive 2件を検出）。
   > 【残点】V-591-1【中】＝0x5821F0 内 notify 0x5827D0 の id 計算の完全 decode（0xFA8×11 と notify を併せ持つ唯一の『frame 更新』関数）＝id98 の実行時発生源の最終候補／V-591-2【低】＝0x581390・0x5894F0（0xFA8＋notify）の identity／V-591-3【低】＝notify 判定ヒューリスティックの厳密化（直前 push 必須）を probe 標準に追加。
+  > V-591-1 の negative 2026-11-21 v591。成果物 tmp/re/v591_notify_heuristic_negative_ruling.md・台帳 row567。probe v591_1（1本・EXIT=0・冒頭 Test-Path）。
+  > 【[確定(命令)（negative）] 0x5821F0 内 0x5827D0 も notify ディスパッチではない】実体＝mov eax,[ecx+0xc]; push eax; lea ecx,[esp+0x78]; call 0x441920（ecx=[0xB333A0]）＝**vtable[3] の値を取り出して別関数へ渡す**処理で、id を push して call reg2 する notify 形式ではない（v590 の判定ヒューリスティックが再び false positive）。
+  > 【[確定(命令)] 0x5821F0 の 0xFA8 読取11箇所の用途】すべて add edi,<X>; call 0x588BD0(0xFA8)（X=0x14/0x1c/0x18/0xc/0x10/8/0x20/0x24/0x28）＝**タイル配列を走査して各タイルの id trait を読む layout 処理**（notify 送信ではない）。→ 0x5821F0（frame 更新）はタイル配列の id trait を読んで layout を更新する関数で notify 送信元ではない。
+  > 【[未確定]（打切り判断）id98 の発生源】静的コードに『id98 を RaceSexMenu へ送る』サイトは存在しない（v589 で確定）＋本裁定で『0x5821F0 経由』仮説も否定 → **id98 は完全に実行時依存**（UI 要素クリック→親メニュー vtable[3] への id push が、静的に特定できない汎用ループ/コールバック経由）→ **静的 RE では確定不能** → V-592-1（動的解析＝0x5CC200 の [ebp+8] に 0x62 が入る瞬間のバックトレース、または 0x579970 メニューマネージャ tick の完全 decode）へ引き継ぎ・**優先度低**（実装は v570 で act 確定済みのため発生源特定は参考情報）。
+  > 【手法メモ（再発型・重要）】notify ディスパッチの静的判定は mov reg2,[reg+0xc] だけでは不十分（v590/v591 で false positive 2件）。正しい判定条件＝①mov reg2,[reg+0xc] ②**直後に push <arg2> と push <id> が連続（2連 push）** ③mov ecx,<obj> ④**call reg2（レジスタ経由。call <direct> は除外）** の4条件必須。『2連 push + mov ecx + call reg』を必須にしないと vtable[3] 一般読取を誤認する。以後の probe はこの4条件で判定する。
+  > 【残点】V-592-1【低】＝id98 の発生源（動的解析領域・静的 RE の限界）／V-592-2【低】＝0x441920（0x5827D0 の callee＝vtable[3] 値を受け取る関数）の identity。
 
 - [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
   > 【前提の訂正（2026-11-17・emu 実測で判明）】**「IME を開くとサーフェースが 1920x573 に縮む」はこの構成では起きない**。証跡: キーボードが実際に開いた状態（%TEMP%/opencode/ime_open_state.png・y≥570 をキーボードが占有）で、リサイズハンドラのログが **すべて `1920x1110`**（`LauncherScreen/TitleScreen/SettingsUI/SaveLoadUI screen size updated to: 1920x1110`）で、`1920x573` は一度も出ない。＝**IME はオーバーレイとして乗るだけでウィンドウ/サーフェースを縮めない**（GLSurfaceView が全画面・adjustPan 相当）。【試して失敗した修正（撤回済み・差分に残していない）】リサイズハンドラに `characterCreationUI->setScreenSize()` を追加し、`getConfirmButtonY()` を `screenHeight - 32 - 8` にクランプする案 → **`screenHeight` が 1110 のままなので発動せずノーオペ**（ボタンは依然キーボード下＝見えない）。【古い台帳の「IME 時は 1920x573」の出所】#143 の記録にある `DebugMenu screen size updated to: 1920x573` は **DebugMenu が縮む別の経路**（コンソールの EditText フォーカス時等）の観測であり、**キャラ作成の名前欄フォーカス時には起きない**。【正しい設計の候補】①**Kotlin 側で WindowInsets(ime) を取得し `nativeOnImeVisibility/insets` で native に通知** → native がボタン行を IME 上端（1110 − imeHeight − margin）へ移動（描画と当たり判定は同じ `getConfirmButtonY()` 経由なので1箇所で足りる）②`AndroidManifest` の `windowSoftInputMode=adjustResize` を試し、**実際にサーフェースが縮むことを実測してから**クランプ案を再開（ただし #143 の調査では GLSurfaceView 全画面で効かなかった旨の記録あり＝要再実験）③現状の回避として #143 の ✔ 自動クローズを前面に出す（実装済み・Back 不要）。**①が最も確実**、②は1実験で確認できる。【補足】検証②で Done タップ（1467,549）が失敗したのはこのため（ボタンは y≈990 にありキーボード下）。
@@ -2555,11 +2561,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2583,4 +2584,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 10:25:47
+**ai-todo** | Last Updated: 2026-11-20 10:29:28

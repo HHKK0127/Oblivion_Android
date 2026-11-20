@@ -4145,3 +4145,13 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-591-1【中】**／V-591-2・3【低】。
 - **本日 push 累計（セッション）**: v405 → … → v589 `a09f2510` →（本件 v590 を本 commit で push）＝**181裁定**。
 
+## 2026-11-21 (md) — V-591-1 の negative v591（U5 フォロー）: **`0x5821F0` 内 `0x5827D0` も notify ではない（vtable[3] 値の受け渡し）・`0xFA8` 読取は layout 用途 → id98 は静的 RE で確定不能**
+
+- **成果物**: `tmp/re/v591_notify_heuristic_negative_ruling.md`（probe **v591_1・1本 EXIT=0**・冒頭 Test-Path）。台帳 **row567**・ai-todo **#161 追加 note**。
+- **① [確定(命令)（negative）] `0x5827D0` は notify ではない**: 実体＝`mov eax,[ecx+0xc]; push eax; lea ecx,[esp+0x78]; call 0x441920`（`ecx=[0xB333A0]`）＝**vtable[3] 値を別関数へ渡す**処理（id を push して `call reg2` する notify 形式ではない）。
+- **② [確定(命令)] `0x5821F0` の `0xFA8` 読取11箇所**: すべて `add edi,<X>; call 0x588BD0(0xFA8)`＝**タイル配列を走査して id trait を読む layout 処理**（notify 送信ではない）。
+- **③ [未確定]（打切り判断）id98 の発生源**: 静的コードに送信サイトが存在しない（v589/v590/v591 で3仮説否定）→ **完全に実行時依存** → **V-592-1（動的解析 or `0x579970` 完全 decode）へ引継ぎ・優先度低**（実装は v570 で act 確定済みのため参考情報）。
+- **④ 手法メモ（再発型・重要）**: **notify 判定は4条件必須**＝①`mov reg2,[reg+0xc]` ②**2連 push（arg2, id）** ③`mov ecx,<obj>` ④**`call reg2`（レジスタ経由）**。`mov reg2,[reg+0xc]` 単独では vtable[3] 一般読取を誤認（v590/v591 で false positive 2件）。
+- **残点**: V-592-1【低】／V-592-2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v590 `0869ee1d` →（本件 v591 を本 commit で push）＝**182裁定**。
+
