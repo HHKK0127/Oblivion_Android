@@ -4134,3 +4134,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-589-1【中】**／V-589-2・3【低】。
 - **本日 push 累計（セッション）**: v405 → … → v588 を本 commit で push（v588/v589 同時）＝**180裁定**。
 
+## 2026-11-21 (mc) — V-589-1 追加調査 v590（U5 フォロー）: **`0xFA8`（id trait）読取×notify の4 head と `push 0x40C`×notify の false positive 確定**（id98 の2仮説を否定）
+
+- **成果物**: `tmp/re/v590_id98_loop_survey_ruling.md`（probe **v590_1〜v590_4・4本 EXIT=0**・冒頭 Test-Path）。台帳 **row566**・ai-todo **#161 追加 note**。
+- **① [確定(命令)（絞込み）] `push 0xFA8` は126箇所**、うち **同 head に notify を持つのは4 head**: `0x579970`（メニューマネージャ tick）／`0x581390`／`0x5821F0`（frame 更新）／`0x5894F0`。
+- **② [確定(命令)（negative）] `0x579970` の notify は id98 の発生源ではない**: id=`eax`（`0xFA8` の値ではない別計算）・呼出先=`edx`（インスタンス固有）。
+- **③ [確定(命令)（negative）] `push 0x40C`＋notify の2 head（`0x474070`/`0x474530`）は false positive**: 両者 `TESAnimGroup` 系（`"Animation sequence '%s' not found in TESAnimGroup::G"` @0xA3C970）で `push 0x40C`（@0x474326）は menuid でない。notify 判定（`mov eax,[edx+0xc]; call eax` @0x474180）は **id を push しない vtable[3] 一般読取**。
+- **④ [未確定]（絞込み・継続）id98 の発生源**: 「`0xFA8` 経由」「`push 0x40C` 経由」の2仮説を否定 → **残る経路＝「要素クリック→親メニュー vtable[3]」の中央ループ本体**（`0x5821F0` 内 notify `0x5827D0` の id 計算を完全 decode）＝**V-591-1【中】**。
+- **⑤ 教訓（再発型）**: **`mov r2,[r+0xc]; call r2` を notify と判定するヒューリスティックは「直前 push <id> 必須」にしないと vtable[3] 一般読取と衝突**（false positive 2件を検出）。
+- **残点**: **V-591-1【中】**／V-591-2・3【低】。
+- **本日 push 累計（セッション）**: v405 → … → v589 `a09f2510` →（本件 v590 を本 commit で push）＝**181裁定**。
+

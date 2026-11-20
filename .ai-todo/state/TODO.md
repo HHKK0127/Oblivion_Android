@@ -295,6 +295,13 @@
   > 【[未確定]（絞込み済）id98 の発生源】静的には RaceSexMenu への notify サイトが 0 → **実行時に決まる id（UI 要素のクリック→親メニュー通知の中央ループ由来の変数）**。候補＝0x579970（メニューマネージャ tick）／0x5821F0（frame 更新・FindMenu 7連発）／0x5A5E00〜0x5A6040（HUD 通知サブハンドラ）の上位 → **V-589-1【中】に再定義・継承**。
   > 【教訓（再発型）】①**『間接 call の直接形（call [reg+0x0c]）＝通知入口』と早合点しない**（UI では0件・帯域分布で判別）→ 真の形式は 2段（mov r,[obj]; mov r2,[r+0xc]; push id; call r2）で **id は call 直前 push**。②**『送信元なし』を断定するには (a) notify サイト全列挙×id 引数の即値全走査 (b) push <menuid> 全件の前方走査 (c) dword 参照の帯域確認 の3手が必要**。
   > 【残点】V-589-1【中】＝id98 の実行時発生源（中央ループ）／V-589-2【低】＝0x5898F0（子要素探索 [+0x10] チェーン）と 0x589D60（call [vt+0xc] の戻りを cmp eax,0x386）の役割区別（notify が id を返す用途か）／V-589-3【低】＝0x5A7CD0 の mov ebx,[edx+0x1c]（[elem+0xc]→[+0x1c]）の用途（要素のコールバック or id フィールド）。
+  > V-589-1 追加調査 2026-11-21 v590。成果物 tmp/re/v590_id98_loop_survey_ruling.md・台帳 row566。probe v590_1〜v590_4（4本・EXIT=0・冒頭 Test-Path）。結果＝id98 の2仮説（0xFA8 経由・push 0x40C 経由）をいずれも否定。
+  > 【[確定(命令)（絞込み）] push 0xFA8（id trait）は126箇所】.text 全体で 126、うち**同 head 内に notify ディスパッチ（2段形式）を持つのは4 head のみ**: 0x579970（メニューマネージャ tick）／0x581390／0x5821F0（frame 更新）／0x5894F0。
+  > 【[確定(命令)（negative）] 0x579970 の notify は id98 の発生源ではない】notify（0x579A3F）の id は eax（0xFA8 の float→int 値ではない別の計算値）、呼出先は edx（インスタンス固有）で RaceSexMenu(0x40C) 固有の送信ではない。
+  > 【[確定(命令)（negative）] push 0x40C＋notify の head は false positive】該当は 0x474070／0x474530 の2件だが両者とも TESAnimGroup 系（"Animation sequence '%s' not found in TESAnimGroup::G" @0xA3C970 参照）で、push 0x40C（@0x474326）は menuid ではなく別用途の定数。notify 判定（mov eax,[edx+0xc]; mov ecx,esi; call eax @0x474180）は id を push しない vtable[3] 一般読取＝false positive。
+  > 【[未確定]（絞込み・継続）id98 の発生源】静的コードに『id98 を RaceSexMenu へ送る』サイトは存在しない（v589 で確定）→ 実行時に決まる id。本裁定で『0xFA8 経由』『push 0x40C 経由』の2仮説をいずれも否定 → **残る経路＝『要素クリック→親メニュー vtable[3]』の中央ループ本体**（0x5821F0 内 notify 0x5827D0 を起点に、id を計算する箇所の完全 decode）＝V-591-1【中】。
+  > 【教訓（再発型）】mov r2,[r+0xc]; call r2 を『notify ディスパッチ』と判定するヒューリスティックは、**『直前に push <id> があるか』を必須条件にしないと vtable[3] の一般読取と衝突する**（本裁定で false positive 2件を検出）。
+  > 【残点】V-591-1【中】＝0x5821F0 内 notify 0x5827D0 の id 計算の完全 decode（0xFA8×11 と notify を併せ持つ唯一の『frame 更新』関数）＝id98 の実行時発生源の最終候補／V-591-2【低】＝0x581390・0x5894F0（0xFA8＋notify）の identity／V-591-3【低】＝notify 判定ヒューリスティックの厳密化（直前 push 必須）を probe 標準に追加。
 
 - [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
   > 【前提の訂正（2026-11-17・emu 実測で判明）】**「IME を開くとサーフェースが 1920x573 に縮む」はこの構成では起きない**。証跡: キーボードが実際に開いた状態（%TEMP%/opencode/ime_open_state.png・y≥570 をキーボードが占有）で、リサイズハンドラのログが **すべて `1920x1110`**（`LauncherScreen/TitleScreen/SettingsUI/SaveLoadUI screen size updated to: 1920x1110`）で、`1920x573` は一度も出ない。＝**IME はオーバーレイとして乗るだけでウィンドウ/サーフェースを縮めない**（GLSurfaceView が全画面・adjustPan 相当）。【試して失敗した修正（撤回済み・差分に残していない）】リサイズハンドラに `characterCreationUI->setScreenSize()` を追加し、`getConfirmButtonY()` を `screenHeight - 32 - 8` にクランプする案 → **`screenHeight` が 1110 のままなので発動せずノーオペ**（ボタンは依然キーボード下＝見えない）。【古い台帳の「IME 時は 1920x573」の出所】#143 の記録にある `DebugMenu screen size updated to: 1920x573` は **DebugMenu が縮む別の経路**（コンソールの EditText フォーカス時等）の観測であり、**キャラ作成の名前欄フォーカス時には起きない**。【正しい設計の候補】①**Kotlin 側で WindowInsets(ime) を取得し `nativeOnImeVisibility/insets` で native に通知** → native がボタン行を IME 上端（1110 − imeHeight − margin）へ移動（描画と当たり判定は同じ `getConfirmButtonY()` 経由なので1箇所で足りる）②`AndroidManifest` の `windowSoftInputMode=adjustResize` を試し、**実際にサーフェースが縮むことを実測してから**クランプ案を再開（ただし #143 の調査では GLSurfaceView 全画面で効かなかった旨の記録あり＝要再実験）③現状の回避として #143 の ✔ 自動クローズを前面に出す（実装済み・Back 不要）。**①が最も確実**、②は1実験で確認できる。【補足】検証②で Done タップ（1467,549）が失敗したのはこのため（ボタンは y≈990 にありキーボード下）。
@@ -2548,6 +2555,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2571,4 +2583,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 10:18:54
+**ai-todo** | Last Updated: 2026-11-20 10:25:47
