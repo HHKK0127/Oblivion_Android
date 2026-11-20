@@ -4168,3 +4168,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: **V-593-1【中】**／**V-593-2【中】**／V-593-3・4【低】。
 - **本日 push 累計（セッション）**: v405 → … → v591 `a52d8af0` →（本件 v592 を本 commit で push）＝**183裁定**。
 
+## 2026-11-21 (mf) — V-593-1 クローズ v593（U6/U4 フォロー）: **`0x5BCDD0` も early-return 型で本体を完全同定（`id==2`→`0x5BCCB0`／`id>=4`→応答バイト算出→`0x5BC6B0`）＝v587/v588 の接続を回復（v592 訂正を取消）**
+
+- **成果物**: `tmp/re/v593_dialog_notify_earlyreturn_ruling.md`（probe **v593_1・v593_2・2本 EXIT=0**・冒頭 Test-Path）。台帳 **row569**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] `0x5BCDD0`（MessageMenu notify）は early-return 型の多分岐ハンドラ**: v588/v592 の「短い関数」は**最初の `ret 8` で打ち切ったアーティファクト**（v586 の `0x587550` と同じ罠）。真の本体は `0x5BCDE7` 以降・末尾 `0x5BCE2F ret 8`。
+- **② [確定(命令)] 全分岐**: ①`id==2`→`0x5BCCB0` ②**`id>=4`→`cl=[edi+0x60]+bl(id)-4`→`[eax+0xB0]=cl`→`call 0x5BC6B0`** ③`id<4 && !=2` は何もしない。
+- **③ [確定負（v592 訂正の取消）] v587/v588 の接続は正しい**: `0x5BC6B0` の唯一 caller は **`0x5BCDD0` 本体 `0x5BCE27`**（`0x5BCCB0` 経由ではない）。**v592 の「接続は誤り」を取消**。
+- **④ [確定(命令)] 応答バイトの決まり方**: **`[singleton+0xB0] = [MessageMenu+0x60](base) + id - 4`** → `0x5BC6B0`（既に非0xFF なので 0xFF 判定は skip＝「ダイアログ最終処理」として機能）。
+- **⑤ [部分確定] `al==1`/`al==2` の Yes/No**: `al = base + (id-4)`。Random cb は `al==2` で実行（v592）＝**`al==2` が肯定（Yes）** → id 5 側（base=1 のとき）が Yes。`base` は実行時値のため厳密対応は V-594-1。
+- **⑥ 手法メモ（再発型・重要）**: **early-return 型関数は「最初の `ret` 打ち切り」で誤って短く見積もる**（`0x587550`(v586)・`0x5BCDD0`(v588/v592) の2回）→ **`ret` 直後の `int3` 連続で真の末尾を判定／分岐先も本体に含める／`find_head` は複数 `ret` で同じ head を返し関数長は分からない**。
+- **残点**: V-594-1【低】／V-594-2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v592 `f8f8d8bf` →（本件 v593 を本 commit で push）＝**184裁定**。
+
