@@ -158,6 +158,15 @@
   > 【[部分確定] al==1/al==2 の Yes/No】al = base + (id-4)。2ボタンなら id 4/5 → al = base/base+1。Random cb は al==2 で実行（v592）＝**al==2 が肯定（Yes）** → id 5 側（base=1 のとき）が Yes。base は実行時値のため厳密な 1/2 対応は V-594-1。
   > 【手法メモ（再発型・重要）】early-return 型関数は『最初の ret で打ち切る線形 decode』で誤って短く見積もる（本件で 0x587550(v586)・0x5BCDD0(v588/v592) の2回）→ 正しい手順＝①ret 直後が int3(0xCC) 連続かで真の末尾を判定 ②jne/je/jmp の分岐先も本体として decode ③find_head は同一関数内の複数 ret すべてで同じ head を返す（関数長は分からない）。
   > 【残点】V-594-1【低】＝[MessageMenu+0x60]（base）の値とボタン id の実値（2ボタンダイアログの Yes/No が id 4/5 か）＝al==1/al==2 の厳密対応／V-594-2【低】＝0x5BCCB0（id==2 分岐）の役割（0xFAE/0xFDE テキスト取得＝入力欄系か）。
+  > 低優先残点の一括クローズ 2026-11-21 v594。成果物 tmp/re/v594_residual_low_priority_ruling.md・台帳 row570。probe v594_1（1本・EXIT=0・冒頭 Test-Path）。V-594-1/2・V-585-1・V-591-2・V-592-2 を消化。
+  > 【[確定(命令)] V-594-1 base＝MessageMenu+0x60】0x5B0000-0x5CFFFF で [reg+0x60] byte 書込みは2件のみ＝**0x5BC48A: mov byte [esi+0x60],1（head 0x5BC450＝MessageMenu ctor/init）** と 0x5BCB3F（0x5BC8B0＝別オブジェクト）。→ **MessageMenu base＝1 固定** → **al = 1 + (id−4)** → id4→al=1、id5→al=2。
+  > 【[確定(命令)] V-594-1 Yes/No】**al==2（＝id 5 のボタン）が肯定（Yes）**（Random cb が al==2 で実行＝v592）→ **ボタン id4＝否定（No 側）、id5＝肯定（Yes 側）**。
+  > 【[確定(命令)] V-594-2 0x5BCCB0（id==2 分岐）】0xFAE（[+0x7e] から取得した現在ページ/フォーム値）と 0xFDE（race_name テキスト）を取得 → 0x4028D0（文字列 Set）→ **文字列を1文字ずつ走査し al==2 を検出すると bl=1** を立てる＝**テキスト入力欄の内容から id2 相当の確定を行う入力欄系ハンドラ**。
+  > 【[確定(命令)（negative）] V-585-1 chargen 中 [+8]】push 0x40C（RaceSexMenu）を持つ17 head のいずれにも InterfaceManager [+8]（byte）書込みは存在しない → **chargen（RaceSexMenu）フローは [+8] を書かない**＝v584 の『HUD 生成は [+8]==1 のみ』と合わせ **chargen 中は [+8] が 1 にならないことが命令的に確認（V-585-1 クローズ）**。
+  > 【[確定(命令)] V-591-2】0x5894F0: esi=tile; 0x588BD0(esi,0xFA8)（id trait）→ fild 引数と fucompp 比較 → 一致で eax=esi（tile 返却）＝**『id trait が指定値と一致するタイルを探す』検索ヘルパ**（id98 の解決候補だが notify 送信ではない）。0x581390 は [ebp+0x58] フラグ操作＋0x959BC0＝別系統。
+  > 【[確定(命令)] V-592-2】0x441920＝[ebx+0x14] を差し替える（旧値解放→新値 AddRef）＝スマートポインタ/参照カウント代入ヘルパ（notify と無関係）。
+  > 【教訓】①オブジェクトのフィールド初期値は同クラスの ctor/init head（ここでは 0x5BC450）の mov byte [reg+off],imm を全走査すれば一発（実行時 base の値を静的に確定できる）。②byte フィールドの書込みは該当アドレス帯の全 opcode（C6/88）+ 全 modrm で走査（imm と reg の両形式）。
+  > 【残点】V-595-1【低】＝0x5BC450（MessageMenu init）の全体と [+0x60] 以外の初期値（base が常に 1 かの確認）／V-595-2【低】＝0x5894F0（id trait 検索）の callers と id98 解決への寄与（notify ではないが id98 の解決候補）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2578,6 +2587,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2601,4 +2615,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 10:38:22
+**ai-todo** | Last Updated: 2026-11-20 10:42:17

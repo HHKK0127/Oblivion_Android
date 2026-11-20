@@ -4180,3 +4180,16 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-594-1【低】／V-594-2【低】。
 - **本日 push 累計（セッション）**: v405 → … → v592 `f8f8d8bf` →（本件 v593 を本 commit で push）＝**184裁定**。
 
+## 2026-11-21 (mg) — 低優先残点の一括クローズ v594（U6/U4 フォロー）: **V-594-1（base=1・id4/5=No/Yes）・V-594-2（`0x5BCCB0`＝入力欄確定）・V-585-1（chargen 中 `[+8]` 書込み 0 件）・V-591-2（`0x5894F0`＝id trait 検索）・V-592-2（`0x441920`）**
+
+- **成果物**: `tmp/re/v594_residual_low_priority_ruling.md`（probe **v594_1・1本 EXIT=0**・冒頭 Test-Path）。台帳 **row570**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] V-594-1 base**: `[MessageMenu+0x60]` byte 書込みは **`0x5BC48A: mov byte [esi+0x60],1`（head `0x5BC450`＝MessageMenu init）のみ**（他は別オブジェクト `0x5BCB3F`）→ **base=1 固定** → **`al = 1 + (id−4)`**（id4→1、id5→2）。
+- **② [確定(命令)] V-594-1 Yes/No**: **`al==2`（id 5 のボタン）が肯定（Yes）**（Random cb が `al==2` で実行）→ **id4＝No 側、id5＝Yes 側**。
+- **③ [確定(命令)] V-594-2 `0x5BCCB0`**: `0xFAE`（`[+0x7e]` 現在値）と `0xFDE`（`race_name`）→`0x4028D0`（文字列 Set）→ 文字列を1文字ずつ走査し `al==2` で `bl=1`＝**テキスト入力欄の確定ハンドラ**。
+- **④ [確定(命令)（negative）] V-585-1**: `push 0x40C`（RaceSexMenu）を持つ17 head に InterfaceManager `[+8]` byte 書込み **0件** → **chargen フローは `[+8]` を書かない**＝v584 と合わせ **chargen 中は `[+8]` が 1 にならない**ことが命令的に確認（**V-585-1 クローズ**）。
+- **⑤ [確定(命令)] V-591-2**: `0x5894F0`＝**`0x588BD0(tile,0xFA8)` の id trait が指定値と一致する tile を返す検索ヘルパ**（id98 の解決候補・notify ではない）／`0x581390` は別系統。
+- **⑥ [確定(命令)] V-592-2**: `0x441920`＝`[ebx+0x14]` 差し替え（参照カウント代入ヘルパ）。
+- **⑦ 教訓（再発型）**: **オブジェクトのフィールド初期値は同クラス ctor/init head の `mov byte [reg+off], imm` 全走査で一発**（実行時 base を静的に確定）／**byte フィールド走査は C6/88 + 全 modrm**。
+- **残点**: V-595-1【低】／V-595-2【低】。
+- **本日 push 累計（セッション）**: v405 → … → v593 `f64c9f54` →（本件 v594 を本 commit で push）＝**185裁定**。
+
