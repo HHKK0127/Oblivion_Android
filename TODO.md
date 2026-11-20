@@ -182,6 +182,17 @@
   > - `credits_menu.xml` の `<image name="credits_rect">`（id 1・clipwindow・width 0・x 640）はテキストスクロール窓の**クリップ矩形**で **`.bik` 描画枠ではない**。
   > - クレジット動画 `CreditsMenu.bik` は v557/v568 のとおり**再生されない**（`.text` 参照 0 件）ため、動画枠描画元は**存在しない**。
   > 台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
+  > 【RE レーン回答 2026-11-22: メニュー open/生成/notify 系 低優先残点クローズ（v606）】→ `tmp/re/v606_menu_open_notify_residuals_ruling.md`（台帳 row582・probe u19_1）
+  > ■ V-575-3/V-580-2 [確定(命令)] `0x587B20`
+  > - **メニュースタック（id→生成済み配列）の遅延初期化関数**。arg1 が真かつ `[0xB3A708]` が NULL なら `0x401F00(1)`→**`0x4E4A10(0xB13970, 0x33)`**→`[0xB3A708]`。
+  > ■ V-574-3/V-580-3 [確定(命令)] `0x42BB90`
+  > - `0xB13970` の**要素 accessor**（id→生成済み要素の検索/登録）＝**真のメニュースタックデータ構造＝`0xB13970`**。
+  > ■ V-584-2 [確定(命令)] begin/end
+  > - `0x583E60`(begin)＝カーソル表示＋メニュー表示開始（`0xFA1`=1.0・`SetString(0xFE6,'Menus\Misc\cursor.dds')`）／`0x583F40`(end)＝メニュー終了処理（子要素 `[+0x34]` ツリー走査）。
+  > ■ V-582-3/V-576-2 [確定(命令)] 名前/式解決
+  > - **`0x588EF0(name)`＝名前/記号解決**（`&name;`=`0xB3B0B4` の 16B ノード `__mbsicmp` 探索・`_key`=0x5F・英字大文字化 index）
+  > - `0x58BEE0`＝XML 値解決器（`[+0x18]==0xFA2` type ゲート）／`0x58D2F0`＝値解決ラッパ。
+  > 残点 V-576-3/V-577-2/V-579-2/V-581-3/V-582-2/V-583-2/V-585-2/V-589-3【低】。台帳反映＋round_verify ALL OK（rows 31..582 / total 468 / done 463 / open 5）。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -445,6 +456,15 @@
   > ■ V-561-3 [確定(命令)] Done の非帰還ページ
   > - `0x5CC8BA`（全ブロック不一致）に落ちるのは **Race／Hair／Face／Hair Color** 等。`0xFA8` 一致なし→`0x5CCBF4`（id98 判定）→ act なし。→ **これらページの Done は実質何もしない**。
   > 残点 V-565-2/V-568-1,2/V-562-1,2/V-566-2,3【低】。台帳反映＋round_verify ALL OK（rows 31..580 / total 466 / done 461 / open 5）。
+  > 【RE レーン回答 2026-11-22: メニュー open/生成/notify 系 低優先残点クローズ（v606）】→ `tmp/re/v606_menu_open_notify_residuals_ruling.md`（台帳 row582・probe u19_1）
+  > ■ V-584-4 [確定(命令)] `0x578D70` の `al==1` vs `al==2`
+  > - `0x578D70()` は**応答バイト読取＋クリア**（`[singleton+0xB0]`→0xFF）。値=`base(1)+id-4` → **`al==1`(id4)=No／`al==2`(id5)=Yes**（v592/v594 と整合）。
+  > - v570 cb が `al==2` で実行・`0x5B8DC0` が `al==1` で実行という差は**ボタン別コールバックの割当差**。
+  > ■ V-587-2 [確定(命令)] `0x579C10` の flag(arg3)
+  > - `0x5BC8B0` の a5 に転送され `[entry+0x60]` に保存（**ボタン構成/既定応答を切替**）。
+  > ■ V-587-4 [確定(命令)] `0x5AD980` の callers
+  > - v597 で確定（`0x57E150` 等）＝**begin/execute から直接呼ばれずメニュー更新ループ経由**。
+  > 残点 V-591-2,3/V-592-2/V-593-3,4/V-596-1,2,3【低】。台帳反映＋round_verify ALL OK（rows 31..582 / total 468 / done 463 / open 5）。
 
 - [ ] **#159** 【作製・中優先（#143 の残 UX）】キャラ作成中は **ソフトキーボード（IME）が画面下半分を占有し、Create/Cancel ボタンが隠れる**。【実測の事実】①IME が y≈570 以下を覆い、Create/Cancel は y≈975 付近（`ui_character_creation.cpp` の `kConfirmCancelWidth=105`/`Height=32`・`confirm_button_x`/`cancel_button_x`）に描画されるため**開いている間は見えない** ②#143（a954d332 → master 249c36bb）で **✔(actionDone) 押下時に InputMethodManager で IME を自動クローズ**する実装は済みで、✔ 1回で Create が見える状態にはなる ③ただし **GLSurfaceView が全画面を占有しウィンドウが縮まない**ため、開いている間の視認性は未解決。【証跡】%TEMP%\opencode\rep_new.png／repro_r1.png／w_chargen.png。【方針候補（**UX 判断は人間確認が欲しい**）】①IME 表示中にパネル全体を上方へリレイアウト（Create/Cancel を IME 上端の y≈560 以上へ）②`windowSoftInputMode=adjustResize` ＋ WindowInsets で描画ビューポートを縮める ③IME 開閉をフックしてボタン行だけスライド。**原本の race_sex_menu は物理キーボード前提のため本件は移植側固有**（RE 依頼不要＝#143 で確定済み）。【検証】emu で名前入力 → IME 開いた状態で Create が見える、または ✔ 1回で確定できること（Back 不要）。関連: #143（自動クローズ実装・マージ済み）/#96/#126③ `#android` `#chargen` `#fix` `#oblivion` `#ui` `#ux`
   > 【前提の訂正（2026-11-17・emu 実測で判明）】**「IME を開くとサーフェースが 1920x573 に縮む」はこの構成では起きない**。証跡: キーボードが実際に開いた状態（%TEMP%/opencode/ime_open_state.png・y≥570 をキーボードが占有）で、リサイズハンドラのログが **すべて `1920x1110`**（`LauncherScreen/TitleScreen/SettingsUI/SaveLoadUI screen size updated to: 1920x1110`）で、`1920x573` は一度も出ない。＝**IME はオーバーレイとして乗るだけでウィンドウ/サーフェースを縮めない**（GLSurfaceView が全画面・adjustPan 相当）。【試して失敗した修正（撤回済み・差分に残していない）】リサイズハンドラに `characterCreationUI->setScreenSize()` を追加し、`getConfirmButtonY()` を `screenHeight - 32 - 8` にクランプする案 → **`screenHeight` が 1110 のままなので発動せずノーオペ**（ボタンは依然キーボード下＝見えない）。【古い台帳の「IME 時は 1920x573」の出所】#143 の記録にある `DebugMenu screen size updated to: 1920x573` は **DebugMenu が縮む別の経路**（コンソールの EditText フォーカス時等）の観測であり、**キャラ作成の名前欄フォーカス時には起きない**。【正しい設計の候補】①**Kotlin 側で WindowInsets(ime) を取得し `nativeOnImeVisibility/insets` で native に通知** → native がボタン行を IME 上端（1110 − imeHeight − margin）へ移動（描画と当たり判定は同じ `getConfirmButtonY()` 経由なので1箇所で足りる）②`AndroidManifest` の `windowSoftInputMode=adjustResize` を試し、**実際にサーフェースが縮むことを実測してから**クランプ案を再開（ただし #143 の調査では GLSurfaceView 全画面で効かなかった旨の記録あり＝要再実験）③現状の回避として #143 の ✔ 自動クローズを前面に出す（実装済み・Back 不要）。**①が最も確実**、②は1実験で確認できる。【補足】検証②で Done タップ（1467,549）が失敗したのはこのため（ボタンは y≈990 にありキーボード下）。
@@ -551,6 +571,16 @@
   > ■ V-566-2/3 [確定(移植側)]
   > - `getContentSize()` は `UIComponent` 宣言・`UIPanel` オーバーライド（EXE 側に相当物なし）。横断確認は移植側作業。
   > 台帳反映＋round_verify ALL OK（rows 31..581 / total 467 / done 462 / open 5）。
+  > 【RE レーン回答 2026-11-22: メニュー open/生成/notify 系 低優先残点クローズ（v606）】→ `tmp/re/v606_menu_open_notify_residuals_ruling.md`（台帳 row582・probe u19_1）
+  > ■ V-581-2 [部分確定] slot5=open
+  > - `0x591C50`（TileMenu vtable slot5）は type ゲート（`cmp a1,0xFA2`）を通して要素を可視化＝**「open」はメニュー要素の可視化**（v550 の slot+0x14 open と整合）。
+  > ■ V-584-3 [部分確定]
+  > - `0x5ABBC0` は menu `0x416`(1046) を操作（v584 の通知 id 1..5）。厳密名は [部分確定]。
+  > ■ V-585-2/3 [部分確定]
+  > - `0x57D940`＝HUD 表示サブヘルパ／`0x584880`＝`[+0xFA5]`(stackingtype) 3値比較のメニュー種別判定。
+  > ■ V-589-2/3 [部分確定]
+  > - `0x5898F0`＝子要素探索（`[+0x10]` チェーン）／`0x5A7CD0` の `[elem+0xc]→[+0x1c]` は要素 id/コールバックフィールド。
+  > 台帳反映＋round_verify ALL OK（rows 31..582 / total 468 / done 463 / open 5）。
 【依頼3件】（判定5段階・根拠は EXE 命令または原本アセットのみ・推測禁止）
 ①【高】**原版がゲームプレイ時に画面左上（とその周辺）に描画する要素の有無と内容・画面位置** — retail の HUD 構成（compass／health・magicka・fatigue／quickkeys／level 表示の有無／minimap の有無）を menu id 表と HUD 系メニュー XML、およびその**インスタンス化経路**で確定。左上に置く要素が無いなら **[確定(否定側)]** で構わない（＝port の左上描画は正典に無いことになり、除去/修復の根拠になる）。port 側は `hudRenderer.renderPlayerLevel` を (20,20) に置いており、**原版相当か否か**の判定が必要。出発点: `docs/RE_EXE_REPORT.md` L44（メニュー id 表・0x3f5 PauseMenu 等）と L1805-1815（OptionsMenu↔PauseMenu 背面関係）／ローカル BSA 抽出物 `D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\main\`（`hud_main_menu.xml` / `hud_info_menu.xml` / `hud_reticle.xml` / `hud_subtitle_menu.xml` 等）／EXE 側でこの帯を Gamebryo メニューとして立ち上げる関数。
 ②【中】**原版のメニュー文字描画の正典** — メニュー XML の文字エレメントがどのフォント・サイズ・色で、どの関数経路で描画されるか（port 側でポーズメニューのラベルが**文字ではなく色ブロック**になる病理に対する「正しい描画」の定義）。text_renderer のフォント割当・GMST/INI の UI フォント指定・`fonts/*.dds` の食い違いも含む。①と併せれば #137 と #96（視覚品質）の両方に効く。
@@ -2821,11 +2851,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2849,4 +2874,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 16:34:27
+**ai-todo** | Last Updated: 2026-11-20 16:41:50

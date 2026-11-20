@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T08:00:00Z",
+  "lastUpdated": "2026-11-22T10:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15274,14 +15274,32 @@
         "todo-166"
       ],
       "content": "2026-11-22 v605 裁定＝低優先残点クローズ バンドル3（ai-todo #96/#156/#157/#166）。成果物 tmp/re/v605_low_priority_residuals_bundle3_ruling.md・台帳 row581。probe u18_1〜u18_2（2本 EXIT=0）＋実物 XML/BSA。①[確定(命令)] V-572-1: 0x66xxxx 系3関数はすべてスキル一覧/使用量表示系（0x5E3320→0x6ECC80/0x51C090）: 0x663C50＝スキル難易度/習得速度計算（0x565C50(2,av)→0x446AF0→0x5F1910→0x548030）／0x666BB0＝スキル画面文字列レイアウト（'PLAYER CHARACTER'/'Skill Usage'）／0x668070＝スキル使用量差分計算（[esi+0x130]＝スキルポイント配列・0x65FAD0）。②[確定(命令)] V-569-5: 0x5DC8F3-5DC8FC は 0x5DC6F0 ループ末尾（cmp ebp,0x15/jl）の次イテレーション用構造体初期化（[esp+0x1c]=0・word[esp+0x22]/[esp+0x20]=0）。dead に見えるのは normal。エラー時 'Error creating skill item in Stats menu. Template not va…'（0xA6DB10）。③[確定(実測)] V-562-1: Data\\ の実 BSA 名は Oblivion - Textures - Compressed.bsa（旧記述 Oblivion - Textures.bsa は不存在）。DLC は DLCShiveringIsles - Textures.bsa。④[確定(XML)] V-562-2: title_main_menu.xml の <text name=\"version\">（id 9・x=10・y=935・zoom 75・<visible><not>&xenon;</not></visible>）の <string> は固定文字列 Version で strings() trait ではない → v562 の「strings() キー」は不存在 [確定負]。移植は \"Version\" 直書きで可（main_menu.xml にも同名要素）。⑤[部分確定] V-568-3: credits_menu.xml の <image name=\"credits_rect\"> はテキストスクロール窓のクリップ矩形で .bik 描画枠ではない。クレジット動画は再生されないため動画枠描画元は不存在。⑥[確定(移植側)] V-566-2/3: getContentSize() は UIComponent 宣言・UIPanel オーバーライド（EXE 側に相当物なし）。横断確認は移植側作業。残点 V-568-1【低】・V-573-2/V-599-2/V-598-4/V-601-1【低・動的領域】・V-566-2,3【低・移植側】。"
+    },
+    {
+      "id": "opencode-v606-menu-open-notify-residuals-20261122",
+      "timestamp": "2026-11-22T10:00:00Z",
+      "priority": "low",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v606",
+        "residuals",
+        "menu-stack",
+        "notify",
+        "todo-156",
+        "todo-161",
+        "todo-166"
+      ],
+      "content": "2026-11-22 v606 裁定＝メニュー open/生成/notify 系 低優先残点クローズ（ai-todo #156/#161/#166）。成果物 tmp/re/v606_menu_open_notify_residuals_ruling.md・台帳 row582。probe u19_1（1本 EXIT=0）。①[確定(命令)] V-575-3/V-580-2: 0x587B20 はメニュースタックの遅延初期化関数。arg1 が真かつ [0xB3A708] が NULL なら 0x401F00(1) で確保→0x4E4A10(0xB13970, 0x33) で構築し [0xB3A708] に格納＝メニュースタック 0xB13970 の遅延初期化。②[確定(命令)] V-574-3/V-580-3: 0x42BB90 は 0xB13970 の要素 accessor（id→生成済み要素の検索/登録）＝真のメニュースタックデータ構造＝0xB13970。③[確定(命令)] V-584-2: 0x583E60(begin) は [esi+8]==3 && [esi+9]==0 のとき [esi+8]=5・SetFloat(0xFA1,1.0)・SetString(0xFE6,'Menus\\Misc\\cursor.dds')・0x58E870＝カーソル表示＋メニュー表示開始。0x583F40(end) は [edi+9]=0・子要素 [+0x34] ツリー走査＝メニュー終了処理。④[確定(命令)] V-582-3/V-576-2: 0x588EF0(name)＝名前/記号解決関数（&name; は 0xB3B0B4 の 16B ノード配列を __mbsicmp 検索、_key=0x5F、英字は大文字化 index）／0x58BEE0＝XML 値/メニュー要素の値解決器（[+0x18]==0xFA2 type ゲート）／0x58D2F0＝値解決ラッパ（0x588EF0 呼出・_ 始まりは 0x58B040）。⑤[確定(命令)] V-584-4: 0x578D70() は応答バイト読取＋クリア（[singleton+0xB0]→0xFF）。値=base(1)+id-4 で al==1(id4)=No／al==2(id5)=Yes（v592/v594 と整合）。⑥[確定(命令)] V-587-2: 0x579C10 の arg3(flag) は 0x5BC8B0 の a5→[entry+0x60] に保存（ボタン構成/既定応答を切替）。V-587-4: 0x5AD980 の callers は v597 で確定＝begin/execute から直接呼ばれずメニュー更新ループ経由。⑦[部分確定] V-581-2（0x591C50 slot5=可視化）・V-584-3（0x5ABBC0=menu 0x416）・V-585-2/3（0x57D940/0x584880）・V-589-2/3（0x5898F0/0x5A7CD0）・V-583-3（0xFA1 block type4001）。残点 V-576-3/V-577-2/V-579-2/V-581-3/V-582-2/V-583-2/V-585-2/V-589-3/V-591-2,3/V-592-2/V-593-3,4/V-596-1,2,3【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1028,
+    "totalEntries": 1029,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T08:00:00Z",
-    "entry_count": 1028,
-    "last_updated": "2026-11-22T08:00:00Z"
+    "lastUpdated": "2026-11-22T10:00:00Z",
+    "entry_count": 1029,
+    "last_updated": "2026-11-22T10:00:00Z"
   }
 }
