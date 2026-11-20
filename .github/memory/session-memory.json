@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T06:00:00Z",
+  "lastUpdated": "2026-11-21T08:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14974,14 +14974,32 @@
         "v590"
       ],
       "content": "2026-11-21 v591 裁定＝V-591-1 の negative（0x5821F0 内 0x5827D0 も notify ではない（vtable[3] 値の受け渡し）・0xFA8 読取は layout 用途 → id98 は静的 RE で確定不能・ai-todo #161 追加 note）。成果物 tmp/re/v591_notify_heuristic_negative_ruling.md・台帳 row567。probe v591_1（1本 EXIT=0）。①[確定(命令)（negative）] 0x5827D0 は notify ではない: 実体＝mov eax,[ecx+0xc]; push eax; lea ecx,[esp+0x78]; call 0x441920（ecx=[0xB333A0]）＝vtable[3] 値を別関数へ渡す処理。②[確定(命令)] 0x5821F0 の 0xFA8 読取11箇所: すべて add edi,<X>; call 0x588BD0(0xFA8)＝タイル配列を走査して id trait を読む layout 処理（notify 送信ではない）。0x5821F0（frame 更新）は notify 送信元ではない。③[未確定]（打切り判断）id98 の発生源: 静的コードに送信サイトが存在しない（v589/v590/v591 で3仮説否定）→ 完全に実行時依存 → V-592-1（動的解析 or 0x579970 完全 decode）へ引継ぎ・優先度低（実装は v570 で act 確定済み）。④手法メモ（重要）: notify 判定は4条件必須＝①mov reg2,[reg+0xc] ②2連 push（arg2, id）③mov ecx,<obj> ④call reg2（レジスタ経由）。mov reg2,[reg+0xc] 単独では vtable[3] 一般読取を誤認（v590/v591 で false positive 2件）。残点 V-592-1【低】／V-592-2【低】。"
+    },
+    {
+      "id": "opencode-v592-dialog-flag-origin-20261121",
+      "timestamp": "2026-11-21T08:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v592",
+        "u6",
+        "u4",
+        "dialog",
+        "todo-166",
+        "v587",
+        "v588"
+      ],
+      "content": "2026-11-21 v592 裁定＝V-588-1/2 + V-587b-1 クローズ（ダイアログ flag の保存元と 0x5BCCB0 の実体・v587/v588 の 0x5BC6B0 接続を [確定負] に訂正・ai-todo #166 追加 note）。成果物 tmp/re/v592_dialog_flag_origin_ruling.md・台帳 row568。probe v592_1〜v592_3（3本 EXIT=0）。①[確定(命令)] [entry+0x60]（flag）の保存元＝0x5BC8B0 の 0x5BCB3F: mov byte [ebp+0x60],al（al＝第5引数 a5）。②[確定(命令)] 0x5BC8B0 の引数契約＝5引数（add esp,0x14）。callers は3関数: 0x579C10（汎用ダイアログ登録・v570/v586 の6引数 API）/0x579CF0/0x5BCC00。0x579C10 の flag(arg3) が 0x5BC8B0 の a3 に対応。③[確定負（v587/v588 訂正）] 『0x5BCCB0→0x5BC6B0（応答バイトへ flag コピー）』は誤り: 0x5BCCB0 の call 一覧（0x5BCCB0-0x5BCDC5）に 0x5BC6B0 は無い（0x582160/0x588C10/0x4028D0/0x401F20×5 のみ）。[+0xB0]=[entry+0x60] 自体は 0x5BC6B0 単体では正しいが、駆動元が 0x5BCDD0/0x5BCCB0 という接続が誤り。④[部分確定] [+0xB0] を書く経路: 0x5BC6B0 の callers は 0x5BCDD0 のみだが 0x5BCCB0 は 0x5BC6B0 を呼ばない → 接続は 0x5BCCB0 の先 → V-593-1。⑤[確定(命令)] Random/Reset callback: 0x5C9FC0/0x5C9F70 は 0x578D70() の戻り al==2 で実行本体へ jmp（0x5C9FA8 cmp al,2）＝v570 と一致 → al==2 が肯定（Yes）。⑥[部分確定] al==1 の意味: al==1/al==2 は『どちらのボタンが押されたか』の2値で al==2＝肯定。al==1 側のボタン確定は V-593-2。⑦副次: [reg+0x60] imm 書込みは 0x5BC48A(imm=1) のみ／0x441920＝[ebx+0x14] 差し替え関数（V-592-2 の解答）。残点 V-593-1【中】／V-593-2【中】／V-593-3・4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1011,
+    "totalEntries": 1012,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T06:00:00Z",
-    "entry_count": 1011,
-    "last_updated": "2026-11-21T06:00:00Z"
+    "lastUpdated": "2026-11-21T08:00:00Z",
+    "entry_count": 1012,
+    "last_updated": "2026-11-21T08:00:00Z"
   }
 }
