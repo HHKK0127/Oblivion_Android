@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T14:00:00Z",
+  "lastUpdated": "2026-11-21T16:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15044,14 +15044,47 @@
         "v594"
       ],
       "content": "2026-11-21 v595 裁定＝V-595-1/2 クローズ（MessageMenu init 0x5BC450（[+0x60]=1 確定）・0x5894F0（id trait 検索）の callers は notify を送らない＝id98 発生源は静的 RE 打切り確定・ai-todo #166 追加 note）。成果物 tmp/re/v595_messagemenu_init_idtrait_callers_ruling.md・台帳 row571。probe v595_1・v595_2（2本 EXIT=0）。①[確定(命令)] V-595-1 0x5BC450（MessageMenu init）: 0x584640（基底 init）→ [esi+0x28..+0x5c] を 0 クリア → [esi]=0xA6CE5C（vtable）→ [esi+0x60]=1（base）→ ret。[+0x60] は常に 1（唯一の書き手）。②[確定(命令)（negative）] V-595-2 0x5894F0 の callers は notify を送らない: callers は3関数のみ＝自身／0x5A7CD0／0x5A8000。いずれにも 4条件 notify は存在しない。③[確定(命令)] 0x5A8000＝0x5894F0(tile,1/2/3) を3連呼して [0xB3B350]/[0xB3B358]/[0xB3B360] に保存＝id trait 1/2/3 のタイル検索・記録。0x5A7CD0＝要素リスト描画（edi+0x7c 配列走査）。④[未確定]（静的 RE 打切り・確定）id98 の発生源: v589-v595 で全候補経路を否定（静的定数／0xFA8／0x5821F0／0x5894F0）→ 汎用ループが実行時に生成する値で静的 RE では特定不能（実装は v570 で act 確定済みのため影響なし）。⑤[確定(命令)] 副次: 0x57DE50＝'MenuStart'/'MenuEnd' を 0x121 トレイトへ設定するメニュー開始/終了処理（jump table 0x57E0C0）。残点 V-596-1・2・3【低】。"
+    },
+    {
+      "id": "opencode-v596-u10-screen-virtual-resolution-20261121",
+      "timestamp": "2026-11-21T16:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v596",
+        "u10",
+        "menu-xml",
+        "screen",
+        "virtual-resolution",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v596 裁定＝U10（screen() の実体＝仮想解像度・ai-todo #96）。成果物 tmp/re/v596_u10_screen_virtual_resolution_ruling.md・台帳 row572。probe u10_1〜u10_26（26本 EXIT=0）。①[確定(命令)] screen()＝InterfaceManager singleton [0xB3A6E0] の [+0x68]（MenuRoot）。source id screen=0x138E・ディスパッチャ 0x58B800 jump table 0x58BAB4 の case 0x58BA02: push 1; push 0; call 0x582160; mov eax,[eax+0x68]。strings()=[+0x6c]（0x58BA28）。②[確定(命令)] trait id: width=0xFCB／height=0xFCA／cropx=0xFDA／cropy=0xFD9（0x58A1C0 が 0x58A0A0 で登録）。cropx=cropoffsetx=0xFDA・cropy=cropoffsety=0xFD9（同名別 id）。③[確定(命令)] 仮想解像度＝設計箱 1280×960: iSizeW=[0xB06C4C]（GMST iSize W:Display・初期640）／iSizeH=[0xB06C50]（iSize H:Display・初期480）から、横長(W≥H): height=960 固定・width=960×W/H／縦長(W<H): width=1280 固定・height=1280×H/W（0x57D7A0 virtW／0x57D7F0 virtH・定数 0xA68D70=960.0d・0xA688A8=1280.0f・0xA688A0=1280.0d・0xA68D78=960.0f）。エミュレーション: 800×600/1024×768/1280×960→1280×960／1280×720/1920×1080→1706.67×960／1080×607→1708.07×960。fMenuScale/uVideoResolution/sVideoResolution のリテラルは .rdata に0件 [確定負]。④[確定(命令)] スケール写像＝直交投影（0x57E7C0・callers=0x581CC0 init／0x5821F0 frame／0x579970 tick）: ±仮想W/2, ±仮想H/2（0x57E330=+W/2・0x57E2D0=-W/2・0x57E3F0=+H/2・0x57E390=-H/2）を張る ortho で実画面全域へ写す（倍率=実H/仮想H）。⑤[確定(命令)] cropx/cropy 供給元: cropx=widescreen?iSafeZoneXWide(0xB13608):iSafeZoneX(0xB135F8)／cropy=widescreen?iSafeZoneYWide(0xB13610):iSafeZoneY(0xB13600)（既定20・v550 再確認）。widescreen 判定=H/W<0.74（0xA68D08=0.74）。仮想値の書き手＝0x581CC0（MenuRoot init）と 0x57D840（0x579370 経由=usz SafeZone/解像度適用・0x5821F0 0x583550 から）。解像度適用 0x498340 が [0xB06C4C]=[0xB06C5C]／[0xB06C50]=[0xB06C64]。⑥[確定負] v367 §1③ 訂正: 「screen 高600で y=-70 クリップ」は実画面高を仮想高と誤認（4:3 の仮想高は常に960→(960−740)/2=110 でクリップしない）。⑦移植指針: MenuEvalContext::screen_width/height に実解像度でなく仮想解像度を入れる（現行 menu_xml_interpreter.cpp:325-326 は素通し・screen().cropx/cropy は未実装=makeNumber(0)・テストは 1280×720 直書き=要修正）。残点 V-596-1/2/3【低】。"
+    },
+    {
+      "id": "opencode-v597-u11-loadingmenu-traits-20261121",
+      "timestamp": "2026-11-21T16:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v597",
+        "u11",
+        "loading-menu",
+        "trait-suppliers",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v597 裁定＝U11（LoadingMenu の trait 供給元 user0〜user5・ai-todo #96）。成果物 tmp/re/v597_u11_loadingmenu_trait_suppliers_ruling.md・台帳 row573。probe u11_1〜u11_14（14本 EXIT=0）＋実物 XML 抽出。①[確定(命令)] menu id=0x3EF（0x589B70 FindMenu・0x5898F0 基底取得・vtable 0xA6C40C・ローダ 0x5ADCF0）。②[確定(命令)] user0（スライドショー段数）: 書き手 0x5AD780（0x5AD914-0x5AD939: 0xFAE を読み +1.0 → SetFloat(0xFAE)）と 0x5AD440（0x5AD44E-0x5AD45C: 0.0 リセット）。0=タイトルページ・>0=ロード。遷移=0x5ADCF0(0)／0x5AD780(+1)。③[確定(命令)] user1（背景画像）: 書き手 0x5AD780（0x5AD88E: push 0xFAF→0x58CED0 SetString）。値='Menus\\Loading'(0xA6C4B8)+ロード対象名（0x5AD853 _strstr で含まなければ 0x5AD87E '%s%s' で合成）＝固定でなく対象ごとに変わる（XML 既定 load_in_game_default.dds は初期値）。④[確定(命令)] user2（表示文字列）: 書き手 0x5AD780（0x5AD906: push 0xFB0→0x58CED0）。値=ロード対象レコードの DESC（0x43534544='DESC' を 0x5AD8A1/0x5AD8BD で取得・0x5AD8EA-0x5AD8F7 で末尾 0x0a 除去）＝sLoading 系 GMST ではない（XML 既定 strings()._missing は初期値）。⑤[確定(命令)] user3（進捗バー現在値）: 書き手 0x5AD980（0x5ADA89: push 0xFB1→0x58CEB0）。値=[LoadingMenu+0x60]（完了セクション数 0..100）＝ロード段階数ベース（実時間でない・0x5ADB40 が 100 まで回す）。user4（最大値）=XML 既定 100 のまま（0xFB2 を書く LoadingMenu サイト=0件）。user5（デバッグ）=0x5ADCF0（0x5ADE21: push ' '(0xA36430)→0xFB3）＝ロード開始時 ' '。実行時 0x5ADEC0 が 'Loading Bar Section %d %d0%%' を 0x404EE0（コンソール）表示。⑥[確定(命令)（negative）] 3 メニュー: 0x590420 の LoadingMenu 系 caller は 0x5ADCF0 のみで Data\\Menus\\loading_menu.xml のみをロード。loading_ingame_menu.xml/loading_bar_ingame_menu.xml の .rdata リテラル=0件＝原版は未使用（起動前・ゲーム内とも loading_menu.xml を使い user0 の 0/1 で切替）。⑦[確定(XML)] strings()._missing=' Missing Text '（Oblivion - Misc.bsa 抽出 menus\\strings.xml L190）・_loading=' Loading... '（L28）。INI [LoadingBar] GMST（0xB14138〜）: fPercentageOfBar0..3=0.06/0.35/0.44/0.15・fLoadingSlideDelay=15。⑧移植指針: loading_menu.xml のみ実装・user3 は段階ベース・_missing/_loading 実文字列を使用。残点 V-597-1/2/3/4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1015,
+    "totalEntries": 1017,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T14:00:00Z",
-    "entry_count": 1015,
-    "last_updated": "2026-11-21T14:00:00Z"
+    "lastUpdated": "2026-11-21T16:00:00Z",
+    "entry_count": 1017,
+    "last_updated": "2026-11-21T16:00:00Z"
   }
 }
