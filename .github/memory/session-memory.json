@@ -15094,14 +15094,67 @@
         "chargen"
       ],
       "content": "2026-11-21 v598 裁定＝U12（導入ムービー OblivionIntro.bik の再生仕様・ai-todo #164）。成果物 tmp/re/v598_u12_intro_movie_playback_ruling.md・台帳 row574。probe u12_1〜u12_23（23本 EXIT=0）＋実物 XML/INI。①[確定(命令)] chargen との表示関係: 動画は全画面（foreground）で chargen パネルを覆う。0x410BA0(path,1,1,0,0,1,0) は a7=0＝前景で新規ムービーを作り、0x410A70 が 0x4106C0 を同期ブロックでループ。0x4106C0 は毎フレーム自前で画面クリア＋全画面クアッド描画（0x40FA20・renderer[+0x104]）→ メニュー描画ループ 0x57F170 が回らないため RaceSexMenu は生成済み（0x57B7E0 が先）だが描画されない。ムービー終了後に通常ループへ戻り chargen が前面に出る。②[確定(命令)（negative）] chargen UI 操作: 不可。v560 の「入力は塞がない」は「ムービー自身が PeekMessageA/TranslateMessage/DispatchMessageA で OS メッセージを空にする」意味でメニューへのクリック配送ではない。③[確定(命令)] キー 5/0x1D の実キー: キーコードではなく action 系識別子。0x410390 が FUN_00403520(input,5,1) と (input,0x1D,1) を呼ぶ。0x403520 の arg1 はアクション id（<0x1D）で [input+0x1B7E] の 29×3 バインド表（stride 0x1D）を引く。action 5=Activate（0x9F6040 action 表）＝既定 Oblivion_default.ini の Activate=0039FFFF＝DIK 0x39=Space。0x1D(29) は特殊擬似アクション＝マウスボタン（0x4035A8 が [input+0x19F5]/[0x18F5] をテスト）→ マウスクリックでもスキップ。タッチ端末の等価操作＝タップ。④[確定(命令)] 音声: 既定トラックをそのまま再生。_BinkSetSoundSystem(_BinkOpenDirectSound,0)（0x410310・起動時 0x40EADB）で接続。BinkSetVolume/BinkSetAudioTrack/BinkSetSoundTrack の import は .rdata に0件 [確定負]＝音量/トラックの明示制御なし。前景ムービーの前後でゲーム音楽を停止/再開（0x6A8D00+0x6A9B40（[+0xA4]=1）→ムービー→0x6A8D50+0x6A9C00（[+0xA4]=0））＝BGM と競合しない。⑤[確定(命令)] 起動順: 0x40EADB（Bink 音声初期化）→ 0x40EAE0 0x410E40（CreateThread MoviePlayer＝非同期で sIntroSequence＝法務/ロゴ4本）→ 0x40F0AF 0x410BA0(sMainMenuMovieIntro='Oblivion iv logo.bik',1,1,0,0,0,0)（同期・a6=0＝高さ基準480）→ 0x40F0C3 0x5B5C90（メインメニュー表示）。OblivionIntro.bik はここでは流れず、NEW 確定後の世界ロード 0x66EAF0 末尾（0x57B7E0 chargen 生成→0x66F2D1）でのみ再生。⑥GMST 実値（0xB03084〜）: sIntroSequence='bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik'／sMainMenuMovieIntro='Oblivion iv logo.bik'／sMainMenuMovie='Map loop.bik'／sCreditsMenuMovie='CreditsMenu.bik'／sOblivionIntro='OblivionIntro.bik'。⑦移植指針: TitleScreen::setupIntroVideo（タイトル初期化時）は位置が誤り→「NEW 確定→chargen 生成→OblivionIntro 同期・全画面再生→chargen 前面表示」に移す。再生中は chargen を描画・操作しない。スキップはタップ（Space 相当）。音声は既定トラック・BGM は前停止後再開。残点 V-598-1/2/3/4【低】。"
+    },
+    {
+      "id": "opencode-u10-screen-virtual-resolution-20261120",
+      "timestamp": "2026-11-20T04:10:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-96",
+        "u10",
+        "screen",
+        "virtual-resolution",
+        "menu-scale",
+        "v596",
+        "canonical"
+      ],
+      "content": "2026-11-20 U10 裁定（tmp/re/v596_u10_screen_virtual_resolution_ruling.md・ai-todo #96）＝ **`screen()` は仮想解像度を返す（実画面解像度ではない）[確定(命令)]**。①実体＝`InterfaceManager` singleton `[0xB3A6E0]` の `[+0x68]`（`MenuRoot` オブジェクト）の width(trait 0xFCB)/height(trait 0xFCA)。ソース id は `0x138E`（`FUN_0058a1c0` が登録）、dispatcher `FUN_0058b800` の table[4]=`0x58BA02` が `0x582160`（singleton getter）→ `[eax+0x68]`。②値＝**設計箱 1280×960 を実アスペクトへ長辺方向に拡張**。横長(W>=H): height=960 固定・width=960×W/H。縦長(W<H): width=1280 固定・height=1280×H/W。4:3（800×600/1024×768/1280×960）は常に 1280×960。③写像＝**直交投影**で UI 座標空間(仮想解像度)の ±仮想W/2,±仮想H/2 を実画面ビューポートへ。倍率=実H/仮想H=実W/仮想W（アスペクト保存）。④`cropx`(trait 0xFDA)=widescreen ? `iSafeZoneXWide` : `iSafeZoneX`（既定20）／`cropy`(0xFD9)=widescreen ? `iSafeZoneYWide` : `iSafeZoneY`。副次: `cropx`/`cropoffsetx` は同一 trait id 0xFDA、`cropy`/`cropoffsety` は 0xFD9（登録順で名前上書き）。解像度変更時の再計算は `0x581CC0`(MenuRoot init) と `0x57D840`(usz コンソール)の2箇所。**移植への指針**: `MenuEvalContext::screen_width/height` に実解像度ではなく仮想解像度を入れる。"
+    },
+    {
+      "id": "opencode-u11-loadingmenu-traits-20261120",
+      "timestamp": "2026-11-20T04:10:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-96",
+        "u11",
+        "loadingmenu",
+        "traits",
+        "v597",
+        "canonical"
+      ],
+      "content": "2026-11-20 U11 裁定（tmp/re/v597_u11_loadingmenu_trait_suppliers_ruling.md・ai-todo #96）＝ LoadingMenu(menu id 0x3EF) の trait 供給元 [確定(命令)]。①user0(0xFAE): 書き手 `0x5AD780`（`0x5AD939` で `user0 += 1.0`）と `0x5AD440`（0 リセット）。**ロード対象ごとに +1**、0=タイトルページ・>0=ロード画面（XML の load_title_page visible=user0==0 / load_main visible=user0>0 がこれで切替）。②user1(0xFAF): `0x5AD780` が `'Menus\\Loading'`＋ロード対象名を SetString（`_strstr` で既に含むなら そのまま）。**固定でなく対象ごとに変わる**。③user2(0xFB0): `0x5AD780` がロード対象の **DESC（説明）文字列**（末尾改行 0x0a 除去）を SetString。**sLoading GMST ではなくレコードの説明文**。④user3(0xFB1): `0x5AD980` が `[LoadingMenu+0x60]`（完了セクション数・0..100）を SetFloat。**ロード段階数ベース**（`0x5ADB40` が [+0x60] を 100 まで回す）。実時間ベースではない。⑤user4(0xFB2): XML 既定値 **100** のまま（LoadingMenu 内で 0xFB2 を書くサイトは0件）。⑥user5(0xFB3): `0x5ADCF0` が空白1文字へ初期化、実行時 `0x5ADEC0` が 'Loading Bar Section %d %d0%%' を `0x404EE0`(コンソール)で出す。⑦**3メニューの状態機械**: `loading_menu.xml` のみが `0x590420` でロードされ（`0x5ADCF0` の `0x5ADD2D`）、**`loading_ingame_menu.xml`/`loading_bar_ingame_menu.xml` は EXE にリテラルが存在せず ロードサイト0件 [確定負]＝原版未使用**（BSA に同梱されるがコードから参照されない）。起動時もゲーム内ロードも**同じ loading_menu.xml** を使い user0 で切替。⑧文字列: `_missing`=**\" Missing Text \"**・`_loading`=**\" Loading... \"**（menus/strings.xml）。ローダ `0x5ADCF0`、vtable `0xA6C40C`。"
+    },
+    {
+      "id": "opencode-u12-intro-movie-playback-20261120",
+      "timestamp": "2026-11-20T04:10:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "todo-164",
+        "u12",
+        "intro-movie",
+        "oblivionintro",
+        "chargen",
+        "v598",
+        "canonical"
+      ],
+      "content": "2026-11-20 U12 裁定（tmp/re/v598_u12_intro_movie_playback_ruling.md・ai-todo #164）＝ 導入ムービー `OblivionIntro.bik` の再生仕様 [確定(命令)]。①**動画は全画面(前景)で chargen パネルを覆う**。`0x410BA0(path,1,1,0,0,1,0)` は a7=0＝前景モードで新規ムービーを作り、`0x410A70` が `FUN_004106C0` を**同期ブロック**でループ。`FUN_004106C0` は毎フレーム自前でレンダラのクリア＋全画面クアッド描画（`0x40FA20`・renderer_vtable[+0x104]）→ **ムービー中はメニュー描画ループ `0x57F170` が回らない**ため RaceSexMenu は生成済みでも**描画されない**。終了後に前面に出る。②**動画中は chargen UI を操作できない**（非描画・非操作）。v560 の『入力は塞がない』はムービー自身が PeekMessageA/TranslateMessage/DispatchMessageA で OS メッセージを空にする意味で、メニューへのクリック配送ではない。③**スキップ**: `5`/`0x1D` はキーコードではなく action 系識別子。`FUN_00403520(input, 5, 1)` と `(input, 0x1D, 1)`。action 5=`Activate`（Oblivion_default.ini の `Activate=0039FFFF`＝DIK 0x39=Space）、`0x1D`(=29) は action 表外の特殊擬似アクション＝**マウスボタン**（`0x40356B`→`0x4035A8` が `[input+0x19F5]`/`[input+0x18F5]` をテスト）。**タッチ端末ではタップ（マウス相当）で skip**。④**音声**: `_BinkSetSoundSystem(_BinkOpenDirectSound,0)` で既定トラックを再生。`BinkSetVolume`/`BinkSetAudioTrack`/`BinkSetSoundTrack` の import は 0件 [確定負]＝明示制御なし。ただし**前景ムービーの前後でゲーム音楽を停止/再開**（`0x66F2B0`-`0x66F2B9` で `0x6A8D00`+`0x6A9B40`（停止）→ ムービー → `0x66F2DB`-`0x66F2E2` で `0x6A8D50`+`0x6A9C00`（再開））。`0x410A70` 自身も前景で 0x6A9B40/0x6A9C00。→ BGM と競合しない。⑤**起動順**: `0x40EADB`(Bink音声初期化) → `0x40EAE0` `0x410E40`(CreateThread 'MoviePlayer'＝非同期で sIntroSequence プレイリスト＝法務/ロゴ4本) → `0x40F0AF` `0x410BA0(sMainMenuMovieIntro='Oblivion iv logo.bik',1,1,0,0,0,0)`(**a6=0＝高さ基準480**) → `0x40F0C3` メインメニュー。**OblivionIntro はここでは流れない**。NEW 確定後: `0x66EAF0` 末尾で `0x57B7E0`(RaceSexMenu 生成)→ `0x410BA0(sOblivionIntro,1,1,0,0,1,0)`(同期・前景・**a6=1＝幅基準640**)。**移植への指針**: `TitleScreen::setupIntroVideo`(タイトル初期化時) は位置が誤り。正しくは『NEW 確定→RaceSexMenu 生成→OblivionIntro を同期・全画面で再生→chargen を前面表示』。再生中は chargen を描画・操作しない。skip はタップ。音声は既定トラック再生＋BGM 停止/再開。"
     }
   ],
   "metadata": {
-    "totalEntries": 1018,
+    "totalEntries": 1021,
     "compressedCount": 123,
     "sessionCount": 43,
     "lastUpdated": "2026-11-21T18:00:00Z",
-    "entry_count": 1018,
+    "entry_count": 1021,
     "last_updated": "2026-11-21T18:00:00Z"
   }
 }
