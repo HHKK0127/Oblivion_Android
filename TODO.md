@@ -201,6 +201,34 @@
   > 【移植への示唆】導入ムービーは RaceSexMenu を生成した後に再生（移植の「NEW 確定→直接 chargen 表示」に挟むなら 生成→再生→表示 の順）。ムービー中の入力を「塞ぐ」実装は原版より強く閉じている（原版は skip キーのみ拾う）。フィットは幅基準（640 論理幅）で 720p 素材なら 640x360＋上下60。
   > 【残点 V-560-1..2】1=キーコード 5/0x1D の物理キー同一性【低】／2=FUN_00582160(0,1) の戻り値の意味【低】。
   > 【U12 を RE へ起票・送信（2026-11-20・resume:true・msg_1f6def415001dg0au7QpO4r5pE）】導入ムービー OblivionIntro.bik の再生仕様。確定済み（v557/v560）: 再生位置は FUN_0066eaf0 末尾で RaceSexMenu 生成が先・動画が後（0x66F295→0x66F2D1）／第6引数 1＝幅基準640／入力は塞がない（FUN_00410390 がポンプを回しキー 5/0x1D を skip）／OblivionIntro.bik は audioTracks=1。未裁定: (a) chargen パネルとの表示関係（動画がパネルを覆うのか別画面か・動画中のパネル可視状態）(b) 動画中の chargen UI 操作可否 (c) skip キー 5/0x1D の実キー同一性とタッチ等価 (d) 音声（audioTrack を再生するか title BGM と競合させないか）(e) 起動スプラッシュ（sIntroSequence）→iv ロゴ→メニューと本動画の厳密な起動順。受付は tmp/re/TODO_re49.md の U12。移植の現状: TitleScreen::setupIntroVideo がタイトル初期化時（title_screen.cpp:147）に再生しており誤り。NEW 確定後の再生経路は無い（renderer.cpp:4986-5004 は gameStarted → 直接 showCharacterCreation）。
+  > 【RE レーン回答 2026-11-21: U12 裁定（作製レーン依頼）】導入ムービー OblivionIntro.bik の再生仕様 → `tmp/re/v598_u12_intro_movie_playback_ruling.md`（台帳 row574・probe u12_1〜u12_23）
+  > ■ ⒜ chargen パネルとの表示関係 [確定(命令)]
+  > - 動画は**全画面（foreground）で chargen パネルを覆う**。`0x410BA0(path,1,1,0,0,1,0)` は `a7=0`＝前景で新規ムービーを作り、`0x410A70` が `0x4106C0` を**同期ブロックでループ**。
+  > - `0x4106C0` は毎フレーム**自前で画面クリア＋全画面クアッド描画**（`0x40FA20`・`renderer[+0x104]`）→ **メニュー描画ループ `0x57F170` が回らない**ため、RaceSexMenu は生成済み（`0x57B7E0` が先・`0x66F295`）だが**描画されない**。ムービー終了後に通常ループへ戻り chargen が前面に出る。
+  > - → 移植は `TitleScreen::setupIntroVideo`（タイトル初期化時に再生）の**位置が誤り**。正しくは「NEW 確定 → RaceSexMenu 生成 → OblivionIntro 同期・全画面再生 → chargen 前面表示」。
+  > ■ ⒝ chargen UI 操作 [確定(命令)（negative）]
+  > - **不可**。v560 の「入力は塞がない」は「ムービー自身が `PeekMessageA`/`TranslateMessage`/`DispatchMessageA` で OS メッセージを空にする」意味であり、**メニューへのクリック配送ではない**（メニュー render ループが回らないため非描画・非操作）。
+  > ■ ⒞ スキップのキー 5 / 0x1D の実キー [確定(命令)]
+  > - **キーコードではなく action 系識別子**。`0x410390` が `FUN_00403520(input,5,1)` と `(input,0x1D,1)` を呼ぶ。`0x403520` の arg1 は**アクション id**（`<0x1D`）で `[input+0x1B7E]` の 29×3 バインド表（stride `0x1D`）を引く。
+  > - **action 5=`Activate`**（`0x9F6040` action 表）＝既定 `Oblivion_default.ini` の `Activate=0039FFFF`＝**DIK 0x39=Space（スペースキー）**。
+  > - `0x1D`(29) は**特殊擬似アクション＝マウスボタン**（`0x4035A8` が `[input+0x19F5]`/`[0x18F5]` をテスト）→ **マウスクリックでもスキップ**。
+  > - **タッチ端末の等価操作＝タップ**（マウスボタン相当）。Space も等価。
+  > ■ ⒟ 音声の扱い [確定(命令)]
+  > - **既定トラックをそのまま再生**。`_BinkSetSoundSystem(_BinkOpenDirectSound,0)`（`0x410310`・起動時 `0x40EADB`）で DirectSound を接続。
+  > - **`BinkSetVolume`/`BinkSetAudioTrack`/`BinkSetSoundTrack` の import は `.rdata` に0件 [確定負]**＝音量/トラックの明示制御なし。
+  > - 前景ムービーの前後で**ゲーム音楽を停止/再開**（`0x6A8D00`+`0x6A9B40`（`[+0xA4]=1`）→ムービー→`0x6A8D50`+`0x6A9C00`（`[+0xA4]=0`））＝**title BGM と競合しない**。
+  > ■ ⒠ 厳密な起動順 [確定(命令)]
+  > - `0x40EADB`（Bink 音声初期化）→ `0x40EAE0` `0x410E40`（**`CreateThread` "MoviePlayer"＝非同期**で `sIntroSequence`＝法務/ロゴ4本）→ `0x40F0AF` `0x410BA0(sMainMenuMovieIntro="Oblivion iv logo.bik",1,1,0,0,0,0)`（**同期**・`a6=0`＝高さ基準480）→ `0x40F0C3` `0x5B5C90`（メインメニュー表示）。
+  > - **`OblivionIntro.bik` はここでは流れず、NEW 確定後の世界ロード `0x66EAF0` 末尾（`0x57B7E0` chargen 生成→`0x66F2D1`）でのみ再生**。
+  > - GMST 実値（`0xB03084`〜）: `sIntroSequence`='bethesda softworks HD720p.bik,2k games.bik,game studios.bik,Oblivion Legal.bik'／`sMainMenuMovieIntro`='Oblivion iv logo.bik'／`sMainMenuMovie`='Map loop.bik'／`sCreditsMenuMovie`='CreditsMenu.bik'／`sOblivionIntro`='OblivionIntro.bik'。
+  > - → 移植の `IntroVideoActivity`（起動スプラッシュ4本）は `sIntroSequence` に対応。iv ロゴは `sMainMenuMovieIntro`（別扱い）。
+  > ■ 移植指針
+  > 1. `TitleScreen::setupIntroVideo` をタイトル初期化から外し、「NEW 確定→chargen 生成→OblivionIntro 同期・全画面→chargen 表示」に移す。
+  > 2. ムービー中は chargen を描画・操作しない（メニュー render/update を止める）。
+  > 3. スキップはタップ（マウス相当）。Space も等価。
+  > 4. 音声は既定トラックを再生（音量制御なし）。再生前にタイトル BGM を停止し、終了後に再開する。
+  > 5. `IntroVideoActivity`（起動スプラッシュ4本）は `sIntroSequence` に対応、iv ロゴは `sMainMenuMovieIntro`（別扱い）。
+  > 残点 V-598-1/2/3/4【低】。台帳反映＋round_verify ALL OK（rows 31..574 / total 460 / done 455 / open 5）。push 69910138（ls-remote MATCH）。
 
 - [ ] **#162** 【RE レーン依頼・#101 の残件（A）】**RaceSexMenu(0x40C) の `user0` ページ構成・並び順・各ページの要素一覧**を確定してほしい。port のキャラクター作成を「原版と同じ画面構成」に揃えるための最後のブロッカー。【出発点＝既裁定】`tmp/re/v351_chargen_structure_survey.md`（#97 成果物・#101 に返却済み）で以下が [確定]: ①原本 UI＝**RaceSexMenu(0x40C)**、初期化 `FUN_005CA010` が `Data\Menus\CharGen\race_sex_menu.xml` を読込 ②実物 XML（BSA 抽出物）**`D:\Cargo\Other\Oblivion\BSA\bsa_Extraction\menus\chargen\race_sex_menu.xml`（705行）** ③構成要素: 名前入力 `race_name` **id=10**／`race_button_done` **id=90**（user5: 1=Done, 2=Back）／3D プレビューのドラッグ領域 `race_player_grab`／**`user0`＝現在表示中の pane/page**（`race_template_pane` が `<eq src="RaceSexMenu" trait="user0"/>` でページ切替）／テンプレート pane(100)・button(101)・toggle(102)・slider(103)・text(104) ④スライダー trait: user0=現在値/user1=開始値/user2=ラベル/user6=マーカID/**user7=スライド対象の editor id**/user8=geometry・texture フラグ/user10=変更フラグ/user13=有効・無効、bar: user1=最小0/user2=最大1、step=0.04(Xbox)/0.01、jump=0.1 ⑤種族表示名＝ESM RACE FULL→`RaceData.fullName`（実装済）＋原本 `FUN_005CDA30` が TESRace リスト `DAT_00B33A98+0x44` を走査 [確定] ⑥属性/スキルの選択モデル＝s58 §1.2/1.6/1.7＋`class_menu.xml`＋正典 AV テーブル21スキル [確定]。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼2 [high]（再掲）: `user0` に設定される**ページ index ↔ 意味の対応表**、枚数と**並び順**、タブ切替の入力経路（矢印/Tab/クリックのどれが正典）。移植側の現行順 `Name / Race / Attributes / Skills / Appearance` が原版と同じかの確定が目的。出発点 `tmp/re/v351_chargen_structure_survey.md`。
@@ -2620,6 +2648,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2643,4 +2676,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 12:17:28
+**ai-todo** | Last Updated: 2026-11-20 12:52:47
