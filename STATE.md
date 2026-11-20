@@ -4049,3 +4049,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v581 `5f55aad8` →（本件 v582 を本 commit で push）＝**173裁定**。
 - **次**: V-583-1（4 callers 上流）／V-573-1（id98）／低優先群。
 
+## 2026-11-20 (lv) — V-583-1 第3経路の実行時証拠 v583（U6/U4 フォロー）: **発火タイミング全系統の確定＝発火源8系統すべてが「ゲーム内イベント」で chargen フローには存在しない**
+
+- **成果物**: `tmp/re/v583_third_path_firing_ruling.md`（probe **v583_1〜v583_6・6本 EXIT=0**・冒頭 Test-Path）。台帳 **row559**・ai-todo **#166 追加 note**。
+- **① [確定(命令)] 発火源8系統を全て同定**: ①`FUN_00440C40`＝**`'Loading area...'`**（ローディング/エリア移動）②`FUN_0040D4D0`＝`cmp eax,0x3F4`(**SleepWaitMenu**)（Sleep/Wait）③`FUN_00459A10`＝state3 2段チェック（ゲーム進行）④`FUN_0045C9C0`＝**`sSaveGameContentIsMissing`+Yes/No**（セーブ欠損応答）⑤`FUN_0045DBC0`＝同型⑥`FUN_0066FF10`＝**`sPlayerLeavingBorderRegion`+`sOk`**（国境離脱 OK）⑦`FUN_005ABBC0`＝**`0x589B70(0x416)`(menu 1046)+通知id1..5**（HUD 操作）⑧`FUN_005B8DC0`＝**すべてゲーム内イベント**。
+- **② [確定(命令)] `FUN_005B8DC0`（E8/E9 callers 0件だった第4 caller）＝Fast Travel 確認の callback**: **`FUN_005BB880`（MapMenu 通知ハンドラ・`cmp edi,21`/`cmp edi,43`・vptr `0xA6CCA8`）**が `sprintf('%s %s?', sTravelQuestion,…)` → **`0x579C10(text,sYes,sNo,1,callback=0x5B8DC0)`**。本体＝`0x578D70()==1` → **`0x589B70(0x3FF)`＝MapMenu** → `vfunc+0x174` → `FUN_005821F0`。→ **callers 0件は callback 登録経由**（v570 Random/Reset と同型）。
+- **③ [確定(命令)（negative）]＋[部分確定] V-562-3 の裏付け成立**: **HUD 生成の実証経路は第3経路のみ**（open は全8系統で不存在＝v578/v580）× **発火源8系統すべてが chargen フロー外** → **chargen 中に HUD は生成されない**。ただし positively なゲート条件は未特定 → **V-584-1【中】**（最終クローズ条件）。
+- **④ [部分確定] 3薄ラッパ**: `0x5791A0`→`0x583E60`(begin)／`0x5791E0`→**`FUN_005821F0`**(execute)／`0x579220`→`0x583F40`(end)、3本とも `0x582160` singleton の `[+0x1c]` ゲート・**常に3連呼**。
+- **⑤ 教訓（再発型）**: **E8/E9 callers 0件＝到達不能でなく callback/vtable 登録経由の可能性** → **`push <addr>` を積む登録 API を `.text` の dword 参照から逆引き**（`0x5BB9B8` が決定打）／**発火タイミングは「発火元全列挙×文脈の文字列/メニュー id」で機械化**。
+- **残点**: **V-584-1【中】**（chargen ゲートの positively 特定）／V-584-2・3・4【低】。
+- **本日 push 累計（セッション）**: v405 → … → v582 `0fc944d7` →（本件 v583 を本 commit で push）＝**174裁定**。
+- **次**: V-584-1（chargen ゲート）／V-573-1（id98）／低優先群（V-561/562/565/567/568/571/572/574〜580 系の低優先）。
+

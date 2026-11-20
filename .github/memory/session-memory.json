@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-20T18:00:00Z",
+  "lastUpdated": "2026-11-20T20:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -14819,14 +14819,32 @@
         "v581"
       ],
       "content": "2026-11-20 v582 裁定＝V-582-1（第3経路の callers chain 4本まで確定・reload コマンド→&name 解決の構造と 0x582160 の identity・ai-todo #166 追加 note）。成果物 tmp/re/v582_command_chain_ruling.md・台帳 row558。probe v582_1〜v582_3（3本 EXIT=0・冒頭 Test-Path）。①[確定(命令)4段目まで] FUN_00586000 の callers＝1関数 FUN_005821F0 → FUN_005821F0 の callers＝4関数: FUN_005791E0（E9 tail-jmp 薄ラッパ）／FUN_00579CF0（3段チェック型）／FUN_005AB980（0x57CFE0→0x583E60 通過型）／FUN_005B8DC0（同一パターン）。4本とも 0x582160(1,0)→条件→ecx=eax で this 渡し。named_funcs は全 FUN_ 番号のみ。②[確定(命令)] '&xxx'＝reload コマンド: 'reload ' 比較→'reload %s'(sscanf) 引数取得→先頭 '&' 直行/非 '&' は末尾 ';'＋先頭 '&' 書込み→\"&<name>;\" を 0x588EF0 解決ヘルパへ→0x587B20→FUN_00587550(id)。reload＝&HUDMainMenu; 等のエンティティ名解決で窓 id を得る仕組み（v576 entity 機構と直結）。同関数に 'delete ' 系と push 0xFA1(4001) ブロックも実測。③[部分確定] 0x582160＝[0xB3A6E0] lazy 初期化: malloc(0x134)＋0x5802B0（ctor）→保存→返す＝型オブジェクト取得（未生成なら生成）＝0x587B20 と対になる型別 singleton グループ。④[部分確定] 第3経路の全体像: 4 callers→FUN_005821F0→コマンドパーサ→&name; 解決→0x587B20→窓 id switch→生成ヘルパ（HUD＝破棄→hud_main_menu.xml ロード）＝v580 矛盾⑤を支える経路の静的構造は確定（残るは発火タイミング）。教訓: E9 tail-jmp を callers に含めないと薄ラッパを取りこぼす（v577 教訓の再現）／__mbsnbicmp＋format sscanf でコマンド名・引数形式が一発／named が番号のみなら identity は機能記述で。残点 V-583-1【中】（4 callers 上流＝実行時証拠の最終段）／V-583-2・3【低】。"
+    },
+    {
+      "id": "opencode-v583-third-path-firing-20261120",
+      "timestamp": "2026-11-20T20:00:00Z",
+      "priority": "medium",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v583",
+        "u6",
+        "u4",
+        "menu",
+        "hud",
+        "todo-166",
+        "v582"
+      ],
+      "content": "2026-11-20 v583 裁定＝V-583-1（第3経路の実行時証拠＝発火タイミング全系統の確定・発火源8系統すべてがゲーム内イベントで chargen フロー外・ai-todo #166 追加 note）。成果物 tmp/re/v583_third_path_firing_ruling.md・台帳 row559。probe v583_1〜v583_6（6本 EXIT=0・冒頭 Test-Path）。①[確定(命令)] 発火源8系統: FUN_00440C40='Loading area...'（ローディング）／FUN_0040D4D0=cmp eax,0x3F4 SleepWaitMenu／FUN_00459A10=state3 2段チェック／FUN_0045C9C0=sSaveGameContentIsMissing+Yes/No／FUN_0045DBC0=同型／FUN_0066FF10=sPlayerLeavingBorderRegion+sOk／FUN_005ABBC0=0x589B70(0x416) menu 1046+通知id1..5／FUN_005B8DC0＝すべてゲーム内イベント。②[確定(命令)] FUN_005B8DC0（E8/E9 callers 0件の第4 caller）＝Fast Travel 確認の callback: FUN_005BB880（MapMenu 通知ハンドラ・cmp edi,21/43・vptr 0xA6CCA8）が sprintf('%s %s?',sTravelQuestion,…)→0x579C10(text,sYes,sNo,1,callback=0x5B8DC0)。本体＝0x578D70()==1→0x589B70(0x3FF)=MapMenu→vfunc+0x174→FUN_005821F0。callers 0件は callback 登録経由（v570 Random/Reset と同型）。③[確定(命令)（negative）]＋[部分確定] V-562-3 の裏付け成立: HUD 生成の実証経路は第3経路のみ（open は全8系統で不存在）×発火源8系統すべてが chargen フロー外 → chargen 中に HUD は生成されない。positively なゲート条件は未特定＝V-584-1【中】。④[部分確定] 3薄ラッパ: 0x5791A0→0x583E60(begin)／0x5791E0→FUN_005821F0(execute)／0x579220→0x583F40(end)、3本とも 0x582160 singleton の [+0x1c] ゲート・常に3連呼。教訓: E8/E9 callers 0件＝到達不能でなく callback/vtable 登録経由の可能性→push <addr> を積む登録 API を .text の dword 参照から逆引き（0x5BB9B8 が決定打）／発火タイミングは発火元全列挙×文脈の文字列/メニュー id で機械化。残点 V-584-1【中】（chargen ゲートの positively 特定）／V-584-2・3・4【低】。"
     }
   ],
   "metadata": {
-    "totalEntries": 1002,
+    "totalEntries": 1003,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-20T18:00:00Z",
-    "entry_count": 1002,
-    "last_updated": "2026-11-20T18:00:00Z"
+    "lastUpdated": "2026-11-20T20:00:00Z",
+    "entry_count": 1003,
+    "last_updated": "2026-11-20T20:00:00Z"
   }
 }
