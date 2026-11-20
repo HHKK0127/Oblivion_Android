@@ -3992,3 +3992,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **本日 push 累計（セッション）**: v405 → … → v576 `abe61284` →（本件 v577 を本 commit で push）＝**168裁定**。
 - **次**: V-577-1（矛盾解消 (c)）／V-573-1（id98 message 配線）／低優先群（V-565/566/567/568/571/572/574-2/3/575-2/3/576-2/3/577-2）。
 
+## 2026-11-20 (lq) — V-577-1 (c) の negative 完全化 v578（U6/U4 フォロー）: **「open 成功呼び出し」を全7系統で否定（矛盾の完全記録）・次の一手を `0x587B20` に特定**
+
+- **成果物**: `tmp/re/v578_open_negative_seven_systems_ruling.md`（probe **v578_1〜v578_4・4本 EXIT=0**・各 probe 冒頭 Test-Path assert 化）。台帳 **row554**・ai-todo **#166 追加 note**。
+- **① [確定(否定側)] 7系統の negative**: ①E8＝open 内1件のみ／②E9＝0件／③**1段 `ff /2`＝282件・UI=0件・push 即値 0x0C..0x32/0x104 系のみで 0xFA2 なし・`push [mem]` 0件**／④**2段 `mov r,[r+0x14];call r`＝408対・UI 多数（`0x53F4C0`/`0x5A3160`/`0x5BB880`/`0x58BEE0` 等）だが push hist に 0xFA2・[mem] とも0件**／⑤`push 0xFA2`＝3件（jmp オペランド・entity 登録・open 内 cmp）／⑥`mov reg,0xFA2`＝0件／⑦**`0x587D20` の data pointer＝ファイル全体0件**（ff15/push+ret も不存在）。
+- **② 矛盾5命題（維持）**: open 成功＝`a1==0xFA2` 固定／即値2件／`0x587D20`＝open 内1件（④⑦で data 経由含む死角なし）／成功呼び出し不存在／**それでもメニューは生成される（EXE 動作）**。
+- **③ 次の一手特定（V-579-1・中）**: **open 内 `0x591C6C: call 0x587B20` の callee `0x587B20(1,id)` を decode**（独自生成経路 or id 解決の可能性＝未読の唯一 callee）＋**open の a2(float) 実体**（v547 の `open(type:int,time:float,?:int)` 契約を f2i 前後で実測）＋**float-id ビット定数の byte 列走査**（例 1004.0f＝`0x447A0000`・本裁定では未走査）。
+- **④ 教訓（再発型）**: **indirect call は1段＋2段の両形式を走査**（1段 UI=0 件 vs 2段 UI 多数＝取りこぼし実例）／**push を imm/reg/[mem] 機械分類＋histogram で negative を1表確定**／**到達系統（E8/E9/1段/2段/push-imm/mov-imm/data-pointer/push-ret）を列挙してから「不存在」＝negative も [確定(否定側)]**／**probe 冒頭 Test-Path**（ハーネス2回目消失の運用対策）。
+- **残点**: **V-579-1【中】**（矛盾解消の最終手）＝V-577-1/V-576-1 を再定義継承／V-579-2【低】（2段形式 UI heads の slot 分類）。
+- **本日 push 累計（セッション）**: v405 → … → v577 `1ee28094` →（本件 v578 を本 commit で push）＝**169裁定**。
+- **次**: V-579-1（`0x587B20` decode＋float-id 走査）／V-573-1（id98 message 配線）／低優先群。
+

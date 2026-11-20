@@ -67,6 +67,12 @@
   > 【[運用・重要] probe ハーネス2回目の消失と復元】2026-11-20 %TEMP%\opencode\v307_common.py が再び消失（2026-11-18 の一度目の消失・復元記録と『以後 probe は最初に Test-Path』の教訓が発動）。他 probe 235個は残存＝**単ファイルのみが掃除される型**。復元: EXE＝D:\Cargo\Ghidra\temp\Oblivion_Steam版\Oblivion.exe（**7,898,624 B 実測一致**）／find_head＝tmp/re/cache/named_funcs.txt（**21,597 heads**・hexaddr,name 形式）の **bisect（va 以下の最大 head）＝CC フィルタ済みのため int3 帯は前 head に吸着（v574 の誤帰属挙動と一致）**／md＝capstone x86/32／sections＝PE32 パース5要素タプル／find_off・bytes_at・callers_of（E8 走査）。**復旧検証3件すべて OK**: callers_of(0x4E4A10)=1043（v546 一致）／callers_of(0x591C50)=0（v545 一致）／find_head(0x42703E)=0x426A90（v547/v576 一致）。加えで find_head(0x591C76)=0x591B70（誤帰属の再現＝挙動一貫）と disasm smoke（cmp [esp+4],0xfa2）も一致。
   > 【教訓（再発型）】①**オペランド内部を起点にした back-decode は偽命令を生む → head からの線形 decode で到達性を必ず検証**（a2＝mov al,moffs 誤読の是正例）②**`ff /2`（call [mem]）は SIB（mod=01 の ff 54・mod=10 の ff 94）まで列挙しないと漏れる**（281→282）③**TEMP ハーネスは毎回消える前提 → probe 冒頭 Test-Path を習慣化**（memory 1回目教訓の再発）。
   > 【残点】V-577-1【中】＝矛盾解消 (c) 引数規約実測＋resolver 2消費者後続（entity id push 経路）＝V-576-1 を再定義継承／V-577-2【低】＝0x714240 の同定。
+  > V-577-1 (c) の negative 完全化 2026-11-20 v578。成果物 tmp/re/v578_open_negative_seven_systems_ruling.md・台帳 row554。probe v578_1〜v578_4（4本・EXIT=0・冒頭 Test-Path assert 化）。
+  > 【[確定(否定側)] open 成功呼び出し（a1=0xFA2）を全7系統で否定】①E8＝open(0x591C50) 内 0x591C76 の1件のみ・0x587D20 も open 内1件（既確定を維持）。②E9 tail＝0件。③ff /2 1段（全 modrm+SIB+disp 完全列挙）＝282件・UI=0件・直前 push 即値は 0x0C..0x32/0x104 系のみで 0xFA2 なし・push [mem] も0件。④2段形式 mov r,[r+0x14]→call r＝408対・UI 多数（0x53F4C0/0x5A3160/0x5BB880/0x58BEE0 等）だが mov→call 間 push histogram に 0xFA2=0 件・[mem]=0 件（immediates は 0x0C..0x31 系と 0x1109 のみ）。⑤push 0xFA2 byte 列＝3件（jmp オペランド・entity 登録・open 内 cmp＝v577 済）。⑥mov reg,0xFA2＝0件。⑦0x587D20 の data pointer（dword 20 7d 58 00）＝ファイル全体0件 → ff 15 経由・push 0x587D20; ret も不存在。
+  > 【矛盾5命題（維持）】①open 成功＝a1==0xFA2 固定 ②0xFA2 即値は2件のみ ③0x587D20＝open 内1件（④⑦で死角なし＝data 経由含む全否定）④成功呼び出しは全系統で不存在 ⑤それでもメニューは生成される（EXE が動作する）。
+  > 【次の一手特定（V-579-1・中）】open 内 0x591C6C: call 0x587B20 の callee 0x587B20(1,id) を decode する — 「独自に生成経路を持つ/ id を解決する」可能性が残る唯一の未読 callee。併せて open の a2(float) 実体を確定（v547 記載の open(type:int, time:float, ?:int) 引数契約を f2i 前後で実測）＋float-id のビット定数（例 1004.0f = 0x447A0000 等）の byte 列走査（本裁定では未走査）。
+  > 【教訓（再発型）】①**indirect call は1段（ff /2）と2段（mov r,[r+disp]; call r）の両形式を走査しないと UI の大半を取りこぼす**（1段 UI=0 件 vs 2段 UI 多数が実例）。②**push を imm/reg/[mem] で機械分類し histogram 化すれば、即値不在の negative が1表で確定できる**。③**到達系統（E8/E9/1段/2段/push-imm/mov-imm/data-pointer/push-ret）を列挙してから『不存在』と断じる** → negative も [確定(否定側)] として裁定価値を持つ。④**probe 冒頭 Test-Path assert を習慣化**（v307_common 2回目消失への運用対策）。加えて 2段形式408対の UI head 一覧（V-579-2・slot 分類用）を出力済み。
+  > 【残点】V-579-1【中】＝矛盾解消の最終手（0x587B20 decode＋open a2(float) 実体＋float-id byte 列走査）＝V-577-1/V-576-1 を再定義継承／V-579-2【低】＝2段形式 UI heads の slot 分類。
 
 - [ ] **#165** 【プロセス・低優先（再現した自分の失敗2件）】**worktree 立ち上げ時の asset 欠落と、検証スクリプトの $apk 誤指定を構造的に防ぐ**。【実害①】2026-11-18、`git worktree add` した `fix-chargen-ime-inset` には `.gitignore` 済みの `app/src/main/assets/videos/`（8本 82.9MB）と `assets/textures/ui/*.png`（7枚）が**作られておらず**、そこからビルドした APK（141.1MB／master 238MB）はタイトル背景動画 `map_loop.mp4` が無音で欠落 → **ユーザーが実機で「タイトル画面の動画が再生されない、前は出ていた」と指摘**して発覚（コード退行ではない）。【実害②】同じ日、`chk_ime.ps1` の `$apk` が別 worktree のビルド（#159 コード未収録）を指したまま2回の emu 検証を行い、「`IME cover changed` が0件＝経路が死んでいる」と**誤診**した（実際は未インストール）。【方針候補（推測でなく手順化）】①worktree 作成直後に main ツリーの `app/src/main/assets` を突合し欠落ファイルを Copy-Item で補完する（`local.properties` の複製と同じ定例手順に足す）②検証スクリプト冒頭に `$apk` の `LastWriteTime` と**APK サイズ出力**を入れ、master ビルド（238MB 級）と比較して 100MB 単位で小さければ asset 欠落として止める③AGENTS.md / oblivion-android-dev skill の worktree 手順に上記2つを書き込む（現在の記載: worktree を「あらゆるコード変更の試み」に使うとあるが asset の扱いは無記載＝docs と実務のギャップ）。【検証】手順化した内容で新規 worktree を作り、`app-debug.apk` が master 相当サイズになりタイトル動画が再生されること。関連: #159（誤診の当事者）/AGENTS.md の Safety 節 `#android` `#oblivion` `#process` `#verify`
   > 【実装＋コミット済み（2026-11-18・マージ承認待ち）】branch `chore-worktree-asset-guard` commit **`87211848`**（base=master 4c4c2cda・2ファイル +171）= `AGENTS.md` 9行（Safety 節に worktree asset ルール＋APK を実機に入れる前のサイズ/エントリ照合）＋ `tools/check_worktree_assets.py` 162行。【スクリプトの仕様】`<tree>` を canonical repo の `app/src/main/assets` と再帰突合し MISSING を列挙（exit 1）、`--fix` で欠落を copy、`--apk <built> --reference <full master apk>` で APK エントリ名の差分も検査（欠落があれば exit 1）。**改行は正規化して比較**（本リポジトリは `core.autocrlf=true` のため checkout だけで全テキストが CRLF 化して大きくなる。実測: `fonts/FONT_LICENSES.txt` 1465→1494B・CR 0→29／`localization/jpwiki_localization.tsv` 5,735,231→5,763,919B・CR 18,419→47,107＝**Δバイト＝追加 CR 数**で内容は同一。初版はここを「size differs」と誤検知していたのでContent 比較に修正）。【実測テスト5ケース】①新規 worktree を main 基準で検査 → **MISSING 15件/85.9MB・exit 1**（videos 8本＋textures/ui 7枚）②`--fix` → `copied 15 file(s)`・exit 0③補完後再検査 → nothing missing・exit 0（CRLF だけの差は表示されなくなった）④補完済み `fix-chargen-ime-inset` を main 基準 → exit 0⑤`map_loop.mp4` を意図的に退避 → **MISSING videos\map_loop.mp4 (9.5 MB)・exit 1**（検出力の回帰確認）→ 復元済み。【APK 突合の実測】worktree 228.1MB vs master：`apk entries: built=2629 reference=2629` 差分0・`assets/ 1709 = 1709`（238→228MB の見かけ差は圧縮結果の違いで、内容欠落は無い）。【副次】検証用スクリプト側にも同趣旨のガードImplemented: `chk_ime2.ps1` は APK の LastWriteTime＋サイズを印字し **200MB 未満だと exit 6 で検証を開始しない**。【残】マージ承認 → master 統合（他 worktree の作成手順に反映するため、次回の worktree 作製時に本スクリプトを実際に使って検証する）。
@@ -2459,6 +2465,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2482,4 +2493,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-20 08:56:53
+**ai-todo** | Last Updated: 2026-11-20 09:03:25
