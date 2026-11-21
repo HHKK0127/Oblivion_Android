@@ -184,3 +184,6 @@ return 0;
 - probe **u78_1**（アドレス検算: `0x5CC8BA` = `a1 f0 8f b3 00` = `[0xB38FF0]=sRandom`）。
 - 実物 XML `race_sex_menu.xml`（`<id>` 14 件・`<user0>` 注記）。
 - 逆コンパイル `docs/Oblivion_decompiled.c` line 333780〜334706（`FUN_005cc200`）／281241〜281288（`FUN_005790e0`）。
+- **XML 正典一致**: `race_sex_menu.xml` の 3 コピー（`%TEMP%\opencode\bsa_chargen\...`／リポジトリ内
+  `tools\BSAFileExtractor\extracted\menus\chargen\...`／worktree `..._tmp_wt\fix-chargen-ui-quality\app\src\main\assets\menus\chargen\...`）は
+  **すべて md5 `d367341334fa89101ba4fc077edb52fe`・22156 bytes で完全一致**。→ §1 の `<id>` 抽出は正典ファイル上のもの。
