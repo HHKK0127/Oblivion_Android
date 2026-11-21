@@ -737,6 +737,30 @@
   > ■ probe `u47_1.py` v614 仕様に更新: **全 trait dump**・**user\*(0xFAE..0xFC2) フラグ**・**isNumber 分岐**・**trait 0 警告**・子リスト差分 STOP。
   > ■ 順序: slot 11（意味）を先に静的で読切る。RegisterTile は fallback。実機が要るのは木走査(V-613-1)とブレークポイント(V-613-3)のみ。
   > 残点 V-614-1/2/3/4。round_verify ALL OK（rows 31..590 / total 476 / done 471 / open 5）。
+  > 【3点実測 2026-11-21: v615（U19）】査読の解釈更新要求へ回答 → `tmp/re/v615_builder_slot11_recount_projects_ruling.md`（台帳 row591・probe u54_1/u55_1/u56_1）
+  > ■ ① builder は chargen 専用 [確定(命令)]
+  > - `0x5CA010` 冒頭: **`0x5CA037 push 0x40C` → `call 0x589B70 GetTileMenu(0x40C)` → 既存なら `0x5CC1DD` へ**（構築スキップ）。raw dword `0x0000040C` の出現は範囲内 1 件（`0x5CA038`）。
+  > - caller は **1 箇所 `0x57B8D9`（head `0x57B7E0`）**。
+  > - → **『139 は汎用 XML 生成側で chargen の意味ではない』の疑いは否定**。builder は `0x40C` を直値で持つ chargen 専用。ただし「XML から tile を生む処理」である点は正しい。
+  > ■ ② slot 11 の実体と user* の書き手 [確定(命令)]
+  > - ラッパ `0x5CE570`: `push 0; push 0x3E9; call 0x5790E0`（MessageMenu 表示判定）→ `visible(0xFA1)` 比較 → `Menu::EnableMenu(0x585190)` → **実体 `0x5CDEF0` を呼ぶ**。
+  > - **`0x5790E0` の同定**: InterfaceManager 3 回参照、`[mgr+0x1C]!=0`・`[mgr+0x68]`(menuRoot)!=0 → `GetFloat(menuRoot, 0xFAE)` を **`0xA379B4`(=2.0)** と比較 → `GetTileMenu(arg)` → `GetContainingMenu` → `test [menu+0x24], arg0`。＝メニュー表示判定。
+  > - **`0x5CDEF0` が user0(0xFAE) を 12 箇所で書く**。各サイトはページ名グローバルと共に現れる（登録バンド実名）: `0xB38F70`=sMain／`0xB38F78`=sRace／`0xB38F88`=sHair／`0xB38F90`=sEyes／`0xB38F98`=sAge／`0xB38FA0`=sComplexion／`0xB38FA8`=sGender／`0xB38FB8`=sStyle／`0xB38FC0`=sRed／`0xB38FC8`=sGreen／`0xB38FD0`=sBlue／`0xB38FD8`=sLength／`0xB39330`=sColor。→ **user0 は『現在ページ名』を保持**。
+  > - builder も user* を 13 箇所書く（user0×4/user1/user6×2/user13×6）。
+  > - ⚠ **内部不整合**: v610 は user0 を float（GetFloat/SetFloat）として裁定。v615 は文字列。**V-615-1** で `Value+0x1A`(isNumber) を見て決着。
+  > ■ ③ 139 再計数 [確定(命令)]
+  > - **命令境界尊重 = 139／raw 0xE8 = 139、差集合 空（偽陽性 0）**。内訳 Pane21/Button22/Toggle5/Slider90/Text1。Slider=90 も実在。レンジは関数 extent `[0x5CA010,0x5CC200)`。
+  > ■ xOBSE 一次資料 [確定(一次資料)]
+  > - Tile/Value レイアウト全項目一致（`Tile` size 0x40: name+08/parent+10/valueList+14/unk24+24/flags+2C/childList+30。`Value` size 0x1C: parentTile+00/num+04/str+08/exprList+10/id+18/bIsNum+1A）。
+  > - **V-614-3 閉じる**: `+0x10`=`ExpressionList{Expression* info; ExpressionList* next}`、`Expression` size 0x18（prev+00/next+04/operand+08/opcode u16 +0C/unkE+0E/src+10）→ **式木 dump 仕様に格上げ**（opcode は 0x7D1 copy/0x7D2 add … 0x7EB ref）。
+  > - `0x58CEB0`=`UpdateFloat(UInt32,float)` ヘッド → **査読の callAtt 読みは撤回**。
+  > - **trait 全表**（bool 1=false/2=true・user0..user25=0xFAE..0xFC7・visible 0xFA1・id 0xFA8・depth 0xFAB・height 0xFCA・width 0xFCB・filename 0xFE6・repeatvertical 0xFE9 等）。**第二の源＝我々の v548（row524）の 223 対属性表**。
+  > ■ ⚠ 過去裁定との不整合
+  > - row518(V542)『ブック系マネージャ 0xB13970』→ 正 **`g_TileMenuArray`**（xOBSE GameMenus.cpp:8・OBVR）。機構（`42BB90` で登録）は正しい。
+  > - row518 の `word[ecx+0xa]`＝count → 正 **firstFreeEntry**（numObjs は +0xC）。
+  > ■ 他参考先
+  > - **shadeMe/Blockhead**（chargen・race/sex menu フリーカメラ、ソース公開）／**DavidJCobb/NorthernUI**（UI mod・ReverseEngineered フォルダ）／Ez0n3/OBSE-Plugins・xOBSE-Plugins／ianpatt/obse64・libxse/commonlibob64（**Oblivion Remastered・別バイナリ**）／cs.uesp.net（MenuQue/Tile docs）。
+  > 残点 V-615-1（user0 の型）/2（0x5CDEF0 完全 decode）/3（0x5790E0）/4（式木 dump）/5（row518 名称訂正）。round_verify ALL OK（rows 31..591 / total 477 / done 472 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2998,6 +3022,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3021,4 +3050,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 20:51:20
+**ai-todo** | Last Updated: 2026-11-21 21:02:04

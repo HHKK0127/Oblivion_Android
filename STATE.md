@@ -4419,3 +4419,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **順序**: slot 11 を先に静的で読切る。RegisterTile は fallback。実機が要るのは木走査(V-613-1)とブレークポイント(V-613-3)のみ。
 - **残点**: V-614-1（slot 11 decode）/ V-614-2（builder caller 0x57B7E0）/ V-614-3（Value +0x10/+0x14 node）/ V-614-4（0x5CE570 ヘッド追加）。
 
+## 2026-11-21 (my) — 3点の実測回答（v615）: **builder は chargen 専用・slot 11 の実体 `0x5CDEF0`（user0 を書く）・139 は再計数でも 139＋ xOBSE 一次資料による確定と内部整合の指摘**
+
+- **成果物**: `tmp/re/v615_builder_slot11_recount_projects_ruling.md`（probe u54_1/u55_1/u56_1・EXIT=0）。台帳 **row591**・`round_verify` **ALL OK（rows 31..591 / total 477 / done 472 / open 5）**・U 節 **U19**・ai-todo **#96 note**。
+- **builder は chargen 専用 [確定(命令)]**: `0x5CA037 push 0x40C` → `call 0x589B70 GetTileMenu(0x40C)` → 既存なら `0x5CC1DD`（構築スキップ）。raw dword `0x0000040C` 出現 1 件。caller は `0x57B8D9`（head `0x57B7E0`）。→ 「139 は汎用 XML 生成側」の疑いは否定。
+- **slot 11 [確定(命令)]**: ラッパ `0x5CE570`（`0x5790E0(0,0x3E9)` MessageMenu 判定＝menuRoot user0==`0xA379B4`(2.0) → `visible(0xFA1)` → `Menu::EnableMenu(0x585190)`）→ **実体 `0x5CDEF0`**。`0x5CDEF0` が **user0(0xFAE) を 12 箇所**で書く（ページ名グローバル `sMain`/`sRace`/`sHair`/`sEyes`/`sAge`/`sComplexion`/`sGender`/`sStyle`/`sRed`/`sGreen`/`sBlue`/`sLength`/`sColor`）。builder も user* 13 箇所（user0×4/user1/user6×2/user13×6）。
+- **139 再計数 [確定(命令)]**: 命令境界 139 ＝ raw 139・差集合 空（偽陽性 0）。内訳 Pane21/Button22/Toggle5/Slider90/Text1。レンジは関数 extent `[0x5CA010,0x5CC200)`。
+- **xOBSE 一次資料 [確定(一次資料)]**: Tile/Value レイアウト全一致。**V-614-3 閉じる**＝`+0x10`=`ExpressionList`（`Expression` size 0x18: prev/next/operand/opcode(u16 +0x0C)/unkE/src）→ 式木 dump 仕様に格上げ。`0x58CEB0`=`UpdateFloat` ヘッド（査読撤回）。trait 全表（bool 1=false/2=true・user0..user25=`0xFAE..0xFC7`）。
+- **⚠ 内部不整合**: row518(V542) の「ブック系マネージャ `0xB13970`」→ 正 **`g_TileMenuArray`**／`+0xA` を count と記した点 → **firstFreeEntry**。v610 の user0=float と v615 の string は **V-615-1** で要解消。
+- **他参考先**: shadeMe/Blockhead（chargen・race/sex menu フリーカメラ）／DavidJCobb/NorthernUI（UI mod・ReverseEngineered）／Ez0n3/OBSE-Plugins／ianpatt/obse64・libxse/commonlibob64（**Remastered 別バイナリ**）／cs.uesp.net（MenuQue/Tile docs）。
+- **残点**: V-615-1（user0 の型）/ V-615-2（0x5CDEF0 完全 decode）/ V-615-3（0x5790E0）/ V-615-4（式木 dump 仕様）/ V-615-5（row518 名称訂正）。
+

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T23:30:00Z",
+  "lastUpdated": "2026-11-22T00:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15435,14 +15435,31 @@
         "todo-96"
       ],
       "content": "2026-11-21 v614 裁定＝v613 検収とレンジ再計数（U18・ai-todo #96）。成果物 tmp/re/v614_v613_review_range_slot11_ruling.md・台帳 row590。probe u51_1/u52_1/u53_1 EXIT=0。①[確定(命令)] slot 11 は異なる: RaceSexMenu[11]=0x5CE570／Menu[11]=0x60D0A0 → Update を上書き。0x5CE570 は正当な関数ヘッド（直前 0x5CE561=ret＋int3。named_funcs.txt にヘッドが無く find_head が 0x5CDEF0 へ誤帰属）。本体は trait 0xFA1(visible) を扱う。②[確定(命令)] レンジを vtable union に張替え → generator 呼出 0 件。RaceSexMenu vtable 15 slot の関数 union（9 区間）に generator は無い。[0x5CA010,0x5CBC00) のヘッドは 1 個（0x5CA010・extent 0x5CA010..0x5CC200）で gen 139（Pane21/Button22/Toggle5/Slider90/Text1）。→ 139 は非仮想ビルダー 0x5CA010 に集中し vtable には 1 件も無い（査読の『落ちた』は成立しない）。builder の caller は 1 箇所 0x57B8D9(head 0x57B7E0)。③[確定(命令)] 0x58CEB0 の prologue: 直前 0x58CEA0=ret 4＋int3 → 正当な関数ヘッド（leaf・ret 8）。xOBSE の ::callAddr と整合。④[確定(命令)] trait id⇔文字列: 0x589080 TileStrIDToStr(id)（id>=0x2710 は [0xB13BC8]・未満は [0xB3B0B4]）／0x588EF0 TileStrToStrID(str)。→ 観測 trait id を XML 属性名に直結できる。⑤[確定(命令)] Value 完全レイアウト（ctor 0x589DF0）: +0x00 owner／+0x04 number／+0x08 string(char*)／+0x0C len(u16)／+0x0E cap(u16)／+0x10 ptr(0x18 node)／+0x14 ptr(0x18 node)／+0x18 id(u16)／+0x1A isNumber(u8, 既定1)／size 0x1C。⑥ probe u47_1.py v614 仕様: 全 trait dump・user*(0xFAE..0xFC2) フラグ・isNumber 分岐・trait 0 警告・子リスト差分 STOP。順序は slot 11 を先に静的で読切る（RegisterTile は fallback）。残点 V-614-1/2/3/4。"
+    },
+    {
+      "id": "opencode-v615-builder-slot11-recount-20261121",
+      "timestamp": "2026-11-22T00:30:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v615",
+        "racesexmenu",
+        "chargen",
+        "slot11",
+        "xobse",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v615 裁定＝3点実測（U19・ai-todo #96）。成果物 tmp/re/v615_builder_slot11_recount_projects_ruling.md・台帳 row591。probe u54_1/u55_1/u56_1 EXIT=0。一次資料 xOBSE GameTiles.h/GameMenus.cpp。①[確定(命令)] builder は chargen 専用: 0x5CA010 冒頭 0x5CA037 push 0x40C → call 0x589B70 GetTileMenu(0x40C) → 既存なら 0x5CC1DD（構築スキップ）。raw dword 0x0000040C 出現 1 件。caller 1 箇所 0x57B8D9(head 0x57B7E0)。→『139 は汎用 XML 生成側』の疑いは否定。②[確定(命令)] slot 11: ラッパ 0x5CE570 は 0x5790E0(0,0x3E9)（MessageMenu 表示判定・menuRoot user0==0xA379B4=2.0）→ visible(0xFA1) 比較 → Menu::EnableMenu(0x585190) → 実体 0x5CDEF0 を呼ぶ。0x5CDEF0 が user0(0xFAE) を 12 箇所で書く（ページ名グローバル sMain/sRace/sHair/sEyes/sAge/sComplexion/sGender/sStyle/sRed/sGreen/sBlue/sLength/sColor）。builder も user* 13 箇所（user0×4/user1/user6×2/user13×6）。③[確定(命令)] 139 再計数: 命令境界 139 ＝ raw 0xE8 139・差集合 空（偽陽性 0）。内訳 Pane21/Button22/Toggle5/Slider90/Text1。レンジは関数 extent [0x5CA010,0x5CC200)。④[確定(一次資料)] V-614-3 閉じる: Value +0x10 = ExpressionList{Expression* info; ExpressionList* next}、Expression size 0x18（prev+00/next+04/operand+08/opcode u16 +0C/unkE+0E/src+10）→ 式木 dump 仕様に格上げ（opcode 0x7D1 copy..0x7EB ref）。⑤[確定(一次資料)] 0x58CEB0 = UpdateFloat(UInt32,float) ヘッド（査読撤回）。Tile(size 0x40)/Value(size 0x1C) レイアウト全一致。trait 全表（bool 1=false/2=true・user0..user25=0xFAE..0xFC7）。第二の源＝v548(row524) の 223 対属性表。⑥⚠ 内部不整合: row518(V542) の『ブック系マネージャ 0xB13970』→ 正 g_TileMenuArray（xOBSE GameMenus.cpp:8）。+0xA を count と記した点 → firstFreeEntry（numObjs は +0xC）。v610 の user0=float と v615 の string は V-615-1 で要解消。⑦ 他参考先: shadeMe/Blockhead（chargen・race/sex menu フリーカメラ、ソース公開）/ DavidJCobb/NorthernUI（UI mod・ReverseEngineered）/ Ez0n3/OBSE-Plugins / ianpatt/obse64・libxse/commonlibob64（Oblivion Remastered・別バイナリ）/ cs.uesp.net（MenuQue/Tile docs）。残点 V-615-1/2/3/4/5。"
     }
   ],
   "metadata": {
-    "totalEntries": 1038,
+    "totalEntries": 1039,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T23:30:00Z",
-    "entry_count": 1038,
-    "last_updated": "2026-11-21T23:30:00Z"
+    "lastUpdated": "2026-11-22T00:30:00Z",
+    "entry_count": 1039,
+    "last_updated": "2026-11-22T00:30:00Z"
   }
 }
