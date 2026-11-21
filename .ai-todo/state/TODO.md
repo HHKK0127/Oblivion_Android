@@ -2,7 +2,10 @@
 
 ## Tasks
 
+- [ ] **#173** 【人間承認待ち・中優先】docs/RE_EXE_REPORT.md の Menu vtable slot 3 の誤ラベル訂正（RE v623 §0・§2 が指摘）。現状は slot 3 を『init』、slot 11 を『handler』と記述しているが、xOBSE 一次資料＋我々の実読で正しくは slot3=HandleClick（例 RaceSexMenu=0x5CC200）／slot11=Update 相当（例 RaceSexMenu=0x5CE570）／slot12=HandleKeyboardInput（0x5C3DD0）。該当箇所: 2977行（列ヘッダ `[0] dtor | [3] init | [11] handler`）／3040行（`[3]=FUN_005cc200（大規模キャラクタ生成初期化）`）／3123行 §29.4（`**[3] init FUN_005cc200**: 1586 行の大規模初期化`）／3078行 §29.2 HUDMainMenu（`[3] init FUN_005a68c0`）／3097行 §29.3 DialogMenu（`[3] init FUN_0059f010`）。正しくは RaceSexMenu の構築＝non-virtual builder FUN_005ca010（chargen 専用・0x40C 直値。v615）で、FUN_005cc200 は buttonID を `GetTile(elem,page).user0` と比較して分岐するクリックハンドラ（v623 §3）。#104 により docs/RE_EXE_REPORT.md は自動コミット対象外のため承認が必要。訂正は他メニュー（HUDMain/Dialog 等）の slot3 記述にも波及するため、§29 全体の整合を取る。根拠: tmp/re/v623_user_handleclick_xmlids_nametable_ruling.md §0/§2/§3。 `#approval` `#docs` `#oblivion` `#re` `#vtable`
+
 - [ ] **#172** 【RE レーン依頼・中優先】RaceSexMenu の tile 木を実機走査し、各 tile の user* 実値を採取する（RE v612 §8 / v613 §8 V-612-1・V-613-1）。背景: 『UI は XML データ、C++ は user trait を埋めるだけ』が確定（v612 §9・v613 §5）＝chargen の意味は vtable でなく各 tile の user* 実値にある。手段: ①RE probe u47_1.py --pid <Oblivion.exe> --menu-id 0x40C で g_TileMenuArray(0x00B13970, index=menuId-0x3E9) から tile 木を DFS 走査（name/id/x/y/w/h/visible/alpha/locus を表化。NiTArray は firstFreeEntry=0xB1397A で境界・numObjs=0xB1397C を併記・null スロット注意・子リストは parent==tile で選別・差分検出で停止）。②代替＝Menu::RegisterTile 0x584880 に menuId==0x40C フィルタのブレークポイント。取得したいもの: 21ページ各 tile の user0..user8 実値（特にスライダー行の user7=顔モーフ軸 ID / user8=geometry flag＝v610 の残点 V-610-D2）。制約: 配列は runtime 構築のため静的ファイルからは辿れない（data ptr=0）。根拠: tmp/re/v612 §5-8、v613 §2/§4/§8。 `#RE` `#chargen` `#oblivion` `#runtime` `#tile`
+  > 【v614〜v623 で残点が精密化】取得したい user* 実値の対象が具体化した。v623 §6/§7: (a) ページ遷移は Done(buttonID=90) で 18 ページ名を反復し `GetFloat(page,0xFAE)` と `GetFloat(menuRoot,0xFAE)` を比較→一致ページのハンドラが menuRoot.user0 へ書戻す（残点 V-623-1 で完全表）。 (b) 要素ハンドラは `buttonID == GetTile(要素名, ページ名).user0` の巨大チェーン（v623 §3、残点 V-623-1）。 (c) user0(0xFAE) の変異サイト 322 の層別（155 setter / 160 getter / 5 deleter(0x589980) / 2 未同定）が未了（V-620-2 / V-621-3 / V-623-3）。 (d) item 6: 登録バンド 173 名（ページ名5＋要素名＋顔スライダ名＋HairColor0..15/iHairColor00..15）の用途分類（V-623-4、v623 §4 に全表あり）。 (e) 0x62(98) の実行時 id の出所（V-623-2）。実機走査の手段（u47_1.py --menu-id 0x40C / Menu::RegisterTile 0x584880 ブレークポイント）は変わらず。特に port が必要とするのはスライダー行の user7(顔モーフ軸)/user8。
 
 - [x] **#171** 【人間判断待ち・中優先】xOBSE/OBVR 実名（GPL）の取込可否を裁定する（RE v611 V-611-1 / v613 §6）。RE が我々の 21,597 FUN_ のうち 416 件に実名（xOBSE 由来・例 Tile::UpdateFloat=0x58CEB0 / Tile::GetContainingMenu=0x5898F0 / IsMenuMode=0x578F60 / Menu::RegisterTile=0x584880 / g_TileMenuArray=0xB13970）を引いた。ただし xOBSE・OBVR は GPL-3.0、compendium は MIT。判断が必要な点: ①実名を我々の named_funcs.txt / docs へ取り込むか（GPL の派生物扱いになる範囲） ②取り込むなら「事実（アドレス→名前）の記録」に留めコード/ヘッダは書直す方針で足りるか ③出所（xOBSE/OBVR/compendium/自前命名）を各エントリに明記する運用にするか。作業用 merged CSV は %TEMP%\opencode\obng_merged_symbols.csv（2255行・非コミット）。根拠: tmp/re/v611 §3.2・§6、v613 §6。 `#approval` `#license` `#naming` `#oblivion` `#re` (2026-11-22)
 
@@ -3249,4 +3252,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 06:27:43
+**ai-todo** | Last Updated: 2026-11-22 06:28:50
