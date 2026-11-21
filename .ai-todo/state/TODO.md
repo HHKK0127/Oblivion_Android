@@ -903,6 +903,39 @@
   > ■ 残点（査読案の順序）
   > - V-621-1（12 サイトの strA 要素名）→ V-621-2（12 名への user0 書き手探索）→ V-621-3（読み手 160 の層別）→ V-621-4（[this+0x28] の owner 種別）→ V-621-5（未同定 2）→ V-619-1（31 名の分類）。
   > round_verify ALL OK（rows 31..597 / total 483 / done 478 / open 5）。
+  > 【slot3=HandleClick 実体 2026-11-21: v623（U26）】査読（GameMenus.h slot3）に沿って race_sex_menu.xml の id 全抽出 → 0x5CC200 突合 → mask 再確認 → ページ遷移。成果物 `tmp/re/v623_user_handleclick_xmlids_nametable_ruling.md`（台帳 row598・probe u70_1/u71_1/u72_1/u74_1/u77_1/u78_1）
+  > ■ 訂正（査読受理）
+  > - slot 3 は『Done dispatch』『init』ではなく **RaceSexMenu::HandleClick(UInt32 buttonID, Tile* clickedTile)**（xOBSE GameMenus.h slot 3）。
+  > - `docs/RE_EXE_REPORT.md` §29.4 が FUN_005cc200 を『[3] init 1586 行の大規模初期化』とするのは**誤り**（init は builder FUN_005ca010）。→ 文書とコードの不一致。
+  > ■ (1) [確定(実物XML)] `<id>` 全 14 件
+  > - 実物 `%TEMP%\opencode\bsa_chargen\menus\chargen\race_sex_menu.xml`（22156B）。
+  > - 数値 id: **1**=race_window, **2**=race_player_grab, **10**=race_name, **20**=race_scroll_bar, **90**=race_button_done, **100**=race_pane, **101**=race_template_button_layout, **102**=race_template_toggle, **103**=race_template_slider, **104**=race_template_text。
+  > - `&generic;` = **0xFFFFFFFF**（FUN_0058a0a0 登録）。
+  > - menu 直下 `<user0> 0 </user0> <!-- what pane/page is currently visible -->` → **menuRoot.user0 = 現在ページ番号**（race_pane.visible = me().user0 == RaceSexMenu.user0）。
+  > ■ (2) [確定(命令)] vtable
+  > - `0xA6D38C` の **slot 3 @0xA6D398 = 0x5CC200**。slot 11 = 0x5CE570、slot 13 = 0x5C4E10(GetID)。
+  > ■ (3) [確定(命令)（negative）] 0x5CC200 の実体
+  > - 範囲 0x5CC200..0x5CDA30（次 head 0x5CDA30・1723 命令・ret 8 ×2）。arg1=[ebp+8]=buttonID、arg2=clickedTile は**未使用**。
+  > - **jump table 0 件**。即値比較は **3 つのみ**: cmp ebx,0xa(10)@0x5CC8A3 / cmp ebx,0x5a(90)@0x5CC277 / cmp ebx,0x62(98)@0x5CCBF4。
+  > - → **XML `<id>` の switch ではない**。10/90 は XML id と一致するが 98 は XML に無い（実行時 id）。
+  > - 本体は逆コンパイル（Oblivion_decompiled.c line 333780〜334706）で **`if (buttonID == GetFloat(GetTile(要素名,ページ名), 0xFAE)) { ハンドラ }` の巨大チェーン**（0xFAE = user0）。
+  > - 例: 0x5CC8BA 起点 `GetTile(sRandom, sFace).user0 == buttonID` → `FUN_00579c10(sRandomizeFace)` ＝ **Randomize Face ボタン**。
+  > - アドレス検算: 0x5CC8BA の実バイト `a1 f0 8f b3 00` = `mov eax,[0xB38FF0]=sRandom`。
+  > ■ (4) [確定(命令)] 名前表（0xB38F70..0xB39500 に 173 名）
+  > - 登録バンド 0x9D9D6F 付近の `mov ecx,<global>; push <name>; call 0x419A70` が 1312 件。
+  > - **ページ(5)**: Main / Race / Face / Hair / Eyes。
+  > - **要素(主要)**: Age / Complexion / Gender / RaceDescription / Style / Red / Green / Blue / Length / Shape / Tone / Random / Reset / GeneralFace / Brow / Cheeks / Chin / Forehead / Jaw / Mouth / Nose / GeneralSkin / Skin / Beard / Eyebrows / MouthLips / Lips / EyesTex / NoseTex / Color / NoNameCharacter / EnterName / ResetFace / RandomizeFace。
+  > - 0xB39070..0xB39318 = 顔詳細スライダ名（Facebrow/BrowRidge/Cheekbones…/Nasolabiallines/Nares 等）。0xB39338..0xB393B0 = HairColor0..15、0xB393B8..0xB39430 = iHairColor00..15。
+  > - ClassMenu の prior（低 user=ラベル文字列 / 高 user=数値）と整合。
+  > ■ (5) [確定(命令)] 0x5CE570 の mask = 0
+  > - `0x5790E0(arg1=menuId, arg2=mask)`: menuRoot.user0==2.0 のとき GetTileMenu(menuId) を引き、**mask≠0 のときだけ** `test [GetContainingMenu(menu)+0x24], mask`（+0x24 = 4=作成済み/8=有効）を実行し、その後 visible(0xFA1) を判定。
+  > - 0x5CE570 は `push 0; push 0x3e9` → **0x5790E0(0x3E9, 0)**。→ **mask=0（+0x24 テストは行われない）**。MessageMenu の存在チェックのみ。
+  > ■ (6) [部分確定] ページ遷移
+  > - buttonID==90 の分岐は 0x5CC280 起点の**ページ反復**: 各ページ名で GetPage(name) → GetFloat(page,0xFAE) と GetFloat(menuRoot,0xFAE) を比較 → 一致ページのハンドラ（0x5cca77/0x5cca09/0x5cc9c4/0x5cc97f）へ。ページ候補: Main/Shape/Tone/GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose/GeneralSkin/Beard/Eyebrows/MouthLips/EyesTex/NoseTex。
+  > - ページハンドラは `UpdateFloat(menu->tile, 0xFAE, page.user0)` で **menuRoot.user0 に現在ページ番号を書き戻す**。
+  > ■ 残点
+  > - V-623-1（(要素,ページ)->ハンドラ完全表）→ V-623-2（98 の出所）→ V-623-3（ページボタン tile の user0 書き手・155 母数で層別）→ V-623-4（31 名の用途分類）→ V-623-5（0x589980 5 件・未同定 2 件）。
+  > round_verify ALL OK（rows 31..598 / total 484 / done 479 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3164,11 +3197,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3192,4 +3220,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 23:02:41
+**ai-todo** | Last Updated: 2026-11-21 23:34:13

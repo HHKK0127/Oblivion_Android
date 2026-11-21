@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T06:30:00Z",
+  "lastUpdated": "2026-11-22T08:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15545,14 +15545,30 @@
         "todo-96"
       ],
       "content": "2026-11-21 v621 裁定＝V-620-1 決着と 0x5C3440 同定（U25・ai-todo #96）。成果物 tmp/re/v621_589980_delete_and_5c3440_gettile_ruling.md・台帳 row597。probe u66_1/u67_1 EXIT=0。①[確定(命令)] 0x589980 は削除系（mutator）: [this+0x28] のリストを [entry+0x04]=key（trait と比較）・[entry+0x0C]=float で引き、一致時に [edx+0x14]（next）を張り替えて unlink＋call 0x401F20 で free。エントリ形 {+0x00 owner, +0x04 key, +0x0C float, +0x14 next}。5 サイトは push 0xFAE で user0 エントリを削除 → 155(setter)＋5(deleter)=160 の変更サイト。査読の『読み手』は [確定(命令)（negative）] 否定。callers_of(0x589980)=28。②[確定(命令)] 0x5C3440＝Menu::GetTile(strA=要素名, strB=親ページ名): edi=[esp+0x2C](strB), ebx=[esp+0x24](strA)、0x5C3495 call 0x5C3110（GetPage(strB)）→ 0x5C349C call 0x589930（page,strA）。callers_of(0x5C3440)=142。③[部分確定] 12 サイトのページ名: Hair7/Race2/Main3（0x5CDF29=Red/Hair, 0x5CDF92=Hair, 0x5CDFF3=Hair, 0x5CE0F5=Hair, 0x5CE170=Hair, 0x5CE1E3=Hair, 0x5CE24B=Race, 0x5CE2C4=Race, 0x5CE345=Main, 0x5CE3A6=Main, 0x5CE45C=Main, 0x5CE4D5=Hair）。要素名 strA は窓不足で未取得。④ 155 を母数として固定（定義＝0xFAE を arg1 として消費する call が setter のサイト数・esp 追跡）。証拠形 fld [0xA379B4]; push ecx; fstp [esp]; push 0xFAE を記録。残点 V-621-1/2/3/4/5・V-619-1。"
+    },
+    {
+      "id": "opencode-v623-handleclick-xmlids-nametable-20261121",
+      "timestamp": "2026-11-22T08:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v623",
+        "racesexmenu",
+        "handleclick",
+        "xml",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v623 裁定＝RaceSexMenu slot 3 = HandleClick の実体（U26・ai-todo #96）。成果物 tmp/re/v623_user_handleclick_xmlids_nametable_ruling.md・台帳 row598。probe u70_1/u71_1/u72_1/u74_1/u77_1/u78_1 EXIT=0。①[確定(実物XML)] race_sex_menu.xml の <id> 14 件: 数値 1/2/10/20/90/100/101/102/103/104、&generic;=0xFFFFFFFF。menu 直下 <user0> 注記『what pane/page is currently visible』＝menuRoot.user0 は現在ページ番号（race_pane.visible = me().user0 == RaceSexMenu.user0）。②[確定(命令)] vtable 0xA6D38C の slot 3 = 0x5CC200（xOBSE GameMenus.h の HandleClick）。RE_EXE_REPORT §29.4 が 0x5CC200 を『[3] init』とするのは誤り（init は builder 0x5CA010）。③[確定(命令)（negative）] 0x5CC200 は XML id の switch ではない: 範囲 0x5CC200..0x5CDA30、jump table 0、即値比較は cmp ebx,0xa(10)/0x5a(90)/0x62(98) の 3 つのみ。本体は if (buttonID == GetFloat(GetTile(要素名,ページ名),0xFAE)) の巨大チェーン（0xFAE=user0）。例 0x5CC8BA 起点 GetTile(sRandom,sFace).user0==buttonID → FUN_00579c10(sRandomizeFace)。98 は実行時 id。④[確定(命令)] 名前表: 登録バンド 0x9D9D6F の mov ecx,<global>; push <name>; call 0x419A70 が 1312 件、0xB38F70..0xB39500 に 173 名。ページ Main/Race/Face/Hair/Eyes。要素 Age/Complexion/Gender/RaceDescription/Style/Red/Green/Blue/Length/Shape/Tone/Random/Reset/GeneralFace/Brow/Cheeks/Chin/Forehead/Jaw/Mouth/Nose/GeneralSkin/Skin/Beard/Eyebrows/MouthLips/Lips/EyesTex/NoseTex/Color/NoNameCharacter/EnterName/ResetFace/RandomizeFace、顔詳細スライダ名 0xB39070..0xB39318、HairColor0..15/iHairColor00..15。⑤[確定(命令)] 0x5CE570 の mask=0: 0x5790E0(arg1=menuId,arg2=mask) は menuRoot.user0==2.0 のとき GetTileMenu(menuId) を引き、mask≠0 のときだけ test [GetContainingMenu(menu)+0x24], mask（+0x24=4=作成済み/8=有効）を実行。0x5CE570 は 0x5790E0(0x3E9,0) なので +0x24 テストなし。⑥[部分確定] buttonID==90 はページ反復（GetPage(name).user0 と menuRoot.user0 を比較→ページ別ハンドラ 0x5cca77/0x5cca09/0x5cc9c4/0x5cc97f）→ UpdateFloat(menu->tile,0xFAE,page.user0)。残点 V-623-1/2/3/4/5。"
     }
   ],
   "metadata": {
-    "totalEntries": 1045,
+    "totalEntries": 1046,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T06:30:00Z",
-    "entry_count": 1045,
-    "last_updated": "2026-11-22T06:30:00Z"
+    "lastUpdated": "2026-11-22T08:00:00Z",
+    "entry_count": 1046,
+    "last_updated": "2026-11-22T08:00:00Z"
   }
 }

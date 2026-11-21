@@ -4489,3 +4489,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **(4) 155 を母数として固定**: 定義＝「0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）」。証拠形 `fld [0xA379B4]; push ecx; fstp [esp]; push 0xFAE` を記録。
 - **残点**: V-621-1（12 サイトの strA）/ V-621-2（12 名への user0 書き手探索）/ V-621-3（読み手 160 の層別）/ V-621-4（`[this+0x28]` の owner 種別）/ V-621-5（未同定 2）/ V-619-1（31 名の分類）。
 
+## 2026-11-21 (nf) — slot 3 = HandleClick の実体（v623）: **XML `<id>` 全抽出・vtable slot3=0x5CC200・名前表 173・`0x5CE570` mask=0・ページ遷移**
+
+- **成果物**: `tmp/re/v623_user_handleclick_xmlids_nametable_ruling.md`（probe u70_1/u71_1/u72_1/u74_1/u77_1/u78_1・EXIT=0）。台帳 **row598**・`round_verify` **ALL OK（rows 31..598 / total 484 / done 479 / open 5）**・U 節 **U26**・ai-todo **#96 note**。
+- **訂正（査読受理）**: slot 3 は「Done dispatch」「init」ではなく **`RaceSexMenu::HandleClick(buttonID, clickedTile)`**（xOBSE `GameMenus.h`）。`docs/RE_EXE_REPORT.md` §29.4 の「[3] init」は誤り（init は builder `0x5CA010`）。
+- **(1) [確定(実物XML)]**: `<id>` 14 件。数値 = 1/2/10/20/90/100/101/102/103/104、`&generic;`=`0xFFFFFFFF`。menu 直下 `<user0>` 注記 = **現在ページ番号**。
+- **(2) [確定(命令)]**: vtable `0xA6D38C` slot 3 = `0x5CC200`。
+- **(3) [確定(命令)（negative）]**: `0x5CC200` は XML id の switch ではない（jump table 0、即値比較は 10/90/98 の 3 つのみ）。本体は `if (buttonID == GetFloat(GetTile(要素名,ページ名),0xFAE))` の巨大チェーン（user0 比較）。例 `0x5CC8BA` 起点 `GetTile(Random,Face)` → `FUN_00579c10(RandomizeFace)`。
+- **(4) [確定(命令)]**: 名前表 173 件。ページ = Main/Race/Face/Hair/Eyes。要素 = Age/Complexion/Gender/Red/Green/Blue/Length/Shape/Tone/Random/Reset/GeneralFace/Brow/…/HairColor0..15/iHairColor00..15 等。
+- **(5) [確定(命令)]**: `0x5CE570` は `0x5790E0(0x3E9,0)` = **mask 0**（`test [menu+0x24], mask` は mask≠0 のときだけ）。
+- **(6) [部分確定]**: buttonID==90 はページ反復 → ページ別ハンドラ（0x5cca77/0x5cca09/0x5cc9c4/0x5cc97f）→ `UpdateFloat(menu->tile,0xFAE,page.user0)`。
+- **残点**: V-623-1（(要素,ページ)->ハンドラ完全表）/ V-623-2（98 の出所）/ V-623-3（ページボタン tile の user0 書き手）/ V-623-4（31 名の分類）/ V-623-5（0x589980 5 件）。
+
