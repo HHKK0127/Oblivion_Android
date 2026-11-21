@@ -716,6 +716,27 @@
   > ■ ⑥ V-612-2 の方法論: 母集団差（gmap 218 vs gmst_defaults 378/382）・キーは名前・**値一致を oracle にしない**・不一致は [部分確定]・`--esm` 分離。
   > ■ ⑦ 順序: V-612-1 優先。代替は `0x584880 Menu::RegisterTile` に menuId==0x40C フィルタのブレークポイント。
   > ■ probe `u47_1.py` 改訂（firstFree/numObjs 併記・二段読み・子リスト差分検出）。残点 V-613-1/2/3/4。round_verify ALL OK（rows 31..589 / total 475 / done 470 / open 5）。
+  > 【v613 検収・レンジ再計数 2026-11-21: v614（U18）】査読3点へ回答 → `tmp/re/v614_v613_review_range_slot11_ruling.md`（台帳 row590・probe u51_1/u52_1/u53_1）
+  > ■ ① slot 11 は異なる [確定(命令)]
+  > - RaceSexMenu[11]=`0x5CE570` ／ Menu[11]=`0x60D0A0` → **Update を上書き**。
+  > - `0x5CE570` は正当な関数ヘッド（直前 `0x5CE561`=`ret`＋int3。**named_funcs.txt にヘッドが無く `find_head` が `0x5CDEF0` へ誤帰属**）。
+  > - 本体先頭は trait `0xFA1`(visible) を扱う → chargen の毎フレーム処理（V-614-1 で decode）。
+  > ■ ② レンジを vtable union に張替え → generator 呼出 **0 件** [確定(命令)]
+  > - RaceSexMenu vtable 15 slot の関数 union（9 区間）に generator 呼出は **0**。
+  > - `[0x5CA010,0x5CBC00)` のヘッドは **1 個（`0x5CA010`）**、extent `0x5CA010..0x5CC200` で **gen 139**（Pane21/Button22/Toggle5/Slider90/Text1）。尾 `0x5CBC00..0x5CC200` に gen は無い。
+  > - → **139 は非仮想ビルダー `0x5CA010` に集中し、vtable スロットには 1 件も無い**。**査読の『ctor/Done の generator が落ちた』は成立しない**（vtable 側に元々無い）。ただしレンジは関数 extent `[0x5CA010,0x5CC200)` と表現すべき。
+  > - **builder の caller は 1 箇所 `0x57B8D9`（head `0x57B7E0`）** → メニュー構築の起点（V-614-2）。
+  > ■ ③ `0x58CEB0` の prologue [確定(命令)]
+  > - 直前 `0x58CEA0`=`ret 4`、`0x58CEA3..`=int3 → **正当な関数ヘッド**（leaf・`ret 8`）。xOBSE の `::callAddr`（callee アドレス）と整合。残疑義は解消。
+  > ■ ④ trait id ⇔ 文字列 [確定(命令)]
+  > - `0x589080 TileStrIDToStr(id)`: id>=0x2710 は `[0xB13BC8]`、未満は `[0xB3B0B4]`。`0x588EF0 TileStrToStrID(str)` は逆。
+  > - → 観測 trait id をこれに通せば **XML 属性名に直結**。手作業の対応表が不要。
+  > ■ ⑤ Value 完全レイアウト [確定(命令)]（ctor `0x589DF0`）
+  > - `+0x00` owner ／ `+0x04` number ／ `+0x08` string(char*) ／ `+0x0C` len(u16) ／ `+0x0E` cap(u16) ／ `+0x10` ptr(0x18 node) ／ `+0x14` ptr(0x18 node) ／ `+0x18` id(u16) ／ `+0x1A` isNumber(u8, 既定 1) ／ size `0x1C`。
+  > - 文字列読みは `+0x08`＋`+0x0C` で足りる。`+0x10`/`+0x14` の node の役割は残点 V-614-3。
+  > ■ probe `u47_1.py` v614 仕様に更新: **全 trait dump**・**user\*(0xFAE..0xFC2) フラグ**・**isNumber 分岐**・**trait 0 警告**・子リスト差分 STOP。
+  > ■ 順序: slot 11（意味）を先に静的で読切る。RegisterTile は fallback。実機が要るのは木走査(V-613-1)とブレークポイント(V-613-3)のみ。
+  > 残点 V-614-1/2/3/4。round_verify ALL OK（rows 31..590 / total 476 / done 471 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2977,11 +2998,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3005,4 +3021,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 20:36:53
+**ai-todo** | Last Updated: 2026-11-21 20:51:20

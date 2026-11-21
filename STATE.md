@@ -4407,3 +4407,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **方法論**: V-612-2 は母集団差（218 vs 378/382）・キーは名前・値一致を oracle にしない・不一致は `[部分確定]`・`--esm` 分離。順序は V-612-1 優先、代替は `0x584880 Menu::RegisterTile` の menuId==0x40C ブレークポイント。
 - **残点**: V-613-1（実機走査）/ V-613-2（gmst 突合）/ V-613-3（RegisterTile 方式）/ V-613-4（ReadXML 完全 decode）。
 
+## 2026-11-21 (mx) — v613 検収とレンジ再計数（v614）: **slot 11 の同定・vtable union 化（結果 0 件）・`0x58CEB0` ヘッド確定・trait id⇔文字列・Value 完全レイアウト**
+
+- **成果物**: `tmp/re/v614_v613_review_range_slot11_ruling.md`（probe u51_1/u52_1/u53_1・EXIT=0）。台帳 **row590**・`round_verify` **ALL OK（rows 31..590 / total 476 / done 471 / open 5）**・U 節 **U18**・ai-todo **#96 note**。
+- **slot 11 [確定(命令)]**: RaceSexMenu[11]=`0x5CE570`／Menu[11]=`0x60D0A0` → **Update を上書き**。`0x5CE570` は正当な関数ヘッド（直前 `0x5CE561`=`ret`＋int3。**`named_funcs.txt` にヘッドが無く `find_head` が `0x5CDEF0` へ誤帰属**）。本体は trait `0xFA1`(visible) を扱う。
+- **レンジ再計数 [確定(命令)]**: **vtable union の generator 呼出は 0 件**。`[0x5CA010,0x5CBC00)` はヘッド1個（`0x5CA010`・extent `0x5CA010..0x5CC200`）で **gen 139**（Pane21/Button22/Toggle5/Slider90/Text1）。→ **139 は非仮想ビルダー `0x5CA010` に集中し vtable には 1 件も無い**（査読の「落ちた」は成立しない）。builder の caller は **1 箇所 `0x57B8D9`（head `0x57B7E0`）**。
+- **`0x58CEB0` [確定(命令)]**: 直前 `0x58CEA0`=`ret 4`＋int3 → **正当な関数ヘッド**（leaf・`ret 8`）。
+- **trait id⇔文字列 [確定(命令)]**: `0x589080 TileStrIDToStr(id)`（id>=0x2710 は `[0xB13BC8]`・未満は `[0xB3B0B4]`）／`0x588EF0 TileStrToStrID(str)`。
+- **Value 完全レイアウト [確定(命令)]**: `+0x00` owner／`+0x04` number／`+0x08` string(char*)／`+0x0C` len(u16)／`+0x0E` cap(u16)／`+0x10` ptr(0x18 node)／`+0x14` ptr(0x18 node)／`+0x18` id(u16)／`+0x1A` isNumber(u8, 既定1)／size `0x1C`（ctor `0x589DF0`）。
+- **probe 更新**: `u47_1.py`（全 trait dump・user\*(0xFAE..0xFC2) フラグ・isNumber 分岐・trait 0 警告・子リスト差分 STOP）。
+- **順序**: slot 11 を先に静的で読切る。RegisterTile は fallback。実機が要るのは木走査(V-613-1)とブレークポイント(V-613-3)のみ。
+- **残点**: V-614-1（slot 11 decode）/ V-614-2（builder caller 0x57B7E0）/ V-614-3（Value +0x10/+0x14 node）/ V-614-4（0x5CE570 ヘッド追加）。
+
