@@ -827,6 +827,29 @@
   > - precheck を **v3**（中国語専用語のみの明示リスト）に変更。`所以`（日本語複合語）・`使用`/`可能`/`点`（日本語語彙）の誤検出を排除。
   > - **STATE・台帳(TODO_re49)・memory の中国語混入を修正**: 中国語接続詞 5+6+4 件・`没有` 1 件。→ 主要文書の中国語は **0**。
   > 残点 V-618-1（user0=2.0 の書き手）/2（dist≥1 の引数切り分け＝正確な書き手数）/3（サイト毎の厳密な名前対応表）/4（tile 取得元による層別）。round_verify ALL OK（rows 31..594 / total 480 / done 475 / open 5）。
+  > 【v618 検収・数字是正 2026-11-21: v619（U23）】査読の3点へ回答 → `tmp/re/v619_user0_writers_155_and_2p0_sites_ruling.md`（台帳 row595・probe u62_1/u63_1）
+  > ■ (1)(2) 数字の是正 [確定(命令)（negative）]
+  > - v618 の dist 合計 **264** は誤集計。欠落は **dist=0 の非 setter 27**（私が 116 に縮めて表示）＋ **dist≥8 の 31**（窓が 8 命令）＝ **58**。
+  > - 窓 20 の完全表（**計 322 一致**）:
+  > - dist0=143(UF88/US28/GF22/other5) / dist1=132(UF28/US5/GF99) / dist2=10 / dist4=5 / dist6=1 / dist8=24 / dist9=5 / dist11=2
+  > - 窓内に call が無い push は **0 件**。**全 322 が push 形**（mov/cmp 形は 0）。
+  > ■ (2) 真の引数窓で書き手 = **155** [確定(命令)]
+  > - 条件: `push 0xFAE` の後 call までに **`push`/`sub esp` が無い**（`mov reg,<tile>`＝this 設定は引数でない）。
+  > - **書き手 155**（UF120/US35）＝ dist0=116 + dist1=33 + dist2=5 + dist4=1。／読み手 125／失格 37／その他 41。
+  > - → **116 は下限で、査読の『dist=1 の 33 も書き手＝≥149』が正**。v617/v618 の 116 を **155 に訂正**。V-618-2 は this 設定の除外で決着。
+  > ■ (3) V-618-1 決着: user0=2.0 の書き手 = **29 箇所** [確定(命令)]
+  > - **形検索**（境界整合に依存しない）: `fld dword [0xA379B4]`（2.0）の近傍 40B に `push 0xFAE` があり、直後 call が `0x58CEB0 UpdateFloat` のもの = **29**（fld 386 中、近傍 30、うち UpdateFloat 29）。
+  > - `fcomp [0xA379B4]` 121 の近傍 64 は大半が `0x582160`/`0x589B70`/`0x578F60` へ＝**読み手**。
+  > - 書き手 29 は **0x57D50B〜0x5DBD10** に分散（0x57D50B/0x59605E/0x59C791/0x5A0C83/0x5A0CDD/0x5A10C2/0x5A2819/0x5A2B6D/0x5A7262/0x5A7752/0x5AC815/0x5AC960/0x5AE654/0x5B0778/0x5B5A30/0x5B5A4A/0x5B5A61/0x5B8B8A/0x5B9B9A/0x5B9CBD/0x5BA24A/0x5BBF69/0x5BE821/0x5BF99B/0x5C1C2D/0x5C3907/0x5D6F19/0x5DBCE3/0x5DBD10）。
+  > ■ (4) 汎用フラグ仮説を支持 [部分確定]
+  > - **`menuRoot.user0 == 2.0` は chargen 専用ではなく『UI/メニューがアクティブ』の汎用フラグ**。
+  > - 読み手 `fcomp [0xA379B4]` 121（64 が push 0xFAE 近傍）→ 判定先は `0x582160`/`0x589B70`/`0x578F60` 等。
+  > - 書き手 **29**（多数メニューに分散）／user0 書き手総数 **155**。
+  > - 汎用経路: **`0x585190 Menu::EnableMenu` の callers = 46**。
+  > - → v617 の『menuRoot.user0==2.0 が chargen 構築のゲート』は、より正確には **『汎用の UI アクティブフラグをゲートに使っている』**。chargen 固有の入口は **builder `0x5CA010` の `0x40C` 直値**の側。
+  > ■ 残り
+  > - V-619-1（31 名の用途分類＝ラベル/ページ識別子）/ V-619-2（155 書き手の tile 取得元による層別）/ V-619-3（29 の user0=2.0 書き手のうち chargen 経路）/ V-619-4（dist8/9/11 の other 31 件）。
+  > round_verify ALL OK（rows 31..595 / total 481 / done 476 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3088,6 +3111,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3111,4 +3139,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 22:33:52
+**ai-todo** | Last Updated: 2026-11-21 22:42:00

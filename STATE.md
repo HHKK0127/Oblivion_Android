@@ -4462,3 +4462,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **(6) precheck 改良＋文書修正**: precheck **v3**（中国語専用語のみ）。**STATE/台帳/memory の中国語混入を修正**（接続詞 5+6+4・`中国語の否定語` 1）→ 主要文書の中国語は **0**。
 - **残点**: V-618-1（user0=2.0 の書き手）/ V-618-2（dist≥1 の引数切り分け）/ V-618-3（サイト毎の厳密な名前対応表）/ V-618-4（tile 取得元による層別）。
 
+## 2026-11-21 (nc) — 数字の是正と V-618-1/2 の決着（v619）: **`0xFAE` 完全表（322 一致）・真の引数窓で書き手 155・user0=2.0 の書き手 29 箇所・汎用フラグ仮説の支持**
+
+- **成果物**: `tmp/re/v619_user0_writers_155_and_2p0_sites_ruling.md`（probe u62_1/u63_1・EXIT=0）。台帳 **row595**・`round_verify` **ALL OK（rows 31..595 / total 481 / done 476 / open 5）**・U 節 **U23**・ai-todo **#96 note**。
+- **数字の是正 [確定(命令)（negative）]**: v618 の dist 合計 **264** は誤集計。欠落は **dist=0 の非 setter 27**（116 に縮めた）＋ **dist≥8 の 31**（窓 8 命令）＝ **58**。窓 20 の完全表は **計 322 一致**（全 322 が push 形）。dist0=143/dist1=132/dist2=10/dist4=5/dist6=1/dist8=24/dist9=5/dist11=2。
+- **書き手 = 155 [確定(命令)]**: 条件＝`push 0xFAE` の後 call までに `push`/`sub esp` が無い（`mov reg,<tile>` は引数でない）。書き手 155（UF120/US35）＝ dist0=116＋dist1=33＋dist2=5＋dist4=1。読み手 125・失格 37・その他 41。**116 は下限、査読の ≥149 が正**。
+- **user0=2.0 の書き手 = 29 箇所 [確定(命令)]**: 形検索（`fld [0xA379B4]`＋`push 0xFAE`＋`UpdateFloat`）。`fcomp [0xA379B4]` 121 の近傍 64 は大半が読み手（`0x582160`/`0x589B70`/`0x578F60`）。
+- **汎用フラグ仮説を支持 [部分確定]**: `menuRoot.user0==2.0` は **「UI/メニューがアクティブ」の汎用フラグ**（読み手 121・書き手 29・総書き手 155・`0x585190 Menu::EnableMenu` callers 46）。chargen 固有の入口は **builder `0x5CA010` の `0x40C` 直値**の側。
+- **残点**: V-619-1（31 名の用途分類）/ V-619-2（155 書き手の tile 取得元層別）/ V-619-3（29 のうち chargen 経路）/ V-619-4（dist8/9/11 の other 31）。
+
