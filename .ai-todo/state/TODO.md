@@ -800,6 +800,33 @@
   > - ただし **`153` は私の未検証数字**だったので撤回（レビューの『push 総数では？』という推測より単純に、出所が無かった）。
   > - iced-x86/rizin/Ghidra 型投入は第2段で正しい。2-1〜2-3 は既存資産（`v307_common.py`＋capstone）だけで完結した。
   > 残点 V-617-1（user0 の型最終確定）/2（chargen に関わる書き手の特定）/3（12 サイトの消費先）/4（未分類 184）。round_verify ALL OK（rows 31..593 / total 479 / done 474 / open 5）。
+  > 【8点検収 2026-11-21: v618（U22）】査読8点へ回答 → `tmp/re/v618_review_8points_fcomp_setter_names_ruling.md`（台帳 row594・probe u60_1/u61_1）
+  > ■ (1) fcomp→jp の実バイト [確定(命令)]
+  > - `0x57B83B d8 1d b4 79 a3 00`(**fcomp**) → `df e0`(**fnstsw ax**) → `f6 c4 44`(**test ah,0x44**) → `0f 8a 93 00 00 00`(**jp 0x57B8DF**)。
+  > - **`sahf` ではなく `test ah,0x44`**。C3=ah bit6(0x40)・C2=ah bit2(0x04)。
+  > - 等しい(C3=1,C2=0): result 0x40 → PF=0 → jp 不成立 → **fall through（builder 呼出）**
+  > - >/<(C3=0,C2=0): result 0x00 → PF=1 → jp 成立 → skip
+  > - NaN(C3=1,C2=1): result 0x44 → PF=1 → jp 成立 → skip
+  > - → **builder は `menuRoot.user0 == 2.0` のときだけ呼ばれる**（v617 の読みは正）。査読の『jp 単独なら NaN 専用』は `sahf` 前提で、実バイトは `test` 経由なので不成立。
+  > ■ (2)(3) setter の引数順 [確定(命令)（negative）]
+  > - `0x58CEB0 UpdateFloat`: `mov eax,[esp+4]`(trait) → GetValue → `fld [esp+8]`(value) → SetNumber。
+  > - `0x58CED0 UpdateString`: `mov eax,[esp+4]`(trait) → GetValue → `mov ecx,[esp+8]`(string) → SetString。
+  > - → **両者とも trait は [esp+4]＝最後の push**。呼出は `push <値>; push 0xFAE; mov ecx,<tile>; call`。
+  > - → **`push 0xFAE` の直後が call の dist=0＝116 が正確な user0 書込数**。査読の『trait が途中（push 0xFAE; push 2.0; call）』は本エンジンの引数順では成立しない（0xFAE が arg2＝値になる）。
+  > - dist 分布: 0=116(UF88/US28) / 1=132(GF99/UF28/US5) / 2=10 / 4=5 / 6=1。dist≥1 の切り分けは V-618-2。
+  > ■ (4) 0xA379B4 xref [確定(命令)]
+  > - `fld [0xA379B4]` **386** / `fcomp [0xA379B4]` **121**（計 507）。
+  > - **user0=2.0 を書くサイトは未特定**（dist=0 setter の直前行逆走査で整合が取れず 0 件）→ **V-618-1**。
+  > - 参考: `0x57902F/0x5790AF/0x579138` 等に `fcomp [0xA379B4]` が集中（0x5790E0 系＝menuRoot.user0==2.0 の判定群）。
+  > ■ (5) 名前グローバル [確定(命令)]
+  > - 登録バンド `0xB38F70..0xB39500` = **173 件**。うちページ/セクション名は `0xB38F70..0xB39068` の **31 件**（Main/Race/Face/Hair/Eyes/Age/Complexion/Gender/Race Description/Style/Red/Green/Blue/Length/Shape/Tone/Random/Reset/General(Face)/Brow/Cheeks/Chin/Forehead/Jaw/Mouth/Nose/General(Skin)/Skin/Beard/Eyebrows/Mouth(Lips)/Lips）。
+  > - 12 サイトが緩い窓で参照するのは 11 種（sEyes 0xB38F90・sLength 0xB38FD8 が窓から落ちた）→『11/12/13 の不一致』は**母集団の取り方の差**。厳密窓で作り直す（V-618-3）。
+  > ■ (6) v615 への訂正注記 [記録]
+  > - v615 本文冒頭に『0x5CDEF0 は読む（v616 で訂正）』『153 は出所不明の誤記（v617 実測 322/116/22 に置換）』を追記。
+  > ■ (7) precheck 改良＋文書修正 [実施]
+  > - precheck を **v3**（中国語専用語のみの明示リスト）に変更。`所以`（日本語複合語）・`使用`/`可能`/`点`（日本語語彙）の誤検出を排除。
+  > - **STATE・台帳(TODO_re49)・memory の中国語混入を修正**: 中国語接続詞 5+6+4 件・`没有` 1 件。→ 主要文書の中国語は **0**。
+  > 残点 V-618-1（user0=2.0 の書き手）/2（dist≥1 の引数切り分け＝正確な書き手数）/3（サイト毎の厳密な名前対応表）/4（tile 取得元による層別）。round_verify ALL OK（rows 31..594 / total 480 / done 475 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3061,11 +3088,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3089,4 +3111,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 22:18:22
+**ai-todo** | Last Updated: 2026-11-21 22:33:52

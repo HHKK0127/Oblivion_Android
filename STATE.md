@@ -1004,7 +1004,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **付随確定（menu 基盤）**: **menu id `0x416`=QuickKeysMenu [確定(RTTI)]**（getter `0x5C0CE0`→vtable 0xA6D1F4→COL 0xAC29C4・3/3 突合）／`0x3FE`=Magic・`0x3EB`=Stats（XML 文字列）／`0x3F7`=Options・`0x417`=Credits・`0x40E`=Load／**race_sex_menu.xml＝`Data\Menus\CharGen\` 直下**(0xA6973C)／`0x579060`=GetTopMenuId・`0x589B70`=FindMenu レジストリ（`[0xB13974]`・count word `[0xB1397A]`・id-0x3E9≤0x32）／`0x578D70`=phase 読取（`[mgr+0xb0]`・読後 0xFF・phase 1/2/3 が cb 入口条件）／`0x579C10`=遅延 queue（cb E8=0＝queue 専用）／`0x57DE50`=UI 遷移サウンド（'MenuStart'/'MenuEnd'/'UIMenuBracket'→`0x6ADE50`）／vtable 3本（Menu 0xA696DC/RaceSex 0xA6D38C/Main 0xA6CB1C）と slot 意味（base `0x60CF60`=`ret 8` no-op 等）。
 - **残点 V-363-1..5**: 1=Cancel のタイトル遷移有無（ESM chargen クエスト／+1 書手の呼出し元）【中・#130① の主眼＝人間ゲート（ESM 抽出物）へ】／2=`race_sex_menu.xml` の Cancel ボタン通知 id（bsa）【中】／3=cmd2 のボタン名（ロード/開始系の切り分け）／4=`0x5CCBB7` queue（cb=ebx 設定部 0x5CCA77..0x5CCADF cover 不能）／5=menu 0x3F5 と 0x3E9 の正体。
 - **次**: 既存 RE キュー **#133→#134→#135→#136**（#142 はキュー促進済）。
-- **push 完了（ユーザー承認 2026-11-14）**: `fbb3ed97..d0695249` **master→origin 5コミット**（0ef273d8/6e11ac11/132458e7/4fb873a1/d0695249＝RE v355..v363＋records＋STATE (cb)(cf)(cg)(cj)＋ledger 759）。push 前検査: `git diff --check`=0・秘密情報スキャン=0件。`opencode.json` の `git push *` deny を本指示で解除して実行（`git reset --hard` deny は維持）。CI(android.yml) 発火は既知の「Rust ツールチェーン没有」で赤見込み＝次は CI 側 rustup 手順追加が本筋。
+- **push 完了（ユーザー承認 2026-11-14）**: `fbb3ed97..d0695249` **master→origin 5コミット**（0ef273d8/6e11ac11/132458e7/4fb873a1/d0695249＝RE v355..v363＋records＋STATE (cb)(cf)(cg)(cj)＋ledger 759）。push 前検査: `git diff --check`=0・秘密情報スキャン=0件。`opencode.json` の `git push *` deny を本指示で解除して実行（`git reset --hard` deny は維持）。CI(android.yml) 発火は既知の「Rust ツールチェーンが無い」で赤見込み＝次は CI 側 rustup 手順追加が本筋。
 
 ## 2026-11-14 (ck) — #133 完遂: Credits 本文＝**外部 `Data\Credits.txt`＋`CreditsMenu.bik` [確定]**・StatsMenu＝**5タブ/値供給 AV→trait→XML [部分確定]**（v364・副次に #130 V-363-3 クローズ）
 
@@ -1296,7 +1296,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 ## 2026-11-15 (dc) — #150 残点1解消: Activate の s1＝**priority（byte）[確定(命令)]**（weight/ID ではない）・`0x6C6A50`＝**RegisterInterpolator 呼び出しループ**・`0x6CC5C0` の4引数を確定（v381・V-380-1）
 
 - **成果物**: `tmp/re/v381_s1_priority_ruling.md`（probe **v381_1 全 EXIT=0**）。台帳 **row357（bak207）**・`round_verify` **ALL OK**（rows 31..357 / total 243 / done 238 / open 5）。ai-todo #45 に note（#150 は complete 済み）。v 採番 **v381 消費（次=v382）**。経緯: v380 の残点 V-380-1 を消化。
-- **s1（`[esp+0xC]`）の厳密な型 [確定(命令)]**: **priority（byte）** — `0x6C6A50` の `0x6C6A7D: movsx edx, byte [esp+0x18]`（**s1 を符号拡張**）→ `0x6C6A91: push edx` → **`0x6CC5C0`（RegisterInterpolator）の arg3（`[ebp+0xC]`＝m_cPriority）** へ格納。`[esi+0xD]`（block の byte flag）が **0xFF のときのみ s1 が使われる**（否则 unit 側 flag 優先 `movzx edx,dl`）。
+- **s1（`[esp+0xC]`）の厳密な型 [確定(命令)]**: **priority（byte）** — `0x6C6A50` の `0x6C6A7D: movsx edx, byte [esp+0x18]`（**s1 を符号拡張**）→ `0x6C6A91: push edx` → **`0x6CC5C0`（RegisterInterpolator）の arg3（`[ebp+0xC]`＝m_cPriority）** へ格納。`[esi+0xD]`（block の byte flag）が **0xFF のときのみ s1 が使われる**（さもなくば unit 側 flag 優先 `movzx edx,dl`）。
 - **`0x47603A` の s1=0x64(100) [確定(命令)]**: **priority 100（最高優先）**。
 - **`0x6C6A50` の identity [確定(命令)]**（v380 から補強）: **各 block の field8 interpolator へ `RegisterInterpolator(block, interpolator, priority, 0.0, 1.0)` を呼ぶループ fn**（`ret 4`＝1引数＝s1・stride16・`[esi+0xC]=al` に結果 byte）。
 - **`0x6CC5C0` の引数レイアウト [確定(命令)]**（v187 L132 補強）: **`ret 0x10`＝4スタック引数** — **arg1（`[esp+0x10]`）＝block ptr**（unit[0] へ格納）／**arg2（`[esp+0x18]`）＝float weight**（`[ebp+4]`＝m_fWeight）／**arg3（`[esp+0x1C]`）＝byte priority**（`[ebp+0xC]`＝m_cPriority）／**arg4（`[esp+0x20]`）＝float**（`[ebp+0x10]`＝m_fEaseSpinner）。満杯時 `virtual+0xA4`（拡張）→ 失敗で `or al,0xFF`（0xFF＝失敗）。
@@ -1432,7 +1432,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
   - **数式（フィールド名は v387 exe label）**: **`t' = Freq[+0x28] × (time − Last[+0x34]) + WeightLast[+0x38]`**（`Last == −FLT_MAX` 未設定なら `t' = Freq × time`＋offset 0）。
   - **flag `[+0x24]==0` のとき wrap**: `span = End[+0x30] − Begin[+0x2C]`、範囲外なら **CRT 数学 thunk `0x982BFA`（`mov edx,0xB30AF0; jmp 0x9908C0`・2 float 引数＝fmod 系 [推定高]）で wrap** → **`+ Begin`** → 最終 clamp を **[Begin, End]**（下回る→Begin／超える→End）／**flag ≠0 は wrap スキップ（clamp のみ）**。戻り値=float。
 - **this の型 [推定高]**: **NiControllerSequence** — 0x6C5FC0 が読む `+0x28/+0x2C/+0x30/+0x34/+0x38` が **v387 exe label（Freq/Begin/End/Last/WeightLast）と5/5 一致**、wrapper `0x49F4A0` の `+0x44/+0x48` も State/Offset と一致（**計7/7**）。vtbl/ctor での直接照合は残点。
-- **game 側 wrapper `0x49F4A0` [確定(命令)]**: `ret 4`（1引数 float time）— **`[this+0x44] − 1 ≤ 2`（state ∈ {1,2,3}）のとき `return 0x6C5FC0(this, Offset[+0x48] + time, 1)`、否则 `return 0.0`（`fldz`）**。decompiled L126640 `FUN_006c5fc0(*(float*)(param_1+0x48) + param_2, 1)` と逐語一致。付近 `0x49F490: jmp 0x6C87A0`（v187 C2 factory への thunk・別物）。
+- **game 側 wrapper `0x49F4A0` [確定(命令)]**: `ret 4`（1引数 float time）— **`[this+0x44] − 1 ≤ 2`（state ∈ {1,2,3}）のとき `return 0x6C5FC0(this, Offset[+0x48] + time, 1)`、さもなくば `return 0.0`（`fldz`）**。decompiled L126640 `FUN_006c5fc0(*(float*)(param_1+0x48) + param_2, 1)` と逐語一致。付近 `0x49F490: jmp 0x6C87A0`（v187 C2 factory への thunk・別物）。
 - **callers の flag 実値**: `0x6C6B4E`（テキストキー同期内）=**0**（L496524）／`0x6CAC00`（重みパス）=**1**（L499627）／`0x49F4C0`=**1**／`0x49F6A5`=同型 [推定]（結果は即 pop）。
 - **param_3（char）[未確定]**: decoded 範囲（0x6C5FC0..0x6C60D0）で `[esp+0x18]` 参照なし＝**未デコード尾部**＝残点。
 - **残点 V-390-1..3**: 1=**param_3 の使用箇所と意味**（0x6C60D0 以降）【低】／2=**`0x49F4A0`/`0x49F6A5` の this 型の直接確定＋`0x982BFA` CRT thunk の正確な関数名**【低】／3=**flag `[+0x24]` の名前**【低】。
@@ -2100,7 +2100,7 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
   - **(A) events＝`FUN_004ff4c0 @0x4FF918`**（v435 確定・`cmp byte [eax+0x10],0` → quest 判定 → `'Invalid block type for quest script.'`）
   - **(B) console/function＝`FUN_004FAB20 @0x4FADB0`**: `cmp byte [eax+0x10],0; je 0x4fadba` → **flag≠0 かつ `test ecx,ecx; je 0x4fadde`（ecx==0）で FAIL（`xor al,al; ret`＝実行拒否）** → flag==0 なら **`mov eax,[eax+0x18]`（record handler）を6引数で `call eax`（`0x4FADD5`）**。
   - → **flag byte ＝「object/reference receiver 必要」[確定]**（event の「quest 不正」と同根）。
-- **② [確定] ecx（flag 判定の対象）の正体**: `0x4FAD5F..0x4FAD74` — `edx=[edx+8]` → **`movzx ebx,byte [edx+4]; add ebx,-0x31; cmp ebx,2; ja → ecx=0` / else `mov ecx,edx`** ＝ **`byte[+4] ∈ {'1','2','3'}（0x31..0x33）の場合のみ ecx=reference object、否则 NULL** [確定(命令)]。→ **flag=1 は「reference 付き呼び出し」を要求**。
+- **② [確定] ecx（flag 判定の対象）の正体**: `0x4FAD5F..0x4FAD74` — `edx=[edx+8]` → **`movzx ebx,byte [edx+4]; add ebx,-0x31; cmp ebx,2; ja → ecx=0` / else `mov ecx,edx`** ＝ **`byte[+4] ∈ {'1','2','3'}（0x31..0x33）の場合のみ ecx=reference object、さもなくば NULL** [確定(命令)]。→ **flag=1 は「reference 付き呼び出し」を要求**。
 - **③ [確定] V-436-2: `0xB108EC` と `0xB10900` は隣接する2つの独立配列（v435「1配列に2段混在」は撤回・訂正）**: **`0xB108EC`＝5 sequence group 名（`LowerBody/LeftArm/LeftHand/RightArm/SpecialIdle`）**／**`0xB10900`＝16 text key 名（`Start`×8/`End`×2/`Attach/Detach/Hit`×2/`Attack/Attach`）** — **base refs が別**（`0xB108EC`→`FUN_00407AE0`／`0xB10900`→`FUN_0051aa10`・`FUN_0051b490`）で各 base が別 fn から使われる。
 - **④ [確定(否定側)] flat array 先頭10件（`0xB10290..0xB102B4`）**: **全セクションで ref 0 件**（`'Left Foot'` 文字列自体の ref も `.data 0xB10290` のみ）。consumer 候補 `FUN_0051b490` は **`0xB102B8`/`0xB102C8`/`0xB102E0`/`0xB102EC`/`0xB102F0`/`0xB10900` の6 base のみ使用・`0xB10290` 不使用** → **未使用 dead data [推定高]**、signed negative index 到達は [未確定]。
 - **⑤ [未確定] V-436-3: `FUN_00407AE0` の owning fn ＋ docs 欠落を発見**: 唯一 call site＝**`0x40DEFC` [確定]**。machine 上 `0x40DEFC` は **`0x40D4D0..0x40DF74` の連続コード内（int3 境界なし）**で annotation 範囲では `FUN_0040d4d0`。**しかし `FUN_0040d4d0` の decompiled body（L8522..L8659）に dump call が存在しない**（`FUN_00407ae0`/`FUN_005791a0`/`FUN_005791e0`/`FUN_00579220` 全て不在）＋ **body tail は machine `0x40D7BD..0x40D7FF` に対応**（`FUN_0040fda0`→`0x40D7BD`・`FUN_00411100`→`0x40D7D9`・`FUN_00977c50(2)`→`0x40D7E0`・ret `0x40D7FF`）→ **`0x40D800..0x40F640` 帯に annotation が1件も無い ＝ `docs/Oblivion_decompiled.c` の function 欠落（docs vs code の不整合）[確定(不整合)]**。dump fn identity は docs から [未確定]。
@@ -2204,12 +2204,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 - **成果物**: `tmp/re/v442_allowlist_ruling.md`（probe **v442_1..v442_3 の3本全 EXIT=0**）。台帳 **row418（bak268）**・`round_verify` **ALL OK**（rows 31..418 / total 304 / done 299 / open 5）。ai-todo **#151 に note**。v 採番 **v442 消費（次=v443）**。
 - **① [確定] V-442-1 `0x23` FormType＝`TESNPC`**（expanded window -0x90＋denylist 拡張で解決・switch 外＝inventory 非対象と整合）。**[未確定] `0x19`/`0x28`（switch set 内2値）は masked 継続**（noise `TESIcon` と window 共存）→ **fn head からの ctor 直接 decode が別法として要**。
-- **② [確定] `FUN_004fab20` 許可リスト＝`{TESFaction(0x06), TESNPC(0x23)}`**: machine `4FB168: movzx ecx,byte[edi+4]; cmp ecx,6; je ok; cmp ecx,0x23; jne fail` → **`byte[obj+4] ∈ {TESFaction, TESNPC} のみ許可、否则 fail [確定(命令)]`**、`4FB183: cmp byte[eax+4],0x43`（EffectShader 判定・別 gate）。
+- **② [確定] `FUN_004fab20` 許可リスト＝`{TESFaction(0x06), TESNPC(0x23)}`**: machine `4FB168: movzx ecx,byte[edi+4]; cmp ecx,6; je ok; cmp ecx,0x23; jne fail` → **`byte[obj+4] ∈ {TESFaction, TESNPC} のみ許可、さもなくば fail [確定(命令)]`**、`4FB183: cmp byte[eax+4],0x43`（EffectShader 判定・別 gate）。
 - **③ [確定] `FUN_004fab20` ＝ compiled script の char-opcode decode/実行 fn [確定(decompiled)]**（L194461 `switch(cVar4) { case 'G': case 'Z': case 'r': … }`＋`FUN_004fa9c0(short,…)` 呼出し）→ **許可リストはその中の「Faction/NPC のみ受容する parameter 検証」[推定高]**（どの opcode case か [未確定]＝残点）。
 - **④ [確定] V-442-2 flag-B chain root `FUN_0056a3b0` ＝ 条件比較 evaluator [確定(decompiled)]**: L269931 **`undefined2 FUN_0056a3b0(undefined4 op, float, float)`**／`switch(op)`: case0 `if(param_3!=param_2) return 0`／case1 反転／case2 `<=`／case3 `<` …＝**比較演算子の実装**。**chain `FUN_0056a3b0 --call@0x56A464--> FUN_0056ad60 --call@0x56ADAC--> FUN_0056b190`（flag B getter）[確定]** → 比較評価時に type-B flag を読む＝条件式の type 検証 [推定高]。**[未確定] `FUN_0056b220/2e0` の callers は未調査＝残点**。
 - **⑤ [部分確定] V-442-3 docs census unconfirmed 3159 の切り分け**: **末尾 byte histogram＝`0xFF=1859／0x00=1214`（99%+）・jcc rel32（end-2＝`0x0F`）は0件**・他は≤10件 → **non-ret 境界の大半は `FF..`（indirect jmp/call）か disp32 末尾 `0x00`＝indirect-jmp tail/switch 表リレー [推定高]**。**ret-confirmed 3038 は下限として堅い [確定]**、non-ret 3159 は tail-jmp epilogue と switch case チャンク intra-function padding の混在 [推定]（機械分離は残点）→ **欠落下限3038／上限6197 レンジ維持**。
 - **⑥ [部分確定] V-442-3 `[esp+0x5c]`（v439 訂正1件を含む）**:
-  - **(i) `FUN_00404fd0` 全 body 完読（L4119-4136）＝`uint __fastcall(ulong* p)`: `u16@+4==0xffff` なら `strlen(*p)` 戻り、否则 `u16` 戻り ＝ string length getter・読みのみ [確定]** → **v439 の「`408FCF` は leacall fill」記述を訂正（書かない）**。
+  - **(i) `FUN_00404fd0` 全 body 完読（L4119-4136）＝`uint __fastcall(ulong* p)`: `u16@+4==0xffff` なら `strlen(*p)` 戻り、さもなくば `u16` 戻り ＝ string length getter・読みのみ [確定]** → **v439 の「`408FCF` は leacall fill」記述を訂正（書かない）**。
   - **(ii) 書くのは direct 3件（`407CBA` edx／`407E5B` ecx／`408F72` eax=0）＋ dtor 1件（`409027→FUN_00402da0`: `*p=0/+6=0/+4=0` ゼロ化）＝ fill 点5件・非ゼロは direct 3件のみ [確定]**。
   - **(iii) CFG**: `[0x409E80,0x40A29D)` への branch targets **42件**、**nearest `0x40A262` から `0x40A29D` まで `[esp+0x5c]` 触れず＝block 継承 [確定]**（非ゼロ経路は `407CBA/407E5B` のどちらか [確定]・**到達 path 決定は [未確定]＝残点**）。
 - **残点 V-443-1..3**: 1=`0x19`/`0x28` FormType（fn head ctor 直接 decode）と許可リストの所属 opcode case【低】／2=`FUN_0056b220/2e0` の callers と `FUN_0056ad60` 呼出の case【低】／3=`[esp+0x5c]` 非ゼロ経路 CFG と docs census non-ret 3159 の機械分離【低】。
@@ -4450,4 +4450,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **user0 の意味更新 [部分確定]**: `menuRoot.user0==2.0` がゲート（2.0=bool true）→ **bool 的フラグ**の公算大（v610 の「ページ index」は要再確認）。
 - **指示書の感想**: 改訂版はほぼそのまま採用可。2-1〜2-3 は capstone ハーネスのみで完結。iced-x86/rizin/Ghidra 型投入は第2段で正しい。
 - **残点**: V-617-1（user0 の型最終確定）/ V-617-2（chargen に関わる書き手の特定）/ V-617-3（12 サイトの消費先）/ V-617-4（未分類 184）。
+
+## 2026-11-21 (nb) — 8 点の実測回答（v618）: **`fcomp`→`jp` 実バイト・setter 引数順（trait は最後）・`0xA379B4` xref・名前グローバル 31 件・「153」の v615 訂正・precheck 改良と文書修正**
+
+- **成果物**: `tmp/re/v618_review_8points_fcomp_setter_names_ruling.md`（probe u60_1/u61_1・EXIT=0）。台帳 **row594**・`round_verify` **ALL OK（rows 31..594 / total 480 / done 475 / open 5）**・U 節 **U22**・ai-todo **#96 note**。
+- **(1) [確定(命令)]**: `fcomp; fnstsw ax; test ah,0x44; jp`（実バイト `d81db479a300`/`dfe0`/`f6c444`/`0f8a`）→ `jp`＝「等しくない（>・<・NaN）」→ **builder は `user0==2.0` のときだけ呼ばれる**（v617 正・査読の `sahf` 前提は不成立）。
+- **(2) [確定(命令)（negative）]**: `0x58CEB0`/`0x58CED0` とも **trait は最後の push**（`[esp+4]`=trait・`[esp+8]`=値）→ **dist=0 の 116 が正確**（「trait が途中」は本エンジンで不成立）。dist 分布 0=116/1=132/2=10/4=5/6=1。
+- **(3) [確定(命令)]**: `0xA379B4` = fld 386／fcomp 121（計 507）。**user0=2.0 の書き手は未特定**（逆走査の整合が取れず）→ V-618-1。
+- **(4) [確定(命令)]**: 名前グローバルは **173 件**、ページ/セクション名は `0xB38F70..0xB39068` の **31 件**。「11/12/13 の不一致」は母集団の差。
+- **(5)**: v615 本文に訂正注記（`0x5CDEF0` は読む・153 は出所不明の誤記＝322/116/22 に置換）。
+- **(6) precheck 改良＋文書修正**: precheck **v3**（中国語専用語のみ）。**STATE/台帳/memory の中国語混入を修正**（接続詞 5+6+4・`中国語の否定語` 1）→ 主要文書の中国語は **0**。
+- **残点**: V-618-1（user0=2.0 の書き手）/ V-618-2（dist≥1 の引数切り分け）/ V-618-3（サイト毎の厳密な名前対応表）/ V-618-4（tile 取得元による層別）。
 

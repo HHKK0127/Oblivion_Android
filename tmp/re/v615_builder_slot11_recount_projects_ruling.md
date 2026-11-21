@@ -1,5 +1,7 @@
 # v615 — 3 点の実測回答: builder は chargen 専用（0x40C 直値）・slot 11 の実体は `0x5CDEF0`（user0 を書く）・139 は再計数でも 139（偽陽性 0）＋ xOBSE 一次資料による確定と内部整合の指摘
 
+> **【訂正 2026-11-21 (v618)】** 本裁定の「`0x5CDEF0` が user0 を書く」は **v616 で訂正済み**（実際は `0x588BD0 GetFloat` で**読む**）。また §5 の **「153 件の user0 set サイト」は出所不明の誤記**であり、**v617 の実測（`0xFAE` 即値 322／trait 直後 setter 116／getter 22）に置換**する。
+
 対象: `Oblivion.exe` v1.2.0416 (Steam, md5 `cdd2f0c5eff198d4f26b7b5b54ce4930`)。
 根拠: 我々の実読 probe **u54_1 / u55_1 / u56_1**（EXIT=0）＋ **xOBSE `GameTiles.h` / `GameMenus.cpp`（一次資料）**。
 判定: `[確定(命令)]` / `[確定(一次資料)]` / `[確定(命令)（negative）]` / `[部分確定]`
