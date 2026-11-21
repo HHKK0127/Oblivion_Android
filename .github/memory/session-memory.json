@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T10:00:00Z",
+  "lastUpdated": "2026-11-22T12:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15577,14 +15577,30 @@
         "todo-96"
       ],
       "content": "2026-11-21 v624 裁定＝trait ID と pane 生成器（U27・ai-todo #96）。成果物 tmp/re/v624_trait_ids_haircolor_array_pane_creator_ruling.md・台帳 row599。probe u79_1/u80_1/u81_1 EXIT=0。①[確定(命令)] trait ID: 0xFA5=stackingtype、0xFAB=depth（XML の <stackingtype> &no_click_past; に対応）。builder の GetFloat(0xFA5)→SetFloat(0xFAB) は重なり順を depth に写す z オーダーの後処理で chargen 固有でない。0x5CA010 は汎用解釈器、chargen 固有は 0x40C ガードのみ。②[確定(命令)] +0x8F0 配列: int +0x8F0..+0x92C（stride4・16件・iHairColor00..15）と char +0x930..+0x9AC（stride8・16件・sHairColor0..15・sprintf \"%s\"）。0x8F0+16*4=0x930 で整合。◪ の 0x8F4 起点は誤り。上限 cmp eax,0x10。16 は hair color 数でありページ数ではない。名前はラベル（0x5CBD16 で tile.user6(0xFB4) へ）。③[確定(命令)] 0x5C4340 = pane 生成器: (menu* this=ecx, Tile* parentTile, int id)→Tile*。テンプレート race_template_pane(0xA6D2DC) を 0x585410 で名前引き（__stricmp(0x98262D)→0x401F00(0x14)→0x58CD30 clone）。tile.id(0xFA8)=id、tile.listindex(0xFAA)、tile.user0(0xFAE)=id、this->[0x94+id*4]=tile。id==-1 は counter [0xB3B5D4]。callers=21（すべて親 [esi+0x28]）。④[確定(命令)] buttonID の正体: 生成 tile は id と user0 が同値 → v623 の GetTile(要素,ページ).user0==buttonID が成立。menu+0x94=pane id→tile 表。名前はラベルで識別子は数値 id。⑤[部分確定] V-619-1 の前提更新: 31 名はラベル用途と識別子用途の混在。user0 は数値。残点 V-624-1/2/3/4・V-623-3。"
+    },
+    {
+      "id": "opencode-v625-range-depth-21panes-templates-20261121",
+      "timestamp": "2026-11-22T12:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v625",
+        "racesexmenu",
+        "pane",
+        "template",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v625 裁定＝範囲訂正・depth 書き込み先・21 pane と名前・template（U28・ai-todo #96）。成果物 tmp/re/v625_range_depth_21panes_templates_ruling.md・台帳 row600。probe u82_1/u83_1/u84_1 EXIT=0。①[確定(命令)] 範囲訂正（以後 [start, exclusive_end)）: int +0x8F0..+0x930（stride4・16件・iHairColor00..15）、char +0x930..+0x9B0（stride8・16件・sHairColor0..15）。v624 の 0x9AC は誤り。◪ の 0x8F4 起点は negative。②[確定(命令)] depth の書き込み先 = ebx: 0x5CA06A call 0x590420(menuRoot, \"Data\\Menus\\CharGen\\race_sex_menu.xml\") の戻り（XML から読み込んだ root tile）。ecx=ebx（menuRoot そのものではない）。depth は root tile に 1 回だけ書く（値 0x588890()）。0x590420=XML ローダ（callers 49）。③[確定(命令)] V-624-1 決着 = 21 pane と名前: Main/Race/Hair/Face/Shape/Tone/GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose/GeneralSkin/Beard/EyesTex/Eyebrows/MouthLips/NoseTex（各生成 site の直前の名前グローバルで確定）。21 pane ≠ 21 ページ。0x5CDEF0 の 12 サイトは Hair(7)/Race(2)/Main(3) の要素のみ。④[確定(実物XML)] <template> は 5 個: race_template_pane(100)/button(101)/toggle(102)/slider(103)/text(104)。ページの中身は template 側。⑤[確定(命令)] user0 は tile クラス依存: menuRoot=bool(2.0)／pane/button=id。155 の層別は pane/button クラス（vtable slot3=0x389 TileMenu）に限定。⑥[部分確定] id==-1 採番: 0x5C4340 は ret 0x14（5 引数）、明示 id 即値なし→全 pane が -1 自動採番の可能性。残点 V-625-1/2/3/4・V-623-3。"
     }
   ],
   "metadata": {
-    "totalEntries": 1047,
+    "totalEntries": 1048,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T10:00:00Z",
-    "entry_count": 1047,
-    "last_updated": "2026-11-22T10:00:00Z"
+    "lastUpdated": "2026-11-22T12:00:00Z",
+    "entry_count": 1048,
+    "last_updated": "2026-11-22T12:00:00Z"
   }
 }

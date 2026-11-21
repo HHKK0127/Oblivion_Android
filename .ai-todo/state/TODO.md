@@ -968,6 +968,36 @@
   > - V-624-1（21 pane の id と親子関係）→ V-624-2（menu+0x94 表の読み手と pane 選択）→ V-624-3（0x585410 の arg 完全同定）→ V-624-4（0xB3B5D4 counter）→ V-623-3（ページボタン tile の user0 書き手）。
   > round_verify ALL OK（rows 31..599 / total 485 / done 480 / open 5）。
   > RE v614〜v623（Tile/UI 内部の精査）受領・#96 への影響。全て #96 の実装方針を裏づけ/確認するもの: (1) v623 で RaceSexMenu の vtable slot が xOBSE 名で確定（slot3=HandleClick 0x5CC200 / slot11=Update 0x5CE570 / slot12=HandleKeyboardInput）。従来『slot3=Done dispatch / init』と読んできたのは誤りで、正しくは HandleClick(buttonID, tile)。(2) v623 §1: race_sex_menu.xml の menu 直下 <user0> 注記『what pane/page is currently visible』＋§6 のページ反復（Done で page.user0 を menuRoot.user0 へ書戻し）→ RaceSexMenu.user0 = 現在ページ番号。port の currentPage 方式と整合。(3) v615: builder 0x5CA010 は 0x40C 直値＝chargen 専用。(4) v619/v620/v621: user0(0xFAE) を arg1 に取る setter サイトは 155、うち 29 が 2.0 を書く、5 が削除(0x589980)。(5) v621/v622: 0x5CDF29 系 12 サイトは Hair(Red/Green/Blue/Length/HairColor/Style)・Race(Gender)・Main(Age/Complexion/Eyes) の user0 を読む。→ port のページ/要素対応と一致。port 側の変更は不要（確認のみ）。race_sex_menu.xml は 3 コピー全て md5 d367341334fa89101ba4fc077edb52fe・22156B で一致（v623 §8）。
+  > 【v624 検収・範囲と depth と 21 pane 2026-11-21: v625（U28）】査読 8 点を処理。成果物 tmp/re/v625_range_depth_21panes_templates_ruling.md（台帳 row600・probe u82_1/u83_1/u84_1）
+  > ■ (1) 範囲の訂正（査読受理）— 以後 [start, exclusive_end) で書く
+  > - int 配列 +0x8F0 .. +0x930（stride 4・16 件・iHairColor00..15）
+  > - char 配列 +0x930 .. +0x9B0（stride 8・16 件・sHairColor0..15）
+  > - v624 の 0x9AC は誤り（最終要素 0x930+15*8=0x9A8、排他端 0x9B0）。◪ の 0x8F4 起点は [確定(命令)（negative）] 否定。
+  > ■ (2) depth の書き込み先 = ebx（XML から読み込んだ menu root tile）[確定(命令)]
+  > - 0x5CA04F call 0x582160(0,1) → esi（InterfaceManager singleton）
+  > - 0x5CA062 mov ecx,[esi+0x68]（=menuRoot）; 0x5CA065 push 0xA6973C; 0x5CA06A call 0x590420 → eax
+  > - 0x5CA06F mov ebx, eax  ← ★ ebx = XML を読み込んだ root tile
+  > - 0x5CA077 call 0x5898F0（GetContainingMenu(ebx)）→ esi（menu オブジェクト）
+  > - 0x5CA15D GetFloat(ebx,0xFA5=stackingtype) / 0x5CA197 SetFloat(ebx,0xFAB=depth, [esp+0x14]=0x588890())
+  > - ecx = ebx（menuRoot そのものではない）。depth は root tile に 1 回だけ書く（tile ごとのコピーではない）。
+  > - 0x590420 = XML ローダ（0x58DBD0 解析→0x590330 構築）。パス 0xA6973C = "Data\Menus\CharGen\race_sex_menu.xml"。callers 49。
+  > ■ (3) V-624-1 決着 = 21 pane と名前 [確定(命令)]
+  > - builder は各 pane の直前に名前グローバルを読み、0x5C4340 で pane を作る（callers_of=21）。順:
+  > Main(0x5CA448)/Race(0x5CA5A4)/Hair(0x5CA62D)/Face(0x5CA726)/Shape(0x5CA85B)/Tone(0x5CAAE4)/GeneralFace(0x5CACA1)/Brow(0x5CAD84)/Cheeks(0x5CAE1B)/Chin(0x5CAEFE)/Eyes(0x5CB02D)/Forehead(0x5CB0EA)/Jaw(0x5CB181)/Mouth(0x5CB23E)/Nose(0x5CB3DF)/GeneralSkin(0x5CB618)/Beard(0x5CB6FB)/EyesTex(0x5CB819)/Eyebrows(0x5CB937)/MouthLips(0x5CBA7E)/NoseTex(0x5CBB21)
+  > - 各 pane の直前に call 0x5C93F0（0x5C4800/0x5C4480 も）で項目を構築。親は全 pane 共通 [esi+0x28]（window）。
+  > - pane 名は XML のラベル名と一致。21 pane ≠ 21 ページ。0x5CDEF0 の 12 サイトは Hair(7)/Race(2)/Main(3) の要素のみ → 残りはサブ pane。
+  > ■ (4) <template> 全抽出 [確定(実物XML)]
+  > - race_sex_menu.xml の <template> は 5 個: race_template_pane(100) / race_template_button(101) / race_template_toggle(102) / race_template_slider(103) / race_template_text(104)。
+  > - 各ページのラベル/スライダ/ボタンは template 側にある（<id> だけでは構造が取れない）。抽出は <template> 単位。
+  > ■ (5) user0 は tile クラス依存 [確定(命令)]
+  > - menuRoot: bool(2.0) / pane・button: id。
+  > - V-623-3 で 155 の書き手を絞るときは tile クラスが pane/button のものだけに限定（vtable slot3 GetTypeID = 0x389 TileMenu）。
+  > ■ (6) id == -1 の自動採番 [部分確定]
+  > - 0x5C4340 は ret 0x14（5 引数）。呼出側は push edi; push edi と 0x419B10 で BSStringT を積み、push [esi+0x28] を追加。明示 id 即値は見えない → 全 pane が id==-1 自動採番（counter [0xB3B5D4]）の可能性が高い。
+  > - その場合 pane id は実行時依存で XML の <id> と一致しない → V-625-1 で明示。
+  > ■ 残点
+  > - V-625-1（0x5C4340 の 5 引数と id が -1 か即値か）→ V-625-2（0x5CDEF0 の 12 が指す pane id）→ V-625-3（menu+0x94 表の読み手）→ V-625-4（0x5C93F0/0x5C4800/0x5C4480）→ V-623-3（pane/button クラスに限定した 155 の user0 書き手）。
+  > round_verify ALL OK（rows 31..600 / total 486 / done 481 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3229,6 +3259,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3252,4 +3287,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 06:28:50
+**ai-todo** | Last Updated: 2026-11-22 06:45:47
