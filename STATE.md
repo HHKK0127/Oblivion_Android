@@ -1,6 +1,6 @@
 # Loop State — My Project
 
-## 2026-11-21 — #96 キャラ作成UI を原版 RaceSexMenu 21ページウィザードへ（worktree feat-chargen-21-pages・未コミット）
+## 2026-11-21 — #96 キャラ作成UI を原版 RaceSexMenu 21ページウィザードへ（worktree feat-chargen-21-pages・commit 380999ed・未マージ）
 
 - RE **v610**（依頼 U14 A〜E）を受領。21ページ全139要素の行表・Done 遷移・ラベル実値が `[確定(命令)]`。正典の訂正2点を反映: ①**Race/Hair/Face の Done は no-op ではなく Main へ戻る**（`0x5CC816` フォールスルー。v561 §2.2 / v567 §2 の「no-op」は誤り）②**Face は Button×4**（Shape/Tone/Random/Reset。v571 の×3 は誤り）。
 - `ui_character_creation.{h,cpp}` を 5タブ独自 UI から原版 RaceSexMenu 21ページへ全面書き換え。`kPageTable` に全21ページ・全139行を充填（ラベルは GMST 実値、スライダー範囲は XML 既定 0..1/step0.01）。Stage2（属性/スキル）は port 独自レイアウトを維持（canon 未準拠と明記）。
@@ -4395,4 +4395,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **compendium ノート [参照]**: UI はデータ（104 XML・1.22MB）・C++ は user trait を埋めるだけ／GMST 既定値 ~2,050 個の静的初期化子スキャン手順（二命令順・二 push 形）。
 - **ライセンス切り分け**: compendium=**MIT**（スクリプト使用可）／OBVR・OBNG=**GPL-3.0**（読んで書直し）。
 - **残点**: V-612-1（実機走査）/ V-612-2（gmst_defaults と gmap 突合）/ V-612-3（openoblivion メニュー実装）/ V-612-4（0x589B70 の 321 callers 分類）。
+
+## 2026-11-21 (mw) — v612 検収と訂正（v613）: **NiTArray count フィールド・vtable 妥当性検算・Tile 値レイアウトの writer 裏取り・名前の出所分類・probe 改訂**
+
+- **成果物**: `tmp/re/v613_v612_review_corrections_ruling.md`（probe u48_1/u49_1/u50_1・EXIT=0）。台帳 **row589**・`round_verify` **ALL OK（rows 31..589 / total 475 / done 470 / open 5）**・U 節に **U17** 追記・ai-todo **#96 note**。
+- **訂正 [確定(命令)（negative）]**: **`0xB1397A`=firstFreeEntry(+0x0A)／`0xB1397C`=numObjs(+0x0C)**。一次資料 xOBSE `NiTypes.h`＋実バイト `0x589B70`=`movzx ecx,word[0xB1397A]`＋`AddAtIndex 0x42BB90`（`[+0x0A]`=index+1・`[+0x0C]`=+1）。**v612 の「count @ 0xB1397A」は誤り**。OBVR `kTileMenuArrayCount` は誤称。probe は両方読む＋null チェック。
+- **vtable 検算 全通過 [確定(命令)]**: `0xA6D38C` COL `0xAC2AF4`→**`.?AVRaceSexMenu@@`**（15 slots すべて `0x5Cxxxx`・**slot[3]=`0x5CC200`**）／`0xA6C40C` COL `0xAC2504`→**`.?AVLoadingMenu@@`**（slot[11]=`0x60D0A0`・slot[13]=`0x5AD370`）。
+- **Tile 値レイアウト [確定(命令)]**: `0x58B220 Tile::GetValue`（`[this+0x18]`=値リスト先頭・`[this+0x14]`=リスト本体・node `{+0x00,+0x08}`・Value size `0x1C`）／`0x58CA00 Value::SetNumber`（`+0x04`=number・`+0x08`=string・`+0x18`=id・`+0x1A`=isNumber）。parent `+0x10`=0x5898F0・child `+0x34`=0x589930。
+- **名前の出所分類 [確定(命令)]**: `0x589B70`=**自前命名**／`0x5C2B36`=**hook_site**（関数ヘッドでない）／`0x58CEB0`=関数ヘッド／`0xB13970`=xobse **global**。
+- **probe 改訂**: `u47_1.py`（firstFree/numObjs 併記・m_pBase 二段読み・**子リスト差分検出で停止**）。
+- **方法論**: V-612-2 は母集団差（218 vs 378/382）・キーは名前・値一致を oracle にしない・不一致は `[部分確定]`・`--esm` 分離。順序は V-612-1 優先、代替は `0x584880 Menu::RegisterTile` の menuId==0x40C ブレークポイント。
+- **残点**: V-613-1（実機走査）/ V-613-2（gmst 突合）/ V-613-3（RegisterTile 方式）/ V-613-4（ReadXML 完全 decode）。
 

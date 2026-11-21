@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-21T20:00:00Z",
+  "lastUpdated": "2026-11-21T22:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15403,14 +15403,30 @@
         "todo-96"
       ],
       "content": "2026-11-21 v612 裁定＝追加参考先クロスチェック（U16・ai-todo #96/#169）。成果物 tmp/re/v612_obvr_compendium_crosscheck_ruling.md・台帳 row588。probe u45_1/u46_1/u47_1 EXIT=0。clone %TEMP%\\opencode\\{OBVR,compendium,openoblivion}（読み取り専用）。①[確定(命令)] 同一バイナリ: md5 cdd2f0c5eff198d4f26b7b5b54ce4930・PE timestamp 0x462392c7(2007-04-16)・no base relocations・7,898,624B（compendium pe_info.py 実測）。imports に d3d9 無し/d3dx9_27.dll 有り。②[確定(外部+実読)] RTTI: compendium の MIT rtti_scan.py で RaceSexMenu vtable=0xA6D38C（15 slots, base Menu）・LoadingMenu=0xA6C40C（v611 ctor 実読 mov [esi],0xa6c40c と一致）・Menu 系 53 vtables・Tile=0xA690E8/TileRect=0xA69138/TileMenu=0xA6AF14。③[確定(外部+実読)] g_TileMenuArray: NiTArray<TileMenu*> @ 0x00B13970（vtable 0xA69680）・data ptr 0x00B13974・count u16 0x00B1397A・index=menuId−0x3E9。0x589B70 GetTileMenu 実読（[edx+eax*4−0xFA4]）と OBVR GameAddresses.h が一致（二源）。RaceSex(0x40C)=idx 35・Loading(0x3EF)=idx 6。④[確定(外部+実読)] Tile レイアウト: +0x08 name(BSStringT char*先頭)/+0x10 parent/+0x18 値リスト/+0x24 render node/+0x34 子リスト。ノード {next+0x00,data+0x08}。子判定 data.parent==tile。trait: id 0xFA8/visible 0xFA1/x 0xFAD/y 0xFAC/w 0xFCB/h 0xFCA。v610 の 0xFA8/0xFAE/0xFAF/0xFB0/0xFB1/0xFB3 と整合。⑤[確定(外部+実読)] メニュー id: 0x3E9 起点。RaceSex=0x40C・Loading=0x3EF・Main=0x414。IsMenuMode 0x578F60 = mgr && [mgr+0x1C]!=0 && [mgr+0x08]!=1。⑥ tile 木走査 probe u47_1.py を具体形で作成（静的確認＋--pid 実行時走査）。静的には data ptr=0（runtime 構築）。⑦[参照] compendium ノート: UI はデータ（104 XML・1.22MB）・C++ は user trait を埋めるだけ／GMST 既定値 ~2,050 個の静的初期化子スキャン手順（二命令順・二 push 形）。ライセンス: compendium=MIT（スクリプト使用可）/ OBVR・OBNG=GPL-3.0（読んで書直し）。残点 V-612-1/2/3/4。"
+    },
+    {
+      "id": "opencode-v613-v612-review-corrections-20261121",
+      "timestamp": "2026-11-21T22:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v613",
+        "tilemenuarray",
+        "nitarray",
+        "vtable",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v613 裁定＝v612 検収と訂正（U17・ai-todo #96/#169）。成果物 tmp/re/v613_v612_review_corrections_ruling.md・台帳 row589。probe u48_1/u49_1/u50_1 EXIT=0。①[確定(命令)（negative）] 訂正: 0xB1397A=firstFreeEntry(+0x0A)／0xB1397C=numObjs(+0x0C)。一次資料 xOBSE obse/obse/NiTypes.h の NiTArray{_vtbl+00,data+04,capacity+08,firstFreeEntry+0A,numObjs+0C,growSize+0E}。実バイト 0x589B70=0FB70D7A39B100=movzx ecx,word[0xB1397A]。AddAtIndex 0x42BB90 が [+0x0A] を index+1・[+0x0C] を +1。v612 の『count @ 0xB1397A』は誤り。OBVR kTileMenuArrayCount=0xB1397A は誤称（エンジンの境界は firstFreeEntry）。firstFree >= numObjs のため null チェック必須。②[確定(命令)] vtable 妥当性検算 全通過: 0xA6D38C COL 0xAC2AF4 -> TypeDescriptor .?AVRaceSexMenu@@・15 slots すべて 0x5Cxxxx（slot[3]=0x5CC200=v610 Done dispatch）。0xA6C40C COL 0xAC2504 -> .?AVLoadingMenu@@（slot[11]=0x60D0A0・slot[13]=0x5AD370）。③[確定(命令)] Tile 値レイアウトの writer 裏取り: 0x58B220 Tile::GetValue（[this+0x18]=値リスト先頭／[this+0x14]=リスト本体／node{+0x00 next,+0x08 data}／Value +0x00=owning tile・+0x18=id・size 0x1C）と 0x58CA00 Value::SetNumber（+0x04=number／+0x08=string／+0x18=id／+0x1A=isNumber・0xFDE=String 判定）。0x58CA50 は +0x1A=0。parent +0x10=0x5898F0・child +0x34=0x589930。④[確定(命令)] RaceSexMenu 15 slots=Menu と同数＝chargen の意味は vtable に無く、本命は user trait を書く箇所。⑤[確定(命令)] 名前の出所分類: 0x589B70=自前命名（OBNG に無し）／0x5C2B36=xobse hook_site（関数ヘッドでない）／0x58CEB0=obvr kTileUpdateFloat(site)・xobse Tile::UpdateFloat::callAddr(function)（実読は関数ヘッド）／0xB13970=xobse g_TileMenuArray(global)・obvr site。xOBSE/OBVR=GPL、compendium=MIT。⑥ probe u47_1.py 改訂: firstFree/numObjs 併記・m_pBase 二段読み・子リスト差分検出で停止。⑦ V-612-2 方法論: 母集団差（gmap 218 vs gmst_defaults 378/382）・キーは名前・値一致を oracle にしない・不一致は [部分確定]・--esm 分離。順序は V-612-1 優先、代替は 0x584880 Menu::RegisterTile の menuId==0x40C ブレークポイント。残点 V-613-1/2/3/4。"
     }
   ],
   "metadata": {
-    "totalEntries": 1036,
+    "totalEntries": 1037,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-21T20:00:00Z",
-    "entry_count": 1036,
-    "last_updated": "2026-11-21T20:00:00Z"
+    "lastUpdated": "2026-11-21T22:00:00Z",
+    "entry_count": 1037,
+    "last_updated": "2026-11-21T22:00:00Z"
   }
 }

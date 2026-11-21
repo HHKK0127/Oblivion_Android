@@ -694,6 +694,28 @@
   > ■ compendium ノート [参照]
   > - UI はデータ（104 XML・1.22MB）で C++ は user trait を埋めるだけ＝我々の chargen 前提を裏づけ。GMST 既定値 ~2,050 個の静的初期化子スキャン手順（二命令順・二 push 形）。
   > 残点 V-612-1/2/3/4。round_verify ALL OK（rows 31..588 / total 474 / done 469 / open 5）。
+  > 【v612 検収・訂正 2026-11-21: v613（U17）】査読指摘8点へ回答 → `tmp/re/v613_v612_review_corrections_ruling.md`（台帳 row589・probe u48_1/u49_1/u50_1）
+  > ■ ① count 訂正 [確定(命令)（negative）]
+  > - xOBSE `obse/obse/NiTypes.h` の NiTArray = `{_vtbl+00, data+04, capacity+08, firstFreeEntry+0A, numObjs+0C, growSize+0E}`。
+  > - 実バイト `0x589B70` = `0FB70D 7A39B100` = `movzx ecx, word [0x00B1397A]` → **エンジンの境界は firstFreeEntry(+0x0A)**。
+  > - `0x42BB90 AddAtIndex`: `[+0x0A]` を index+1 に更新し、**`[+0x0C]` を +1（numObjs）**。
+  > - → **`0xB1397A`=firstFreeEntry／`0xB1397C`=numObjs**。**v612 の『count @ 0xB1397A』は誤り**。OBVR `kTileMenuArrayCount=0xB1397A` は誤称（ただしエンジンと同じ境界）。
+  > - probe は両方を読み、境界はエンジンと同じ firstFreeEntry＋**null チェック必須**（firstFree ≥ numObjs のため未充填スロットがあり得る）。
+  > ■ ①' m_pBase 二段読み: probe は `data = u32(0xB13974)`（値）で正しい。
+  > ■ ③ vtable 妥当性検算 全通過 [確定(命令)]
+  > - `0xA6D38C` COL `0xAC2AF4` → TypeDescriptor **`.?AVRaceSexMenu@@`**、15 slots すべて `0x5Cxxxx`。**slot[3]=0x5CC200（v610 の Done dispatch そのもの）**。
+  > - `0xA6C40C` COL `0xAC2504` → **`.?AVLoadingMenu@@`**（slot[11]=0x60D0A0・slot[13]=0x5AD370）。
+  > ■ ② Tile レイアウトの writer 裏取り [確定(命令)]
+  > - `0x58B220 Tile::GetValue(trait)`: `[this+0x18]`=値リスト先頭／`[this+0x14]`=リスト本体／node `{+0x00 next, +0x08 data}`／Value `+0x00`=owning tile・`+0x18`=id・size **0x1C**。
+  > - `0x58CA00 Value::SetNumber`: **`[+0x1A]=1`（isNumber）／`[+0x04]`=number／`[+0x08]`=string／`[+0x18]`=id**（0xFDE=String 判定）。`0x58CA50` は `[+0x1A]=0`。
+  > - parent `+0x10`=0x5898F0 の歩み、child `+0x34`=0x589930 で確認。ReadXML 0x590420 は補助（値/子書込は helper 側）。
+  > - 子リストは「総ノード数 vs parent 一致採用数」を記録し、**差分で停止**するよう probe を改訂。
+  > ■ ④ RaceSexMenu 15 slots = Menu と同数 → chargen の意味は vtable に無い。本命は user trait を書く箇所。
+  > ■ ⑤ 名前の出所分類 [確定(命令)]
+  > - `0x589B70` = **自前命名**（OBNG に無し）／`0x5C2B36` = xobse **hook_site**（関数ヘッドでない）／`0x58CEB0` = obvr `kTileUpdateFloat`(site)・xobse `Tile::UpdateFloat::callAddr`(function)＝実読は関数ヘッド／`0xB13970` = xobse `g_TileMenuArray`(**global**)・obvr site。
+  > ■ ⑥ V-612-2 の方法論: 母集団差（gmap 218 vs gmst_defaults 378/382）・キーは名前・**値一致を oracle にしない**・不一致は [部分確定]・`--esm` 分離。
+  > ■ ⑦ 順序: V-612-1 優先。代替は `0x584880 Menu::RegisterTile` に menuId==0x40C フィルタのブレークポイント。
+  > ■ probe `u47_1.py` 改訂（firstFree/numObjs 併記・二段読み・子リスト差分検出）。残点 V-613-1/2/3/4。round_verify ALL OK（rows 31..589 / total 475 / done 470 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2955,6 +2977,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2978,4 +3005,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 20:24:09
+**ai-todo** | Last Updated: 2026-11-21 20:36:53
