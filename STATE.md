@@ -4359,3 +4359,15 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-610-A1/C1/D1/D2/E1。
 - **本日 push 累計（セッション）**: v405 → … → v609 →（本件 v610 を本 commit で push）＝**201裁定**。
 
+## 2026-11-21 (mu) — OBNG（Naragorn/OBNG）クロスチェック裁定（v611）: **同一 EXE の姉妹 RE プロジェクト照合と LoadingMenu レーン（v608）の確定補強**
+
+- **成果物**: `tmp/re/v611_obng_crosscheck_ruling.md`（probe u43_1/u44_1・EXIT=0）。台帳 **row587**・`round_verify` **ALL OK（rows 31..587 / total 473 / done 468 / open 5）**・U 節に **U15** 追記・ai-todo **#96 note**。
+- **対象一致 [確定(命令)]**: OBNG の対象 Oblivion.exe 1.2.0.416 は **md5 `cdd2f0c5eff198d4f26b7b5b54ce4930` で我々の手元 EXE と完全一致**。clone `%TEMP%\opencode\OBNG`（commit b9526a6・1124 files・11.6MB）。**rea-all（21,240 関数 decompile・205MB）は Git 外**で取得不可。
+- **アドレス照合 [確定(命令)]**: 我々 21,597 FUN_ のうち **union 416 件**に実名（symbols 353・ledger 18・functions 104）。UI/Tile 系実名（xOBSE 由来）: `0x58CEB0 Tile::UpdateFloat`（＝v610 の SetFloat）・`0x5898F0 Tile::GetContainingMenu`・`0x582160 InterfaceManager_GetSingleton`・`0x5C2B36 EventManager::kChargenPatchAddr` 等。**xOBSE は GPL のため一括取込は別途判断（V-611-1）**。
+- **LoadingMenu 三者一致 [確定(命令)]**: `0xA2FC70`=1000.0・`0xB14158`=15.0・`0xB14160`=2500・`0xB14168`=100・`0xB14170`=10・`0xB33A98`=g_dataHandler・時間単位 ms。
+- **我々の新規確定 [確定(命令)]**: OBNG が『名前未エクスポート』とした4設定の実名 `fLoadingSlideDelay`／`iMoveBarMaxMilliseconds`／`iMoveBarChaseMilliseconds`／`iMoveBarWaitingMilliseconds`、`fPercentageOfBar0..3`=0.06/0.35/0.44/0.15（和1.00）。
+- **LoadingMenu フィールド表 [確定(命令)]**: +0x3C slowStepCap=-1／+0x40 screenTimeLeft=15.0f／+0x4C・+0x50 リスト／+0x54 TimeInfo*(FormHeap_Allocate(0x18)→TimeInfo::Init 0x47D150)／+0x60 shownStep／+0x64 targetStep／+0x68 stepChangedMs／+0x6C lastTickMs／+0x70 fastStepEnabled／+0x71=1／vtable 0xA6C40C。
+- **Tick 進捗則 [確定(命令)]**: しきい値 2500/100/10ms・残量 `sinceLast/1000.0`・trait user3(`0xFB1`)・`0x5AD780`(OBNG 名 RefreshScreen) 再アーム。**callers 精密化**: `0x5AD440` ← 0x5AD734(in 0x5AD700)/0x5ADE2C(in 0x5ADCF0)/0x5AE03E(in 0x5ADEC0)（v608 の関数単位記載は正）。
+- **参照のみ [参照(OBNG)]**: `0x5AD780` の RefreshScreen 名・Tick の PC24 x87 丸め（我々の C++ port には不要）。
+- **残点**: V-611-1（xobse 実名取込・ライセンス）/ V-611-2（0x5AD780 完全 decode）/ V-611-3（OBNG verified 関数は port 範囲外）。
+

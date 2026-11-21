@@ -651,6 +651,23 @@
   > - Done(90) は 19 ページ比較連鎖（Main→名前確認／Shape・Tone→Face／顔パーツ→Shape／肌・髭・目・眉・唇・鼻→Tone）。**Race/Hair/Face は連鎖に無く、フォールスルー `0x5CC816` が user0 を Main(0) に書戻す＝Main へ戻る**。**v561/v567 の「Race/Hair/Face→no-op（0x5CC8BA）」は誤り**（0x5CC8BA は要素通知専用入口）。
   > - **遷移方向**: `0x5C3440(strB=親ページ,strA=要素)`→`GetPage(strB)→0x589930(page,strA)`。block9 は strA=sFace／strB=sMain＝Main の Face 行、act `0x5C9650(sFace)`＝**Face へ入る**。→ 行クリックは「入る」で遷移先=strA。
   > 残点 V-610-A1/C1/D1/D2/E1。台帳反映＋round_verify ALL OK（rows 31..586 / total 472 / done 467 / open 5）。
+  > RE v610 受領（2026-11-21・依頼U14 A〜E）。要点: (1) 139要素の21ページ行表 [確定(命令)]。v571 の消費欄が誤り＝Slider は2 id 消費。Main は Button Race/Face/Hair + Toggle Eyes + Slider Age/Complexion の6行（+8消費、次 counter=208）で Race page_id=209 が一致。(2) 重要訂正: Race/Hair/Face の Done(id=90) は no-op ではなく 0x5CC816 フォールスルーで menuRoot.user0=Main(0) へ書き戻す＝Main へ戻る。v561 §2.2 / v567 §2 の『no-op』は誤り。(3) Face は Button×4（Shape/Tone/Random/Reset）。v571 の×3 は誤り。(4) Race=Toggle Gender + Toggle Race + Text sRaceDescription。(5) Hair=Toggle Style + Toggle Hair Color(16段) + Slider Red/Green/Blue/Length。(6) ラベルは GMST 実値（§2.2 全218件）。(7) Done/Back は詳細ページ遷移後 Back（0x5C9650 が user5=2.0）、Main は Done。index 対応式は残点 V-610-C1。(8) スライダー min/max/step は XML 既定 0/1/0.01/0.1 でページ別差なし。user7=顔モーフ軸は port 未実装→float 状態のみ保持。port 反映: kPageTable 全21ページ充填・Race の Done=Main・Race トグルを row1 に訂正・loadRacesFromESM を row1 へ。
+  > 【OBNG クロスチェック 2026-11-21: v611（U15・#96）】姉妹プロジェクト Naragorn/OBNG を clone して照合 → `tmp/re/v611_obng_crosscheck_ruling.md`（台帳 row587・probe u43_1/u44_1）
+  > ■ 対象一致 [確定(命令)]
+  > - OBNG の対象 Oblivion.exe 1.2.0.416 は **md5 cdd2f0c5eff198d4f26b7b5b54ce4930 で我々の手元 EXE と完全一致**。アドレスをそのまま照合可能。
+  > - OBNG は public・GPL-3.0・472 commits。clone は 1124 files / 11.6MB。**rea-all（21,240 関数 decompile・205MB）は Git 外**で取得不可。
+  > ■ アドレス照合 [確定(命令)]
+  > - 我々 21,597 FUN_ のうち **union 416 件**に実名（symbols 353・ledger 18・functions 104）。
+  > - UI/Tile 系の実名（xOBSE 由来）: `0x58CEB0 Tile::UpdateFloat`（＝v610 の SetFloat の実体）・`0x5898F0 Tile::GetContainingMenu`・`0x582160 InterfaceManager_GetSingleton`・`0x578F60 IsMenuMode`・`0x5C2B36 EventManager::kChargenPatchAddr` 等。
+  > - **xOBSE は GPL** のため一括取込は別途判断（V-611-1）。本裁定は事実記録のみ。
+  > ■ LoadingMenu（v608 の確定補強）[確定(命令)]
+  > - 三者一致: `0xA2FC70`=1000.0(f64)・`0xB14158`=15.0・`0xB14160`=2500・`0xB14168`=100・`0xB14170`=10・`0xB33A98`=g_dataHandler・時間単位 ms。
+  > - **我々が新規確定（OBNG は『名前未エクスポート』としていた）**: 4 設定の実名＝`fLoadingSlideDelay`／`iMoveBarMaxMilliseconds`／`iMoveBarChaseMilliseconds`／`iMoveBarWaitingMilliseconds`。`fPercentageOfBar0..3`=0.06/0.35/0.44/0.15（和1.00）。
+  > - **フィールド表（ctor 実読）**: +0x3C slowStepCap=-1／+0x40 screenTimeLeft=15.0f／+0x4C・+0x50 ロード対象リスト／+0x54 TimeInfo*(FormHeap_Allocate(0x18)→TimeInfo::Init 0x47D150)／+0x60 shownStep／+0x64 targetStep／+0x68 stepChangedMs／+0x6C lastTickMs／+0x70 fastStepEnabled／+0x71=1／vtable 0xA6C40C。
+  > - **Tick 進捗則**: しきい値 2500/100/10ms、残量 `sinceLast/1000.0`、trait user3(`0xFB1`)、`0x5AD780`(OBNG 名 RefreshScreen) で再アーム。
+  > - **callers 精密化**: `0x5AD440` ← call site 0x5AD734(in 0x5AD700)/0x5ADE2C(in 0x5ADCF0)/0x5AE03E(in 0x5ADEC0)（v608 の関数単位記載は正しい）。
+  > ■ 残点 V-611-1（xobse 実名の取込・ライセンス）/2（0x5AD780 完全 decode）/3（OBNG verified 関数は port 範囲外）。
+  > 台帳反映＋round_verify ALL OK（rows 31..587 / total 473 / done 468 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2940,4 +2957,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 12:53:34
+**ai-todo** | Last Updated: 2026-11-21 20:04:20

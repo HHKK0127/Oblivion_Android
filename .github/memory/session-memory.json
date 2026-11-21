@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T16:00:00Z",
+  "lastUpdated": "2026-11-21T18:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15370,14 +15370,30 @@
         "todo-96"
       ],
       "content": "2026-11-22 v610 裁定＝U14 依頼A〜E（ai-todo #96）。成果物 tmp/re/v610_racesexmenu_page_rows_ruling.md・台帳 row586。probe u28_1〜u42_1（15本 EXIT=0）。①[確定(命令)] A: 0x5CA010 の 139 generator 呼出を生成順に復元。Main(page_id 0)=Button×3(Race/Face/Hair)+Toggle×1(Eyes)+Slider×2(Age/Complexion)／Race(209)=Toggle×2(Gender/Race)+Text×1(RaceDescription)／Hair(213)=Toggle×2(Style/HairColor)+Slider×4(Red/Green/Blue/Length)／Face(224)=Button×4(Shape/Tone/Random/Reset)〔v571 の Button×3 を訂正〕／Shape(229)=Button×9／Tone(239)=Button×6／他は Slider のみ。page_id 算術: Main のみ明示 0、他は counter++（初期 200）。子は Button/Toggle/Text=+1・Slider=+2 消費 → v571「Main 消費 +6」は誤りで実際 +8（page_id 0/209/213/224/…/424/最終428）。②[確定(命令)] B: 登録バンド 0x9F6000..0x9F8000 は push value; push name; mov ecx,<.data>; call 0x419A70 の形で 218 登録。第2引数=GMST 名、第1引数=表示実値（sCheekboneslow→'Cheekbones low/high'）。iHairColorNN の実値は RGB パック整数。③[部分確定] C: [RaceSexMenu+0x3C]=user5。ctor 0x5C4EA2 で 0 初期。setter 0x5C2710 は id=0x5A で [+0x3C]=value。0x5C9650（ページ遷移 act・0x5C96B3）が SetFloat(doneTile,0xFB3,2.0)〔0xA379B4=2.0f〕＝サブページ遷移後は Back、Main では Done。④[部分確定] D: スライダー 0x5C93F0（ret 0x18）が 2 id 消費。XML user7=editor id／user8=geometry/texture flag。0x5C6860 は player→vfunc+0x170→[+0xE8]+0x29C→0x521A10→0x552990＝顔フォーム再計算系。port は user7/user8+現在値のみ保持で画面再現可。⑤[確定(命令)（negative）] E: Done(90) は 19 ページ比較連鎖（Main→名前確認／Shape・Tone→Face／顔パーツ→Shape／肌・髭・目・眉・唇・鼻→Tone）。Race/Hair/Face は連鎖に無く、フォールスルー 0x5CC816 が user0 を Main(0) に書戻す＝Main へ戻る。v561/v567 の『Race/Hair/Face→no-op（0x5CC8BA）』は誤り（0x5CC8BA は要素通知専用入口）。遷移方向: 0x5C3440(strB=親ページ,strA=要素)→GetPage(strB)→0x589930(page,strA)。block9 は strA=sFace/strB=sMain＝Main の Face 行、act 0x5C9650(sFace)＝Face へ入る。行クリックは『入る』で遷移先=strA。残点 V-610-A1/C1/D1/D2/E1。"
+    },
+    {
+      "id": "opencode-v611-obng-crosscheck-20261121",
+      "timestamp": "2026-11-21T18:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v611",
+        "obng",
+        "crosscheck",
+        "loadingmenu",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v611 裁定＝OBNG（Naragorn/OBNG）クロスチェック（U15・ai-todo #96）。成果物 tmp/re/v611_obng_crosscheck_ruling.md・台帳 row587。probe u43_1/u44_1 EXIT=0。①[確定(命令)] 対象一致: OBNG の対象 Oblivion.exe 1.2.0.416 は md5 cdd2f0c5eff198d4f26b7b5b54ce4930 で我々の手元 EXE と完全一致。OBNG は public・GPL-3.0・472 commits。clone は 1124 files/11.6MB（%TEMP%\\opencode\\OBNG・commit b9526a6）。rea-all（21,240 関数 decompile・205MB）は Git 外で取得不可。②[確定(命令)] アドレス照合: 我々 21,597 FUN_ のうち union 416 件に実名（symbols 353・ledger 18・functions 104）。UI/Tile 系実名（xOBSE 由来）: 0x58CEB0 Tile::UpdateFloat（＝v610 の SetFloat）・0x5898F0 Tile::GetContainingMenu・0x582160 InterfaceManager_GetSingleton・0x578F60 IsMenuMode・0x5C2B36 EventManager::kChargenPatchAddr。xOBSE は GPL のため一括取込は別途判断（V-611-1）。③[確定(命令)] LoadingMenu 三者一致: 0xA2FC70=1000.0・0xB14158=15.0・0xB14160=2500・0xB14168=100・0xB14170=10・0xB33A98=g_dataHandler・時間単位 ms。④[確定(命令)] 我々の新規確定（OBNG は名前未エクスポートとしていた）: 4 設定の実名 fLoadingSlideDelay／iMoveBarMaxMilliseconds／iMoveBarChaseMilliseconds／iMoveBarWaitingMilliseconds、fPercentageOfBar0..3=0.06/0.35/0.44/0.15（和1.00）。⑤[確定(命令)] LoadingMenu フィールド表（ctor 0x5AD0D0 実読）: +0x3C slowStepCap=-1／+0x40 screenTimeLeft=15.0f／+0x4C・+0x50 ロード対象リスト／+0x54 TimeInfo*(FormHeap_Allocate(0x18)→TimeInfo::Init 0x47D150)／+0x60 shownStep／+0x64 targetStep／+0x68 stepChangedMs／+0x6C lastTickMs／+0x70 fastStepEnabled／+0x71=1／vtable 0xA6C40C。⑥[確定(命令)] Tick 0x5AD980 進捗則: しきい値 2500/100/10ms・残量 sinceLast/1000.0・trait user3(0xFB1)・0x5AD780(RefreshScreen) 再アーム。callers 精密化: 0x5AD440 ← call site 0x5AD734(in 0x5AD700)/0x5ADE2C(in 0x5ADCF0)/0x5AE03E(in 0x5ADEC0)（v608 の関数単位記載は正）。⑦[参照(OBNG)] 0x5AD780 の RefreshScreen 名・Tick の PC24 x87 丸め（我々の C++ port には不要）。残点 V-611-1/2/3。"
     }
   ],
   "metadata": {
-    "totalEntries": 1034,
+    "totalEntries": 1035,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T16:00:00Z",
-    "entry_count": 1034,
-    "last_updated": "2026-11-22T16:00:00Z"
+    "lastUpdated": "2026-11-21T18:00:00Z",
+    "entry_count": 1035,
+    "last_updated": "2026-11-21T18:00:00Z"
   }
 }
