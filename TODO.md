@@ -761,6 +761,26 @@
   > ■ 他参考先
   > - **shadeMe/Blockhead**（chargen・race/sex menu フリーカメラ、ソース公開）／**DavidJCobb/NorthernUI**（UI mod・ReverseEngineered フォルダ）／Ez0n3/OBSE-Plugins・xOBSE-Plugins／ianpatt/obse64・libxse/commonlibob64（**Oblivion Remastered・別バイナリ**）／cs.uesp.net（MenuQue/Tile docs）。
   > 残点 V-615-1（user0 の型）/2（0x5CDEF0 完全 decode）/3（0x5790E0）/4（式木 dump）/5（row518 名称訂正）。round_verify ALL OK（rows 31..591 / total 477 / done 472 / open 5）。
+  > 【v615 自己訂正 2026-11-21: v616（U20）】前回依頼3点の結果 → `tmp/re/v616_v615_self_correction_user0_read_ruling.md`（台帳 row592・probe u57_1/u58_1）
+  > ■ ① `0x5CDEF0` は user0 を『読む』[確定(命令)（negative）]
+  > - 12 サイトの `push 0xFAE` 直後 callee は **全 12 箇所が同一** `[0x4028D0, 0x4028D0, 0x5C3440, 0x588BD0]`。
+  > - **`0x588BD0` = `Tile::GetFloat` ＝ 読み**。`0x5C3440` = ページ/要素 tile 取得、`0x4028D0` = BSStringT 代入（比較用の名前構築）。
+  > - → **v615 §3.2「0x5CDEF0 が user0 を書く」は誤り**。訂正。
+  > ■ ② `0x5790E0` の引数順 [確定(命令)（negative）]
+  > - `0x5CE572 push 0` / `0x5CE574 push 0x3E9` / `0x5CE57B call 0x5790E0` → cdecl で **arg1=0x3E9(menu id), arg2=0(mask)**（v615 の『(0,0x3E9)』は逆）。
+  > - 本体: `0x579145 mov eax,[esp+8]`＝arg1→GetTileMenu／`0x579159 mov edi,[esp+0x10]`＝arg2(mask)／`0x57915D test edi,edi; je 0x579172` → **mask==0 のときは `test [eax+0x24], edi` を踏まない**。
+  > - → v615 の『`test [menu+0x24], arg0`（arg0=0 で常に ZF=1）』という懸念は、**arg を 1 つずらして読んだ誤り**でした。
+  > ■ ③ V-615-1 決着 = **user0 は float** [確定(命令)]
+  > - builder `0x5CA010`（user0×4）: **`0x58CEB0` = UpdateFloat ＝ 書き（float）**。
+  > - `0x5CDEF0`（push 0xFAE×12）: **`0x588BD0` = GetFloat ＝ 読み**。
+  > - → **v610 の float 裁定が正**、v615 の「string（ページ名）」は誤り。**ページ名グローバル（sMain/sRace/…/sColor）は `GetPage(name)`（0x5C3110 の `__mbscmp(name, sMain)` 系）の引数**であって user0 の値ではない。
+  > ■ ④ `0x5790E0` の完全な意味
+  > - `0x5790E0(menuId, mask)`: mgr 3 回・`[mgr+0x1C]!=0`・`[mgr+0x68]`(menuRoot)!=0 → `GetFloat(menuRoot, 0xFAE)==0xA379B4(2.0)` → `GetTileMenu(menuId)` → mask!=0 なら `GetContainingMenu()[+0x24] & mask` → 最後に `GetFloat(tileMenu, 0xFA1=visible)` を `[0xA2F948]` と比較。
+  > - ＝ **menuId の tile menu が表示中か（visible 比較）＋任意マスク**の述語。`[mgr+0x68]`=menuRoot（OBVR `kInterfaceMenuRootOffset=0x68`・xOBSE 一致）。
+  > ■ ⑤ row518(V542) の被引用 row
+  > - 台帳: **519(V543) / 520(V544) / 524(V548) / 550(V574) / 555(V579) / 582(V606)** ＋ 588/589/591。U 節: line 393/396/424。
+  > - → V-615-5 の名称訂正（ブック系→g_TileMenuArray）は **V543/V544/V548/V606** へ波及（docs/GT 反映時に一括）。
+  > ■ 残点 V-616-1（user0 の書き手完全列挙・153 件との母集団突合）/ V-616-2（GetPage(name) と user0 の関係）/ V-616-3（builder user13×6 の用途）。round_verify ALL OK（rows 31..592 / total 478 / done 473 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3022,11 +3042,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3050,4 +3065,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 21:02:04
+**ai-todo** | Last Updated: 2026-11-21 21:26:21

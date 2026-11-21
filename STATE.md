@@ -4430,3 +4430,13 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **他参考先**: shadeMe/Blockhead（chargen・race/sex menu フリーカメラ）／DavidJCobb/NorthernUI（UI mod・ReverseEngineered）／Ez0n3/OBSE-Plugins／ianpatt/obse64・libxse/commonlibob64（**Remastered 別バイナリ**）／cs.uesp.net（MenuQue/Tile docs）。
 - **残点**: V-615-1（user0 の型）/ V-615-2（0x5CDEF0 完全 decode）/ V-615-3（0x5790E0）/ V-615-4（式木 dump 仕様）/ V-615-5（row518 名称訂正）。
 
+## 2026-11-21 (mz) — v615 の自己訂正（v616）: **`0x5CDEF0` は user0 を「読む」・`0x5790E0` の引数順訂正・V-615-1 は float で決着**
+
+- **成果物**: `tmp/re/v616_v615_self_correction_user0_read_ruling.md`（probe u57_1/u58_1・EXIT=0）。台帳 **row592**・`round_verify` **ALL OK（rows 31..592 / total 478 / done 473 / open 5）**・U 節 **U20**・ai-todo **#96 note**。
+- **`0x5CDEF0` は user0 を読む [確定(命令)（negative）]**: 12 サイトの `push 0xFAE` 直後 callee は全て `[0x4028D0,0x4028D0,0x5C3440,0x588BD0]`＝**`0x588BD0 GetFloat`（読み）**。v615 §3.2 を訂正。
+- **`0x5790E0` の引数順 [確定(命令)（negative）]**: `push 0; push 0x3E9` → **arg1=0x3E9(menu id)・arg2=0(mask)**。`test edi,edi; je 0x579172`（mask==0 で test を踏まない）。
+- **V-615-1 決着 = user0 は float [確定(命令)]**: builder が `0x58CEB0 UpdateFloat`（書）×4、`0x5CDEF0` が `0x588BD0 GetFloat`（読）×12 → **v610 が正**。ページ名グローバルは `GetPage(name)` の引数。
+- **`0x5790E0` の意味**: menuId の tile menu 表示判定（menuRoot user0==2.0(`0xA379B4`) → GetTileMenu → mask → visible(0xFA1) 比較）。`[mgr+0x68]`=menuRoot。
+- **row518(V542) の被引用**: 519(V543)/520(V544)/524(V548)/550(V574)/555(V579)/582(V606)。名称訂正は V543/V544/V548/V606 へ波及。
+- **残点**: V-616-1（user0 の書き手完全列挙・153 件との母集団突合）/ V-616-2（GetPage(name) と user0 の関係）/ V-616-3（builder user13×6 の用途）。
+
