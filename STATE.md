@@ -4348,3 +4348,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **残点**: V-607-1/2・V-608-1/2/3・V-609-1/2・V-597-3・V-567-2/3【低】。
 - **本日 push 累計（セッション）**: v405 → … → v606 `2f95b10e` →（本件 v607/v608/v609 を本 commit で push）＝**200裁定**。
 
+## 2026-11-22 (mt) — 作製レーン依頼 U14 裁定 A〜E（v610）: **RaceSexMenu 21ページ行表・登録バンド全リスト・Done/Back規則・スライダー対象・Race/Hair/Face の Done 挙動**
+
+- **成果物**: `tmp/re/v610_racesexmenu_page_rows_ruling.md`（probe u28_1〜u42_1・15本 EXIT=0）。台帳 **row586**・`round_verify` **ALL OK（rows 31..586 / total 472 / done 467 / open 5）**・U 節に **U14** 追記・ai-todo **#96 note**。
+- **依頼 A [確定(命令)]**: `0x5CA010` の 139 generator 呼出を生成順に復元。**Main=Button×3(Race/Face/Hair)+Toggle×1(Eyes)+Slider×2(Age/Complexion)**／**Face=Button×4(Shape/Tone/Random/Reset)**〔v571 の×3 を訂正〕。**page_id 算術: Slider=+2 消費で v571「Main +6」→「+8」訂正**（page_id 0/209/213/224/…/424/最終428）。
+- **依頼 B [確定(命令)]**: 登録バンド `0x9F6000..0x9F8000` の **218 登録**（`0x419A70`・第2引数=GMST 名／第1引数=表示実値）。全対応表を裁定書 §2.2 に記載。
+- **依頼 C [部分確定]**: `[RaceSexMenu+0x3C]`=user5。ctor `0x5C4EA2` で 0 初期。**`0x5C9650` が遷移後 `user5=2.0`（Back）**、Main は Done。
+- **依頼 D [部分確定]**: スライダー=顔モーフ軸（`user7`=editor id／`user8`=geometry flag・`0x5C6860` が顔フォーム再計算）。
+- **依頼 E [確定(命令)（negative）]**: Done の 19 ページ比較連鎖＋**Race/Hair/Face はフォールスルー `0x5CC816` で Main へ戻る**（v561/v567 の「no-op」を訂正）。**行クリックは「入る」（遷移先=strA）**。
+- **残点**: V-610-A1/C1/D1/D2/E1。
+- **本日 push 累計（セッション）**: v405 → … → v609 →（本件 v610 を本 commit で push）＝**201裁定**。
+

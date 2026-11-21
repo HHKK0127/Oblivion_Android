@@ -637,6 +637,20 @@
   > - v597 の user1＝`'Menus\Loading'`＋名前は誤り。実測は **`Textures\Menus\Loading\`**（`0xA498F8`）。`'Menus\Loading'`（`0xA6C4B8`）は `_strstr` 判定用リテラル。
   > 残点 V-608-1/2/3・V-597-3【低】。台帳反映＋round_verify ALL OK（rows 31..585 / total 471 / done 466 / open 5）。
   > 【RE 回答受領（v608・依頼B）】`tmp/re/v608_u_handoffB_loadingmenu_loader_ruling.md`。**ロード対象＝`[0xB33A98]+0x9C のレコード連結リスト`（TESForm）** [確定(命令)]。`FUN_005AD440` が formType(0x30/0x31-0x33/0x35) で分岐→3分類→乱択→`[LoadingMenu+0x4C]` へ追加。user1=レコード名（`+0x1C`、null なら空）に **`Textures\Menus\Loading\` を前置**（v597 の `Menus\Loading` は誤り・[確定負]訂正）。user2=レコード vtable+0x10 に 'DESC'(0x43534544)。**時間単位=ms**（0xB14160=2500ms・fdiv 1000.0）。**`[0xB33A98]==0` なら user0=0（title page のみ）** [確定(命令)]。【重要】port に『ロード対象レコード』概念が無いなら **user0=0 の load_title_page のみ再現するのが正典範囲**（user1/user2 のスライドショーは対象レコードが要る）。盤面: port は title page 実装で正しい。【port 実装】`loading_screen.{h,cpp}` を §32.5 の座標で title page（bg+symbol+ribbon3層+_loading）へ置換済。setBackgroundImage のコメントを v608 の `Textures\Menus\Loading\` に訂正済。
+  > 【RE レーン回答 2026-11-22: 依頼A〜E 裁定（U14・v610）】RaceSexMenu 21ページの行表・登録バンド全リスト・Done/Back規則・スライダー対象・Race/Hair/Face の Done 挙動 → `tmp/re/v610_racesexmenu_page_rows_ruling.md`（台帳 row586・probe u28_1〜u42_1）
+  > ■ A [確定(命令)] 139要素の生成順行表
+  > - Main(page_id 0)=Button×3(Race/Face/Hair)+Toggle×1(Eyes)+Slider×2(Age/Complexion)／Race(209)=Toggle×2(Gender/Race)+Text×1(RaceDescription)／Hair(213)=Toggle×2(Style/HairColor)+Slider×4(Red/Green/Blue/Length)／**Face(224)=Button×4(Shape/Tone/Random/Reset)**〔v571 の Button×3 を訂正〕／Shape(229)=Button×9／Tone(239)=Button×6／他は Slider のみ。
+  > - **page_id 算術**: Main のみ明示 0、他は counter++（初期 200）。子は Button/Toggle/Text=+1・**Slider=+2 消費**。→ v571「Main 消費 +6」は誤りで**実際 +8**（page_id 0/209/213/224/…/424/最終428 は一致）。
+  > ■ B [確定(命令)] 登録バンド `0x9F6000..0x9F8000`
+  > - `push value; push name; mov ecx,<.data>; call 0x419A70` の形で **218 登録**。第2引数=**GMST 名**、第1引数=**表示実値**（`sCheekboneslow`→"Cheekbones low/high"）。`iHairColorNN` の実値は RGB パック整数。全 218 件の対応表を §2.2 に記載。
+  > ■ C [部分確定] Done/Back
+  > - `[RaceSexMenu+0x3C]`=user5 値。ctor `0x5C4EA2` で 0 初期。**`0x5C9650`（ページ遷移 act・`0x5C96B3`）が `SetFloat(doneTile,0xFB3,2.0)`〔`0xA379B4`=2.0f〕＝サブページ遷移後は Back**、Main では Done。
+  > ■ D [部分確定] スライダー=顔モーフ軸
+  > - `0x5C93F0`（ret 0x18）が 2 id 消費。XML の `user7`=editor id／`user8`=geometry/texture flag。`0x5C6860` は `player→vfunc+0x170→[+0xE8]+0x29C→0x521A10→0x552990`＝顔フォーム再計算系。port は user7/user8+現在値のみ保持で画面再現可。
+  > ■ E [確定(命令)（negative）] Done の戻り
+  > - Done(90) は 19 ページ比較連鎖（Main→名前確認／Shape・Tone→Face／顔パーツ→Shape／肌・髭・目・眉・唇・鼻→Tone）。**Race/Hair/Face は連鎖に無く、フォールスルー `0x5CC816` が user0 を Main(0) に書戻す＝Main へ戻る**。**v561/v567 の「Race/Hair/Face→no-op（0x5CC8BA）」は誤り**（0x5CC8BA は要素通知専用入口）。
+  > - **遷移方向**: `0x5C3440(strB=親ページ,strA=要素)`→`GetPage(strB)→0x589930(page,strA)`。block9 は strA=sFace／strB=sMain＝Main の Face 行、act `0x5C9650(sFace)`＝**Face へ入る**。→ 行クリックは「入る」で遷移先=strA。
+  > 残点 V-610-A1/C1/D1/D2/E1。台帳反映＋round_verify ALL OK（rows 31..586 / total 472 / done 467 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2898,6 +2912,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2921,4 +2940,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 12:06:17
+**ai-todo** | Last Updated: 2026-11-21 12:53:34
