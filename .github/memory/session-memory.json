@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T05:30:00Z",
+  "lastUpdated": "2026-11-22T06:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15529,14 +15529,30 @@
         "todo-96"
       ],
       "content": "2026-11-21 v620 裁定＝155 の確定と 2.0 の積み方（U24・ai-todo #96）。成果物 tmp/re/v620_user0_155_confirmed_fld_form_ruling.md・台帳 row596。probe u64_1/u65_1 EXIT=0。①[確定(命令)] 2.0 の積み方は fld 形: push dword [0xA379B4] は 0 件、fld dword [0xA379B4] は 386 件。実例 0x57D518 は fld [0xA379B4]; push ecx; mov ecx,[esi+0x68](=menuRoot); fstp [esp]; push 0xFAE。実例 0x596067 は fld1/jmp/fld/fstp（bool 1.0 or 2.0）。→ fld 起点の 29 は全数（push 形は存在しない）。②[確定(命令)] esp 追跡で 155 を確定: push 0xFAE 全 322 の消費者（arg1=[esp+4] に 0xFAE が来る call）を push/pop/sub esp/add esp＋callee の ret N で追跡 → 書き手 155(UF120/US35)／読み手 160(GF)／その他 5(0x589980)／未同定 2 = 322。→ v619 の 155 は過小ではない（other 41 は文字列構築 0x4028D0 等で真の消費者は後続 GetFloat）。失格 37 の理由も callee 別（0x4028D0 系31/0x419B10 4/0x58A0A0 1/UF 1）。③[部分確定] 29 の tile 取得元: 後方探索で層別できた 14 件中 menuRoot は 2 件（0x57D518・0x5BBF76）、他は local/other。ecx 前方追跡が必要（V-620-2）。0x57D518 は menuRoot 由来＝汎用フラグの書き手。④ 定義: 155 = 0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）／29 = fld [0xA379B4] を含む直近 8 命令＋消費 call が UpdateFloat のサイト数／160 = 同条件で GetFloat。残点 V-620-1/2/3/4・V-619-1。"
+    },
+    {
+      "id": "opencode-v621-589980-delete-5c3440-gettile-20261121",
+      "timestamp": "2026-11-22T06:30:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v621",
+        "racesexmenu",
+        "user0",
+        "tile",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v621 裁定＝V-620-1 決着と 0x5C3440 同定（U25・ai-todo #96）。成果物 tmp/re/v621_589980_delete_and_5c3440_gettile_ruling.md・台帳 row597。probe u66_1/u67_1 EXIT=0。①[確定(命令)] 0x589980 は削除系（mutator）: [this+0x28] のリストを [entry+0x04]=key（trait と比較）・[entry+0x0C]=float で引き、一致時に [edx+0x14]（next）を張り替えて unlink＋call 0x401F20 で free。エントリ形 {+0x00 owner, +0x04 key, +0x0C float, +0x14 next}。5 サイトは push 0xFAE で user0 エントリを削除 → 155(setter)＋5(deleter)=160 の変更サイト。査読の『読み手』は [確定(命令)（negative）] 否定。callers_of(0x589980)=28。②[確定(命令)] 0x5C3440＝Menu::GetTile(strA=要素名, strB=親ページ名): edi=[esp+0x2C](strB), ebx=[esp+0x24](strA)、0x5C3495 call 0x5C3110（GetPage(strB)）→ 0x5C349C call 0x589930（page,strA）。callers_of(0x5C3440)=142。③[部分確定] 12 サイトのページ名: Hair7/Race2/Main3（0x5CDF29=Red/Hair, 0x5CDF92=Hair, 0x5CDFF3=Hair, 0x5CE0F5=Hair, 0x5CE170=Hair, 0x5CE1E3=Hair, 0x5CE24B=Race, 0x5CE2C4=Race, 0x5CE345=Main, 0x5CE3A6=Main, 0x5CE45C=Main, 0x5CE4D5=Hair）。要素名 strA は窓不足で未取得。④ 155 を母数として固定（定義＝0xFAE を arg1 として消費する call が setter のサイト数・esp 追跡）。証拠形 fld [0xA379B4]; push ecx; fstp [esp]; push 0xFAE を記録。残点 V-621-1/2/3/4/5・V-619-1。"
     }
   ],
   "metadata": {
-    "totalEntries": 1044,
+    "totalEntries": 1045,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T05:30:00Z",
-    "entry_count": 1044,
-    "last_updated": "2026-11-22T05:30:00Z"
+    "lastUpdated": "2026-11-22T06:30:00Z",
+    "entry_count": 1045,
+    "last_updated": "2026-11-22T06:30:00Z"
   }
 }

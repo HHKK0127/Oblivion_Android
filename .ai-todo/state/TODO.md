@@ -884,6 +884,25 @@
   > ■ 残点（査読案の順序）
   > - V-620-1（0x589980 5 件の同定）→ V-620-2（ecx 前方追跡で層別）→ V-620-3（menuRoot 除外後の chargen 経路）→ V-620-4（未同定 2）→ V-619-1（31 名の分類）。
   > round_verify ALL OK（rows 31..596 / total 482 / done 477 / open 5）。
+  > 【v620 検収・V-620-1 決着 2026-11-21: v621（U25）】査読6点へ回答 → `tmp/re/v621_589980_delete_and_5c3440_gettile_ruling.md`（台帳 row597・probe u66_1/u67_1）
+  > ■ (1) V-620-1 決着: `0x589980` は削除系（mutator） [確定(命令)]
+  > - `0x5899A6 mov ecx,[ebp+0x28]`＝リスト先頭 → `0x5899B1 cmp [ecx+4], ebx`（**+0x04=key** を trait と比較）→ `0x5899B6 fld [ecx+0xC]`（**+0xC=float** を arg2 と比較）→ 一致時に `0x5899FD mov [edx+0x14], ecx`（**+0x14=next**）で **unlink** ＋ `call 0x401F20` で **free**。
+  > - エントリ形 { +0x00 owner, +0x04 key, +0x0C float, +0x14 next }、リストは `[this+0x28]`。
+  > - → **読み手ではなく削除系**。5 サイトは `push 0xFAE` で **user0 のエントリを削除**。→ **155(setter) ＋ 5(deleter) = 160 の『user0 を変更するサイト』**。
+  > - 査読の『GetValueByType/GetChildByIDTrait なら読み手』は **[確定(命令)（negative）] 否定**（+4=key・+0xC=float・+0x14=next）。`callers_of(0x589980)=28`（うち 5 が 0xFAE）。
+  > ■ (2) `0x5C3440` の同定 [確定(命令)]
+  > - `edi=[esp+0x2C]`(arg2=strB 親ページ名)、`ebx=[esp+0x24]`(arg1=strA 要素名)。
+  > - `0x5C3495 call 0x5C3110`（**GetPage(strB)**）→ `0x5C349C call 0x589930`（**0x589930(page, strA)** 名前で子 tile 検索）。
+  > - → **`0x5C3440(Menu*, strA=要素名, strB=親ページ名)`＝名前で引いた子 tile**（v610 と一致）。`callers_of(0x5C3440)=142`。
+  > ■ (3) 12 サイトのページ名 [部分確定]
+  > - 0x5CDF29=Red/Hair、0x5CDF92=Hair、0x5CDFF3=Hair、0x5CE0F5=Hair、0x5CE170=Hair、0x5CE1E3=Hair、0x5CE24B=Race、0x5CE2C4=Race、0x5CE345=Main、0x5CE3A6=Main、0x5CE45C=Main、0x5CE4D5=Hair。
+  > - 分布 **Hair 7 / Race 2 / Main 3**。**要素名 strA は窓が狭く未取得**（V-621-1）。
+  > ■ (6) 155 を母数として固定
+  > - 定義: 「0xFAE を arg1 として消費する call が setter（0x58CEB0/0x58CED0）のサイト数（esp 追跡）」。
+  > - 証拠形として `0x57D518` の `fld [0xA379B4]; push ecx; mov ecx,[esi+0x68]; fstp [esp]; push 0xFAE`（push で枠確保＋fstp [esp] で充填）を裁定に残置＝esp 追跡の妥当性根拠、別 trait でも同形が出る。
+  > ■ 残点（査読案の順序）
+  > - V-621-1（12 サイトの strA 要素名）→ V-621-2（12 名への user0 書き手探索）→ V-621-3（読み手 160 の層別）→ V-621-4（[this+0x28] の owner 種別）→ V-621-5（未同定 2）→ V-619-1（31 名の分類）。
+  > round_verify ALL OK（rows 31..597 / total 483 / done 478 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3145,6 +3164,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3168,4 +3192,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 22:55:06
+**ai-todo** | Last Updated: 2026-11-21 23:02:41

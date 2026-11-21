@@ -4480,3 +4480,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **定義**: 155 = 「0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）」／29 = 「`fld [0xA379B4]` を含む直近 8 命令＋消費 call が UpdateFloat のサイト数」／160 = 同条件で GetFloat。
 - **残点**: V-620-1（`0x589980` 5 件の同定）/ V-620-2（ecx 前方追跡で層別）/ V-620-3（menuRoot 除外後の chargen 経路）/ V-620-4（未同定 2）/ V-619-1（31 名の分類）。
 
+## 2026-11-21 (ne) — V-620-1 決着と `0x5C3440` 同定（v621）: **`0x589980`＝削除系・`0x5C3440`＝GetTile・12 サイトのページ名・155 を母数として固定**
+
+- **成果物**: `tmp/re/v621_589980_delete_and_5c3440_gettile_ruling.md`（probe u66_1/u67_1・EXIT=0）。台帳 **row597**・`round_verify` **ALL OK（rows 31..597 / total 483 / done 478 / open 5）**・U 節 **U25**・ai-todo **#96 note**。
+- **(1) V-620-1 決着 [確定(命令)]**: `0x589980` は**削除系**（`[this+0x28]` のリストを `[+0x04]`=key（trait 比較）・`[+0x0C]`=float で引き、`[+0x14]` を張り替えて **unlink＋free**）。エントリ形 `{+0x00 owner, +0x04 key, +0x0C float, +0x14 next}`。5 サイトは `push 0xFAE` で user0 エントリを削除 → **155(setter)＋5(deleter)=160 の変更サイト**。査読の「読み手」は **[確定(命令)（negative）] 否定**。`callers_of(0x589980)=28`。
+- **(2) [確定(命令)]**: `0x5C3440(Menu*, strA=要素名, strB=親ページ名)` ＝ `GetPage(strB)` → `0x589930(page, strA)` ＝ **名前で引いた子 tile**。`callers_of(0x5C3440)=142`。
+- **(3) [部分確定]**: 12 サイトのページ名 = **Hair 7 / Race 2 / Main 3**（要素名 strA は窓不足で未取得）。
+- **(4) 155 を母数として固定**: 定義＝「0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）」。証拠形 `fld [0xA379B4]; push ecx; fstp [esp]; push 0xFAE` を記録。
+- **残点**: V-621-1（12 サイトの strA）/ V-621-2（12 名への user0 書き手探索）/ V-621-3（読み手 160 の層別）/ V-621-4（`[this+0x28]` の owner 種別）/ V-621-5（未同定 2）/ V-619-1（31 名の分類）。
+
