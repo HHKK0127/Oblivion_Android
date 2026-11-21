@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T04:30:00Z",
+  "lastUpdated": "2026-11-22T05:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15514,14 +15514,29 @@
         "todo-96"
       ],
       "content": "2026-11-21 v619 裁定＝数字の是正と V-618-1/2 の決着（U23・ai-todo #96）。成果物 tmp/re/v619_user0_writers_155_and_2p0_sites_ruling.md・台帳 row595。probe u62_1/u63_1 EXIT=0。①[確定(命令)（negative）] 数字の是正: v618 の dist 合計 264 は誤集計。欠落は dist=0 の非 setter 27（116 に縮めた）＋ dist>=8 の 31（窓 8 命令）＝58。窓 20 の完全表は計 322 一致（全 322 が push 形・mov/cmp 形 0）。dist0=143(UF88/US28/GF22/other5)/dist1=132(UF28/US5/GF99)/dist2=10/dist4=5/dist6=1/dist8=24/dist9=5/dist11=2。②[確定(命令)] 真の引数窓で書き手 155: 条件＝push 0xFAE の後 call までに push/sub esp が無い（mov reg,<tile> は引数でない）。書き手 155（UF120/US35）＝ dist0=116+dist1=33+dist2=5+dist4=1。読み手 125/失格 37/その他 41。116 は下限で査読の >=149 が正。V-618-2 は this 設定の除外で決着。③[確定(命令)] user0=2.0 の書き手 29 箇所: 形検索（fld [0xA379B4] 近傍に push 0xFAE・直後 call UpdateFloat）＝29（fld 386 中 近傍 30 のうち 29）。fcomp [0xA379B4] 121 の近傍 64 は大半が 0x582160/0x589B70/0x578F60 へ＝読み手。書き手は 0x57D50B〜0x5DBD10 に分散。④[部分確定] 汎用フラグ仮説を支持: menuRoot.user0==2.0 は chargen 専用ではなく『UI/メニューがアクティブ』の汎用フラグ（読み手 121・書き手 29・総書き手 155・0x585190 Menu::EnableMenu callers 46）。chargen 固有の入口は builder 0x5CA010 の 0x40C 直値の側。残点 V-619-1/2/3/4。"
+    },
+    {
+      "id": "opencode-v620-user0-155-confirmed-20261121",
+      "timestamp": "2026-11-22T05:30:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v620",
+        "racesexmenu",
+        "user0",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v620 裁定＝155 の確定と 2.0 の積み方（U24・ai-todo #96）。成果物 tmp/re/v620_user0_155_confirmed_fld_form_ruling.md・台帳 row596。probe u64_1/u65_1 EXIT=0。①[確定(命令)] 2.0 の積み方は fld 形: push dword [0xA379B4] は 0 件、fld dword [0xA379B4] は 386 件。実例 0x57D518 は fld [0xA379B4]; push ecx; mov ecx,[esi+0x68](=menuRoot); fstp [esp]; push 0xFAE。実例 0x596067 は fld1/jmp/fld/fstp（bool 1.0 or 2.0）。→ fld 起点の 29 は全数（push 形は存在しない）。②[確定(命令)] esp 追跡で 155 を確定: push 0xFAE 全 322 の消費者（arg1=[esp+4] に 0xFAE が来る call）を push/pop/sub esp/add esp＋callee の ret N で追跡 → 書き手 155(UF120/US35)／読み手 160(GF)／その他 5(0x589980)／未同定 2 = 322。→ v619 の 155 は過小ではない（other 41 は文字列構築 0x4028D0 等で真の消費者は後続 GetFloat）。失格 37 の理由も callee 別（0x4028D0 系31/0x419B10 4/0x58A0A0 1/UF 1）。③[部分確定] 29 の tile 取得元: 後方探索で層別できた 14 件中 menuRoot は 2 件（0x57D518・0x5BBF76）、他は local/other。ecx 前方追跡が必要（V-620-2）。0x57D518 は menuRoot 由来＝汎用フラグの書き手。④ 定義: 155 = 0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）／29 = fld [0xA379B4] を含む直近 8 命令＋消費 call が UpdateFloat のサイト数／160 = 同条件で GetFloat。残点 V-620-1/2/3/4・V-619-1。"
     }
   ],
   "metadata": {
-    "totalEntries": 1043,
+    "totalEntries": 1044,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T04:30:00Z",
-    "entry_count": 1043,
-    "last_updated": "2026-11-22T04:30:00Z"
+    "lastUpdated": "2026-11-22T05:30:00Z",
+    "entry_count": 1044,
+    "last_updated": "2026-11-22T05:30:00Z"
   }
 }

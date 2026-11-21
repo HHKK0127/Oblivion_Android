@@ -2,6 +2,12 @@
 
 ## Tasks
 
+- [ ] **#172** 【RE レーン依頼・中優先】RaceSexMenu の tile 木を実機走査し、各 tile の user* 実値を採取する（RE v612 §8 / v613 §8 V-612-1・V-613-1）。背景: 『UI は XML データ、C++ は user trait を埋めるだけ』が確定（v612 §9・v613 §5）＝chargen の意味は vtable でなく各 tile の user* 実値にある。手段: ①RE probe u47_1.py --pid <Oblivion.exe> --menu-id 0x40C で g_TileMenuArray(0x00B13970, index=menuId-0x3E9) から tile 木を DFS 走査（name/id/x/y/w/h/visible/alpha/locus を表化。NiTArray は firstFreeEntry=0xB1397A で境界・numObjs=0xB1397C を併記・null スロット注意・子リストは parent==tile で選別・差分検出で停止）。②代替＝Menu::RegisterTile 0x584880 に menuId==0x40C フィルタのブレークポイント。取得したいもの: 21ページ各 tile の user0..user8 実値（特にスライダー行の user7=顔モーフ軸 ID / user8=geometry flag＝v610 の残点 V-610-D2）。制約: 配列は runtime 構築のため静的ファイルからは辿れない（data ptr=0）。根拠: tmp/re/v612 §5-8、v613 §2/§4/§8。 `#RE` `#chargen` `#oblivion` `#runtime` `#tile`
+
+- [ ] **#171** 【人間判断待ち・中優先】xOBSE/OBVR 実名（GPL）の取込可否を裁定する（RE v611 V-611-1 / v613 §6）。RE が我々の 21,597 FUN_ のうち 416 件に実名（xOBSE 由来・例 Tile::UpdateFloat=0x58CEB0 / Tile::GetContainingMenu=0x5898F0 / IsMenuMode=0x578F60 / Menu::RegisterTile=0x584880 / g_TileMenuArray=0xB13970）を引いた。ただし xOBSE・OBVR は GPL-3.0、compendium は MIT。判断が必要な点: ①実名を我々の named_funcs.txt / docs へ取り込むか（GPL の派生物扱いになる範囲） ②取り込むなら「事実（アドレス→名前）の記録」に留めコード/ヘッダは書直す方針で足りるか ③出所（xOBSE/OBVR/compendium/自前命名）を各エントリに明記する運用にするか。作業用 merged CSV は %TEMP%\opencode\obng_merged_symbols.csv（2255行・非コミット）。根拠: tmp/re/v611 §3.2・§6、v613 §6。 `#approval` `#license` `#naming` `#oblivion` `#re`
+
+- [ ] **#170** 【作製・中優先】LoadingMenu 正典の port 突合（RE v611）: 移植済みローディング画面（ui/loading_screen.{h,cpp}・app/src/main/cpp/ui）を v611 の正典と照合し、差分を埋める。①フィールド表（+0x3C slowStepCap / +0x40 screenTimeLeft=15.0秒 / +0x60 shownStep / +0x64 targetStep / +0x68 stepChangedMs / +0x6C lastTickMs / +0x70 fastStepEnabled）に対応する状態を port が持つか ②バー進捗則（sinceStep > iMoveBarMaxMilliseconds(2500) → targetStep++ 無条件 / slowStepCap 未満で sinceStep > iMoveBarChaseMilliseconds(100) → targetStep++ / fastStepEnabled かつ sinceStep > iMoveBarWaitingMilliseconds(10) → targetStep++。screenTimeLeft -= sinceLast/1000.0、負値補正 2^32）を port のアニメが再現しているか ③バー比率 fPercentageOfBar0..3=0.06/0.35/0.44/0.15（和1.00、ctor の合計検証）を port が使っているか ④バー trait は user3(0xFB1) ⑤設定名 fLoadingSlideDelay:LoadingBar / iMoveBarMaxMilliseconds / iMoveBarChaseMilliseconds / iMoveBarWaitingMilliseconds。根拠: tmp/re/v611_obng_crosscheck_ruling.md §4.2-4.4。推測実装禁止・差分のみ修正。x87 精度制御(PC=24)は port 不要（v611 §4.6）。 `#android` `#loadingmenu` `#oblivion` `#port` `#re`
+
 - [ ] **#169** 【RE 連携・中優先（v611 V-611-1）】OBNG (Naragorn/OBNG) の re/symbols/xobse.csv（実名 2004 件）を我々の tmp/re/cache/named_funcs.txt へ取り込むか方針決定する。xOBSE は GPL-3.0 のため、ライセンス確認のうえ判断（事実＝アドレス・名前の参照は可、リポジトリへの一括コピーは別途）。対象: UI/Tile/Interface 系の実名（0x58CEB0 Tile::UpdateFloat 等）。成果物は v611_obng_crosscheck_ruling.md を参照。  `#連携` `#RE`
   > 【v612 追記・ライセンス切り分け（2026-11-21）】追加調査で判明した扱いの切り分け:
   > - **madpai/game-decomp-compendium は MIT** → `skills/re-binary-recon/scripts/{rtti_scan,pe_info,string_xrefs,aob_scan,pe}.py` と `skills/bethesda-gamebryo-re/scripts/gmst_defaults.py` は**そのまま使用可**（v612 で rtti_scan.py/pe_info.py を実使用し RaceSexMenu vtable 0xA6D38C 等を機械同定）。
@@ -850,6 +856,34 @@
   > ■ 残り
   > - V-619-1（31 名の用途分類＝ラベル/ページ識別子）/ V-619-2（155 書き手の tile 取得元による層別）/ V-619-3（29 の user0=2.0 書き手のうち chargen 経路）/ V-619-4（dist8/9/11 の other 31 件）。
   > round_verify ALL OK（rows 31..595 / total 481 / done 476 / open 5）。
+  > RE v611〜v613（姉妹 RE プロジェクトとのクロスチェック）受領・要点。v611(OBNG): 同一バイナリ(md5 cdd2f0c5eff198d4f26b7b5b54ce4930)・我々の FUN_ 416件に実名(xOBSE由来)・LoadingMenu を三者一致で確定＋OBNG未確定4設定の実名を我々が実読(fLoadingSlideDelay:LoadingBar=15.0 / iMoveBarMaxMilliseconds=2500 / iMoveBarChaseMilliseconds=100 / iMoveBarWaitingMilliseconds=10)・バー比率 fPercentageOfBar0..3=0.06/0.35/0.44/0.15(和1.00)・LoadingMenuフィールド表(+0x3C slowStepCap / +0x40 screenTimeLeft=15.0 / +0x60 shownStep / +0x64 targetStep / +0x68 stepChangedMs / +0x6C lastTickMs / +0x70 fastStepEnabled)。v612(OBVR/compendium): 同一バイナリ(md5+PE timestamp 0x462392c7)・RaceSexMenu vtable=0xA6D38C(15 slots)・LoadingMenu=0xA6C40C・g_TileMenuArray=NiTArray<TileMenu*>@0x00B13970(index=menuId-0x3E9)・menu id RaceSex=0x40C/Loading=0x3EF/Main=0x414・Tile layout(+0x08 name/+0x10 parent/+0x18 値リスト/+0x34 子リスト)・trait id(id=0xFA8/user0=0xFAE..user5=0xFB3＝v610と整合)・『UIはデータ(104 XML)、C++は user trait を埋めるだけ』＝#96 の方針を裏づけ。v613(訂正): NiTArray count は 0xB1397A=firstFreeEntry／0xB1397C=numObjs（v612 の count 記載は誤り・OBVR kTileMenuArrayCount も誤称）・RaceSexMenu slot[3]=0x5CC200(=v610 Done dispatch)・Tile+0x14=値リスト本体/Value size 0x1C(Value+0x04 number/+0x08 string/+0x18 id/+0x1A isNumber)・chargen の意味は vtable に無い→本命は『各 tile の user* 実値と書込箇所』。残点: V-611-1(xOBSE実名2004件の取込＝GPL判断) / V-612-1・V-613-1(u47_1.py 実機走査 --menu-id 0x40C) / V-613-2(gmst_defaults.py と gmap 突合) / V-613-3(Menu::RegisterTile 0x584880 menuId==0x40C ブレークポイント)。ライセンス: OBNG/OBVR=GPL(事実参照のみ・コピー禁止)、compendium=MIT(スクリプト使用可)。
+  > 【v619 検収・155 確定 2026-11-21: v620（U24）】査読6点へ回答 → `tmp/re/v620_user0_155_confirmed_fld_form_ruling.md`（台帳 row596・probe u64_1/u65_1）
+  > ■ (1) 2.0 の積み方は fld 形 [確定(命令)]
+  > - **`push dword [0xA379B4]` = 0 件**、**`fld dword [0xA379B4]` = 386 件**。
+  > - 実例 `0x57D518`: `fld [0xA379B4]; push ecx; mov ecx,[esi+0x68](=menuRoot); fstp [esp]; push 0xFAE` → call UpdateFloat。
+  > - 実例 `0x596067`: `fld1 / jmp / fld [0xA379B4] / fstp [esp] / push 0xFAE`（bool 1.0 or 2.0）。
+  > - → **`fld` 起点の 29 は全数**（push 形は存在しないので食い違いなし）。
+  > ■ (2)(4) esp 追跡で 155 を確定 [確定(命令)]
+  > - `push 0xFAE` 全 322 の**消費者**（arg1=[esp+4] に 0xFAE が来る call）を、`push`/`pop`/`sub esp`/`add esp`＋callee の `ret N` を反映して追跡:
+  > - **書き手（setter）= 155**（UF120 / US35）
+  > - 読み手（GetFloat）= 160
+  > - その他 = 5（`0x589980` ×5）
+  > - 未同定 = 2
+  > - **合計 322 ✓**
+  > - → **v619 の 155 は過小ではない**。`other` 41 は全て**文字列構築 `0x4028D0` 等**で、真の消費者は後続の `GetFloat`＝**読み手**でした。
+  > - 失格 37 の理由も callee 別に記録: `0x4028D0` 系 31（`sub esp,8`＋文字列構築）／`0x419B10` 4／`0x58A0A0` 1／UF 1（`0x5A2C73`＝`push ecx; push 0xFA1`）。
+  > - 残る「その他」= **`0x589980` 5 件**（0x5DA036/0x5DBE39/0x5DC2BA/0x5DC357/0x5DC4EE）。`mov ecx,[ebp+0x28]; cmp [ecx+4], ebx` の検索系 → **getter か writer か要同定**（V-620-1）。
+  > ■ (3) 29 の tile 取得元 [部分確定]
+  > - 後方探索で層別できたのは 14 件のみ（境界探索の限界）。うち **menuRoot(`[esi+0x68]`) は 2 件**（`0x57D518`・`0x5BBF76`）、他 12 は local/other。
+  > - → **menuRoot 由来の除外は未完**。**ecx の前方追跡**が必要（V-620-2）。
+  > - 確度ある事実: `0x57D518`（0x57 帯）は menuRoot 由来＝**汎用フラグの書き手**（v619 §4 の予想どおり）。
+  > ■ (6) 定義を明記
+  > - **155** = 「0xFAE を arg1 として消費する call が setter（0x58CEB0/0x58CED0）であるサイト数（esp 追跡で判定）」。
+  > - **29** = 「`fld dword [0xA379B4]`（2.0）を含む直近 8 命令を持ち、消費 call が 0x58CEB0 UpdateFloat のサイト数」。
+  > - 160 = 同条件で消費 call が 0x588BD0 GetFloat（読み手）。
+  > ■ 残点（査読案の順序）
+  > - V-620-1（0x589980 5 件の同定）→ V-620-2（ecx 前方追跡で層別）→ V-620-3（menuRoot 除外後の chargen 経路）→ V-620-4（未同定 2）→ V-619-1（31 名の分類）。
+  > round_verify ALL OK（rows 31..596 / total 482 / done 477 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3111,11 +3145,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3139,4 +3168,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 22:42:00
+**ai-todo** | Last Updated: 2026-11-21 22:55:06

@@ -4471,3 +4471,12 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **汎用フラグ仮説を支持 [部分確定]**: `menuRoot.user0==2.0` は **「UI/メニューがアクティブ」の汎用フラグ**（読み手 121・書き手 29・総書き手 155・`0x585190 Menu::EnableMenu` callers 46）。chargen 固有の入口は **builder `0x5CA010` の `0x40C` 直値**の側。
 - **残点**: V-619-1（31 名の用途分類）/ V-619-2（155 書き手の tile 取得元層別）/ V-619-3（29 のうち chargen 経路）/ V-619-4（dist8/9/11 の other 31）。
 
+## 2026-11-21 (nd) — 155 の確定と 2.0 の積み方（v620）: **esp 追跡で書き手 155 確定・`fld` 形（push 形 0）・29 の条件明記・tile 層別の残点**
+
+- **成果物**: `tmp/re/v620_user0_155_confirmed_fld_form_ruling.md`（probe u64_1/u65_1・EXIT=0）。台帳 **row596**・`round_verify` **ALL OK（rows 31..596 / total 482 / done 477 / open 5）**・U 節 **U24**・ai-todo **#96 note**。
+- **(1) [確定(命令)]**: `push dword [0xA379B4]` は **0 件**、`fld dword [0xA379B4]` は **386 件**。実例 `0x57D518` は `fld [0xA379B4]; push ecx; mov ecx,[esi+0x68]; fstp [esp]; push 0xFAE`。→ **`fld` 起点の 29 は全数**（push 形は存在しない）。
+- **(2)(4) [確定(命令)]**: **esp 追跡**（`push`/`pop`/`sub esp`/`add esp`＋callee の `ret N`）で全 322 の消費者を同定 → **書き手 155**（UF120/US35）／読み手 160／その他 5（`0x589980`）／未同定 2 = **322 ✓**。**155 は過小ではない**（`other` 41 は文字列構築で真の消費者は後続 GetFloat）。失格 37 の理由も callee 別に記録。
+- **(3) [部分確定]**: 29 の tile 取得元は後方探索で 14 件中 menuRoot 2 件のみ → **ecx 前方追跡が必要**（V-620-2）。
+- **定義**: 155 = 「0xFAE を arg1 として消費する call が setter のサイト数（esp 追跡）」／29 = 「`fld [0xA379B4]` を含む直近 8 命令＋消費 call が UpdateFloat のサイト数」／160 = 同条件で GetFloat。
+- **残点**: V-620-1（`0x589980` 5 件の同定）/ V-620-2（ecx 前方追跡で層別）/ V-620-3（menuRoot 除外後の chargen 経路）/ V-620-4（未同定 2）/ V-619-1（31 名の分類）。
+
