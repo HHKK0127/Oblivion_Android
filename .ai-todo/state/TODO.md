@@ -998,6 +998,34 @@
   > ■ 残点
   > - V-625-1（0x5C4340 の 5 引数と id が -1 か即値か）→ V-625-2（0x5CDEF0 の 12 が指す pane id）→ V-625-3（menu+0x94 表の読み手）→ V-625-4（0x5C93F0/0x5C4800/0x5C4480）→ V-623-3（pane/button クラスに限定した 155 の user0 書き手）。
   > round_verify ALL OK（rows 31..600 / total 486 / done 481 / open 5）。
+  > 【v625 検収・139/depth/counter 2026-11-21: v626（U29）】査読 7 点を処理。成果物 tmp/re/v626_139_dynamic_depth_gate_counter200_ruling.md（台帳 row601・probe u85_1/u86_1/u87_1）
+  > ■ (1) 139 の位置づけ訂正 [確定(命令)]
+  > - XML スケルトン = 0x590420 ReadXML（汎用・callers 49）。パスはハードコード。
+  > - chargen の動的コンテンツ = 0x5CA010 内の 139 generator（Pane21 / Slider90 / Button22 / Toggle5 / Text1）。
+  > - v619 で「139 は汎用の XML 生成側」と否定したのは不正確。正しくは 139 は動的側、汎用なのは ReadXML。Pane21 が 21 pane と一致。
+  > - 移植対応: 0xA6973C = "Data\Menus\CharGen\race_sex_menu.xml"（ハードコード）。BSA 内は menus\chargen\race_sex_menu.xml（小文字・相対）。両者の対応表が必要。
+  > ■ (2) depth の演算 = stackingtype はゲート（条件）[確定(命令)]
+  > - 0x5CA15D GetFloat(root, 0xFA5=stackingtype) を 0x5CA169 fcomp [0xA69770]=6006.0(float) と比較。
+  > - 0x5CA176 再読 → 0x5CA182 fcomp [0xA69778]=102.0(double)。
+  > - どちらかに等しいときだけ 0x5CA197 SetFloat(root, 0xFAB=depth, [esp+0x14]=0x588890())。
+  > - 102.0 = 0x66 = &no_click_past;（XML の <stackingtype> と一致）。
+  > - → stackingtype は depth を書くかどうかの条件。加減算なし（オフセットではない）が無関係でもない。
+  > - 0x588890 は thunk（jmp 0x584980）。depth の値は 0x584980 の戻り。
+  > ■ (3) 21 サイトの引数 [確定(命令)]
+  > - call 直前に push edi; push edi; push edx(名前グローバル); push eax([esi+0x28]=親)。前段に item builder（0x5C93F0 等）の即値 push（グループ idx: 0x17,2,7,0x12,0x1a,0x1e,0x28,0x36,6,5,0x13,0xf,0x18）。
+  > - 0x5C4340 が読むのは arg1 = parent([esp+0x34]) と arg4 = id([esp+0x40])（ret 0x14 = 5 引数）。
+  > - 0x419B10 = BSStringT ctor（ret 4、ecx=dest）。
+  > ■ (4) counter 初期値 = 200 [確定(命令)]
+  > - 0x5C4F3C mov dword [0xB3B5D4], 0xC8（200）。id==-1 の pane は 201,202,... と呼出順（ランタイム不要で静的確定）。
+  > ■ (5) id は -1 と明示値の混在 [部分確定]
+  > - 観測値（逆コンパイル ppuStack_40）= -1 / 0 / 2 / 3 / 5 / 6 / 7 / 9 / 0xe / 0xf / 0x12 / 0x13 / 0x16 / 0x18 / 0x19 / 0x1a / 0x1b / 0x1c / 0x1e / 0x1f / 0x28 / 0x29 / 0x36。
+  > - 21 pane を一意にする連番ではない（グループ idx 的性格）。
+  > ■ (6) 構造 [確定(命令)]
+  > - pane 配列 = menu+0x40 + i*4（puVar3[0x10..]）。menu+0x94 + id*4 = id→tile 表。
+  > - 0x5CDEF0 の 12 サイトは Hair(7)/Race(2)/Main(3) の要素のみ → 21 pane のうち Hair/Race/Main の 3 pane だけが「ページ」。
+  > ■ 残点
+  > - V-626-1（21 pane の (index,名前,id) 完全表）→ V-626-2（menu+0x94 の読み手）→ V-626-3（0x5C93F0/0x5C4800/0x5C4480 と template の対応）→ V-626-4（0x584980）→ V-623-3。
+  > round_verify ALL OK（rows 31..601 / total 487 / done 482 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3259,11 +3287,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3287,4 +3310,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 06:45:47
+**ai-todo** | Last Updated: 2026-11-22 06:53:55

@@ -4515,10 +4515,22 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 
 - **成果物**: `tmp/re/v625_range_depth_21panes_templates_ruling.md`（probe u82_1/u83_1/u84_1・EXIT=0）。台帳 **row600**・`round_verify` **ALL OK（rows 31..600 / total 486 / done 481 / open 5）**・U 節 **U28**・ai-todo **#96 note**。
 - **(1) [確定(命令)] 範囲訂正（以後 `[start, exclusive_end)`）**: int `+0x8F0..+0x930`（16・`iHairColor00..15`）／char `+0x930..+0x9B0`（stride 8・16・`sHairColor0..15`）。v624 の `0x9AC` は誤り。◪ の `0x8F4` 起点は **[確定(命令)（negative）] 否定**。
-- **(2) [確定(命令)] depth の書き込み先 = ebx**: `0x590420(menuRoot, "Data\Menus\CharGenace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=ebx`（menuRoot そのものではない）。depth は root tile に 1 回だけ書く（値 `0x588890()`）。`0x590420` = XML ローダ（callers 49）。
+- **(2) [確定(命令)] depth の書き込み先 = ebx**: `0x590420(menuRoot, "Data\Menus\CharGen
+ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=ebx`（menuRoot そのものではない）。depth は root tile に 1 回だけ書く（値 `0x588890()`）。`0x590420` = XML ローダ（callers 49）。
 - **(3) [確定(命令)] V-624-1 決着 = 21 pane と名前**: Main/Race/Hair/Face/Shape/Tone/GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose/GeneralSkin/Beard/EyesTex/Eyebrows/MouthLips/NoseTex。**21 pane ≠ 21 ページ**。`0x5CDEF0` の 12 サイトは Hair(7)/Race(2)/Main(3) の要素のみ。
 - **(4) [確定(実物XML)] `<template>` は 5 個**: pane(100)/button(101)/toggle(102)/slider(103)/text(104)。ページの中身は template 側。
 - **(5) [確定(命令)] user0 は tile クラス依存**: menuRoot=bool(2.0)／pane/button=id。155 の層別は pane/button クラス（vtable slot 3 = `0x389` TileMenu）に限定。
 - **(6) [部分確定] id==-1 採番**: `0x5C4340` は `ret 0x14`（5 引数）、明示 id 即値なし → 全 pane が -1 自動採番の可能性。
 - **残点**: V-625-1（`0x5C4340` の 5 引数と id）/ V-625-2（`0x5CDEF0` の 12 が指す pane id）/ V-625-3（`menu+0x94` 表の読み手）/ V-625-4（`0x5C93F0`/`0x5C4800`/`0x5C4480`）/ V-623-3。
+
+## 2026-11-21 (ni) — 139 の位置づけ・depth ゲート・counter 200（v626）
+
+- **成果物**: `tmp/re/v626_139_dynamic_depth_gate_counter200_ruling.md`（probe u85_1/u86_1/u87_1・EXIT=0）。台帳 **row601**・`round_verify` **ALL OK（rows 31..601 / total 487 / done 482 / open 5）**・U 節 **U29**・ai-todo **#96 note**。
+- **(1) [確定(命令)] 139 は動的側**: 汎用は `0x590420 ReadXML`（callers 49）、139 は `0x5CA010` 内（Pane21 = 21 pane）。v619 の「139 は汎用」を訂正。XML パスはハードコード `0xA6973C = "Data\Menus\CharGen\race_sex_menu.xml"`（BSA は `menus\chargen\race_sex_menu.xml`）。
+- **(2) [確定(命令)] depth は stackingtype をゲート**: `0xA69770=6006.0` / `0xA69778=102.0`（=`&no_click_past;`）のときだけ `SetFloat(root,0xFAB,0x588890())`。加減算なし（オフセットではない）が無関係でもない。`0x588890` は thunk（`jmp 0x584980`）。
+- **(3) [確定(命令)] 21 サイトの引数**: `arg1=parent`（`[esp+0x34]`）、`arg4=id`（`[esp+0x40]`）。`ret 0x14`=5 引数。前段に item builder の即値 push（グループ idx）。
+- **(4) [確定(命令)] counter 初期値 = 200（0xC8）**: `0x5C4F3C mov [0xB3B5D4],0xC8`。`id==-1` の pane は 201 から呼出順。
+- **(5) [部分確定] id は -1 と明示値の混在**: 観測値 -1/0/2/3/5/6/7/9/0xe/0xf/0x12/0x13/0x16/0x18/0x19/0x1a/0x1b/0x1c/0x1e/0x1f/0x28/0x29/0x36。
+- **(6) [確定(命令)] 構造**: pane 配列 = `menu+0x40 + i*4`、`menu+0x94 + id*4` = id→tile 表。`0x5CDEF0` の 12 は Hair(7)/Race(2)/Main(3) のみ。
+- **残点**: V-626-1（21 pane の (index,名前,id)）/ V-626-2（`menu+0x94` の読み手）/ V-626-3（item builder と template）/ V-626-4（`0x584980`）/ V-623-3。
 
