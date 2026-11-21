@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T14:00:00Z",
+  "lastUpdated": "2026-11-22T16:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15609,14 +15609,29 @@
         "todo-96"
       ],
       "content": "2026-11-21 v626 裁定＝139 の位置づけ・depth ゲート・counter 200（U29・ai-todo #96）。成果物 tmp/re/v626_139_dynamic_depth_gate_counter200_ruling.md・台帳 row601。probe u85_1/u86_1/u87_1 EXIT=0。①[確定(命令)] 139 は動的側: XML スケルトンは 0x590420 ReadXML（汎用・callers 49）、chargen の動的コンテンツは 0x5CA010 内の 139（Pane21/Slider90/Button22/Toggle5/Text1）。Pane21 が 21 pane と一致。v619 の『139 は汎用』を訂正。XML パスはハードコード 0xA6973C=\"Data\\\\Menus\\\\CharGen\\\\race_sex_menu.xml\"（BSA は menus\\\\chargen\\\\race_sex_menu.xml）。②[確定(命令)] depth は stackingtype をゲート: GetFloat(root,0xFA5) を 0xA69770=6006.0(float) と 0xA69778=102.0(double,=0x66=&no_click_past;) に fcomp し、等しいときだけ SetFloat(root,0xFAB,0x588890())。加減算なし（オフセットではない）が無関係でもない。0x588890 は thunk（jmp 0x584980）。③[確定(命令)] 21 サイトの引数: call 直前に push edi;push edi;push edx(名前);push eax([esi+0x28]=親)。0x5C4340 は arg1=parent([esp+0x34]) と arg4=id([esp+0x40]) を読む（ret 0x14=5引数）。④[確定(命令)] counter 初期値=200(0xC8): 0x5C4F3C mov [0xB3B5D4],0xC8。id==-1 の pane は 201 から呼出順（ランタイム不要）。⑤[部分確定] id は -1 と明示値の混在: 観測 -1/0/2/3/5/6/7/9/0xe/0xf/0x12/0x13/0x16/0x18/0x19/0x1a/0x1b/0x1c/0x1e/0x1f/0x28/0x29/0x36。⑥[確定(命令)] pane 配列=menu+0x40+i*4（puVar3[0x10..]）、menu+0x94+id*4=id→tile 表。0x5CDEF0 の 12 は Hair(7)/Race(2)/Main(3) のみ。残点 V-626-1/2/3/4・V-623-3。"
+    },
+    {
+      "id": "opencode-v627-pane-index-names-items-20261121",
+      "timestamp": "2026-11-22T16:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v627",
+        "racesexmenu",
+        "pane",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v627 裁定＝21 pane の index→名前と中身（U30・ai-todo #96）。成果物 tmp/re/v627_pane_index_names_items_ruling.md・台帳 row602。probe u88_1 EXIT=0。①[確定(命令)] pane 配列 = menu+0x40+i*4: 0x40 Main/0x44 Race/0x48 Hair/0x4C Face/0x50 Shape/0x54 Tone/0x58 GeneralFace/0x5C Brow/0x60 Cheeks/0x64 Chin/0x68 Eyes/0x6C Forehead/0x70 Jaw/0x74 Mouth/0x78 Nose/0x7C GeneralSkin/0x80 Beard/0x84 EyesTex/0x88 Eyebrows/0x8C MouthLips/0x90 NoseTex。V-626-1 の index→名前 確定。②[確定(命令)] 各 pane の item index→名前: Main(0x40)=0/1/2 Race/Face/Hair（タブ）、Face(0x4C)=3/4/5/6 Shape/Tone/Random/Reset、Shape(0x50)=7/8/9/10/0xb/0xc/0xd/0xe/0xf GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose、Tone(0x54)=0x10/0x11/0x12/0x13/0x14/0x15 GeneralSkin/Beard/EyesTex/Eyebrows/MouthLips/NoseTex。逆コンパイルの uStack_4=index＋FUN_005c4480(pane) で確定。③[部分確定] pane id = ppuStack_40: 観測 -1(Race/Face)/0x13/0/2/3/7…。-1 は counter 0xB3B5D4(初期200) から採番 → Race=201/Face=202。明示値はグループ idx 的性格。完全表は V-627-1。④Main pane=タブバー。残点 V-627-1/V-626-2/V-626-3。"
     }
   ],
   "metadata": {
-    "totalEntries": 1049,
+    "totalEntries": 1050,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T14:00:00Z",
-    "entry_count": 1049,
-    "last_updated": "2026-11-22T14:00:00Z"
+    "lastUpdated": "2026-11-22T16:00:00Z",
+    "entry_count": 1050,
+    "last_updated": "2026-11-22T16:00:00Z"
   }
 }

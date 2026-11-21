@@ -4534,3 +4534,12 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **(6) [確定(命令)] 構造**: pane 配列 = `menu+0x40 + i*4`、`menu+0x94 + id*4` = id→tile 表。`0x5CDEF0` の 12 は Hair(7)/Race(2)/Main(3) のみ。
 - **残点**: V-626-1（21 pane の (index,名前,id)）/ V-626-2（`menu+0x94` の読み手）/ V-626-3（item builder と template）/ V-626-4（`0x584980`）/ V-623-3。
 
+## 2026-11-21 (nj) — 21 pane の index→名前と中身（v627）
+
+- **成果物**: `tmp/re/v627_pane_index_names_items_ruling.md`（probe u88_1・EXIT=0）。台帳 **row602**・`round_verify` **ALL OK（rows 31..602 / total 488 / done 483 / open 5）**・U 節 **U30**・ai-todo **#96 note**。
+- **(1) [確定(命令)] pane 配列 = `menu+0x40 + i*4`**: 0x40 Main / 0x44 Race / 0x48 Hair / 0x4C Face / 0x50 Shape / 0x54 Tone / 0x58 GeneralFace / 0x5C Brow / 0x60 Cheeks / 0x64 Chin / 0x68 Eyes / 0x6C Forehead / 0x70 Jaw / 0x74 Mouth / 0x78 Nose / 0x7C GeneralSkin / 0x80 Beard / 0x84 EyesTex / 0x88 Eyebrows / 0x8C MouthLips / 0x90 NoseTex。**V-626-1 の index→名前 確定**。
+- **(2) [確定(命令)] 各 pane の item index→名前**: Main(0x40)=0/1/2 Race/Face/Hair（タブ）、Face(0x4C)=3/4/5/6 Shape/Tone/Random/Reset、Shape(0x50)=7..0xf GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose、Tone(0x54)=0x10..0x15 GeneralSkin/Beard/EyesTex/Eyebrows/MouthLips/NoseTex。
+- **(3) [部分確定] pane id = `ppuStack_40`**: 観測 -1(Race/Face)/0x13/0/2/3/7…。**-1 は counter `0xB3B5D4`（初期 200）から採番 → Race=201 / Face=202**。
+- **残点**: V-627-1（pane id 全件）/ V-626-2（`menu+0x94` の読み手）/ V-626-3（item builder と template）。
+- **停止条件**: V-626-2/3 が閉じたら chargen lane を一旦停止。
+

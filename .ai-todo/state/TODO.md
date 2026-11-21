@@ -1026,6 +1026,26 @@
   > ■ 残点
   > - V-626-1（21 pane の (index,名前,id) 完全表）→ V-626-2（menu+0x94 の読み手）→ V-626-3（0x5C93F0/0x5C4800/0x5C4480 と template の対応）→ V-626-4（0x584980）→ V-623-3。
   > round_verify ALL OK（rows 31..601 / total 487 / done 482 / open 5）。
+  > 【v626 検収・21 pane の index/名前/中身 2026-11-21: v627（U30）】成果物 tmp/re/v627_pane_index_names_items_ruling.md（台帳 row602・probe u88_1）
+  > ■ (1) pane 配列 = menu+0x40 + i*4（index→名前）[確定(命令)]
+  > - 0x40 Main / 0x44 Race / 0x48 Hair / 0x4C Face / 0x50 Shape / 0x54 Tone / 0x58 GeneralFace / 0x5C Brow / 0x60 Cheeks / 0x64 Chin / 0x68 Eyes / 0x6C Forehead / 0x70 Jaw / 0x74 Mouth / 0x78 Nose / 0x7C GeneralSkin / 0x80 Beard / 0x84 EyesTex / 0x88 Eyebrows / 0x8C MouthLips / 0x90 NoseTex。
+  > - V-626-1 の index→名前 確定（逆コンパイル puVar3[0x10+i] = FUN_005c4340(...) と各生成直前の名前グローバル）。
+  > ■ (2) 各 pane の item index→名前 [確定(命令)]
+  > - Main(0x40): 0/1/2 = Race/Face/Hair（＝タブ）
+  > - Face(0x4C): 3/4/5/6 = Shape/Tone/Random/Reset
+  > - Shape(0x50): 7/8/9/10/0xb/0xc/0xd/0xe/0xf = GeneralFace/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose
+  > - Tone(0x54): 0x10/0x11/0x12/0x13/0x14/0x15 = GeneralSkin/Beard/EyesTex/Eyebrows/MouthLips/NoseTex
+  > - 逆コンパイルの uStack_4=index ＋ FUN_005c4480(pane) で確定。
+  > ■ (3) pane id = ppuStack_40 [部分確定]
+  > - 観測値: -1(Race/Face) / 0x13 / 0 / 2 / 3 / 7 …。
+  > - -1 は counter 0xB3B5D4（初期 200）から採番 → Race=201 / Face=202（作成順）。
+  > - 明示値はグループ idx 的性格で、21 pane を一意にする連番ではない。完全表は V-627-1。
+  > ■ 含意
+  > - Main pane = タブバー。0x5CDEF0 の 12 サイト（Hair/Race/Main）は pane の item ではなく別のラベル要素を読む。
+  > ■ 残点 / 停止条件
+  > - V-627-1（pane id 全件）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）。
+  > - V-626-2/3 が閉じたら chargen lane を一旦停止（残りは人間ゲート待ち）。
+  > round_verify ALL OK（rows 31..602 / total 488 / done 483 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3287,6 +3307,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3310,4 +3335,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 06:53:55
+**ai-todo** | Last Updated: 2026-11-22 07:16:49
