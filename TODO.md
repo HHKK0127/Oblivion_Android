@@ -4,7 +4,7 @@
 
 - [ ] **#172** 【RE レーン依頼・中優先】RaceSexMenu の tile 木を実機走査し、各 tile の user* 実値を採取する（RE v612 §8 / v613 §8 V-612-1・V-613-1）。背景: 『UI は XML データ、C++ は user trait を埋めるだけ』が確定（v612 §9・v613 §5）＝chargen の意味は vtable でなく各 tile の user* 実値にある。手段: ①RE probe u47_1.py --pid <Oblivion.exe> --menu-id 0x40C で g_TileMenuArray(0x00B13970, index=menuId-0x3E9) から tile 木を DFS 走査（name/id/x/y/w/h/visible/alpha/locus を表化。NiTArray は firstFreeEntry=0xB1397A で境界・numObjs=0xB1397C を併記・null スロット注意・子リストは parent==tile で選別・差分検出で停止）。②代替＝Menu::RegisterTile 0x584880 に menuId==0x40C フィルタのブレークポイント。取得したいもの: 21ページ各 tile の user0..user8 実値（特にスライダー行の user7=顔モーフ軸 ID / user8=geometry flag＝v610 の残点 V-610-D2）。制約: 配列は runtime 構築のため静的ファイルからは辿れない（data ptr=0）。根拠: tmp/re/v612 §5-8、v613 §2/§4/§8。 `#RE` `#chargen` `#oblivion` `#runtime` `#tile`
 
-- [ ] **#171** 【人間判断待ち・中優先】xOBSE/OBVR 実名（GPL）の取込可否を裁定する（RE v611 V-611-1 / v613 §6）。RE が我々の 21,597 FUN_ のうち 416 件に実名（xOBSE 由来・例 Tile::UpdateFloat=0x58CEB0 / Tile::GetContainingMenu=0x5898F0 / IsMenuMode=0x578F60 / Menu::RegisterTile=0x584880 / g_TileMenuArray=0xB13970）を引いた。ただし xOBSE・OBVR は GPL-3.0、compendium は MIT。判断が必要な点: ①実名を我々の named_funcs.txt / docs へ取り込むか（GPL の派生物扱いになる範囲） ②取り込むなら「事実（アドレス→名前）の記録」に留めコード/ヘッダは書直す方針で足りるか ③出所（xOBSE/OBVR/compendium/自前命名）を各エントリに明記する運用にするか。作業用 merged CSV は %TEMP%\opencode\obng_merged_symbols.csv（2255行・非コミット）。根拠: tmp/re/v611 §3.2・§6、v613 §6。 `#approval` `#license` `#naming` `#oblivion` `#re`
+- [x] **#171** 【人間判断待ち・中優先】xOBSE/OBVR 実名（GPL）の取込可否を裁定する（RE v611 V-611-1 / v613 §6）。RE が我々の 21,597 FUN_ のうち 416 件に実名（xOBSE 由来・例 Tile::UpdateFloat=0x58CEB0 / Tile::GetContainingMenu=0x5898F0 / IsMenuMode=0x578F60 / Menu::RegisterTile=0x584880 / g_TileMenuArray=0xB13970）を引いた。ただし xOBSE・OBVR は GPL-3.0、compendium は MIT。判断が必要な点: ①実名を我々の named_funcs.txt / docs へ取り込むか（GPL の派生物扱いになる範囲） ②取り込むなら「事実（アドレス→名前）の記録」に留めコード/ヘッダは書直す方針で足りるか ③出所（xOBSE/OBVR/compendium/自前命名）を各エントリに明記する運用にするか。作業用 merged CSV は %TEMP%\opencode\obng_merged_symbols.csv（2255行・非コミット）。根拠: tmp/re/v611 §3.2・§6、v613 §6。 `#approval` `#license` `#naming` `#oblivion` `#re` (2026-11-22)
 
 - [ ] **#170** 【作製・中優先】LoadingMenu 正典の port 突合（RE v611）: 移植済みローディング画面（ui/loading_screen.{h,cpp}・app/src/main/cpp/ui）を v611 の正典と照合し、差分を埋める。①フィールド表（+0x3C slowStepCap / +0x40 screenTimeLeft=15.0秒 / +0x60 shownStep / +0x64 targetStep / +0x68 stepChangedMs / +0x6C lastTickMs / +0x70 fastStepEnabled）に対応する状態を port が持つか ②バー進捗則（sinceStep > iMoveBarMaxMilliseconds(2500) → targetStep++ 無条件 / slowStepCap 未満で sinceStep > iMoveBarChaseMilliseconds(100) → targetStep++ / fastStepEnabled かつ sinceStep > iMoveBarWaitingMilliseconds(10) → targetStep++。screenTimeLeft -= sinceLast/1000.0、負値補正 2^32）を port のアニメが再現しているか ③バー比率 fPercentageOfBar0..3=0.06/0.35/0.44/0.15（和1.00、ctor の合計検証）を port が使っているか ④バー trait は user3(0xFB1) ⑤設定名 fLoadingSlideDelay:LoadingBar / iMoveBarMaxMilliseconds / iMoveBarChaseMilliseconds / iMoveBarWaitingMilliseconds。根拠: tmp/re/v611_obng_crosscheck_ruling.md §4.2-4.4。推測実装禁止・差分のみ修正。x87 精度制御(PC=24)は port 不要（v611 §4.6）。 `#android` `#loadingmenu` `#oblivion` `#port` `#re`
 
@@ -15,6 +15,7 @@
   > - したがって #169 の「xobse.csv 実名取込」は、**xOBSE(GPL) の名前一括コピー**が論点のまま。一方 **compendium(MIT) のスクリプト・手法は制約なく取り込める**。
   > - compendium は「exe 由来のアドレス表・GMST ダンプは公開リポジトリに置かない」方針。我々の tmp/re は gitignore 済みで整合。
   > - 成果物: tmp/re/v612_obvr_compendium_crosscheck_ruling.md（台帳 row588）。
+  > 【#171 から統合】本件の包括版。判断点3つ: ①実名を named_funcs.txt / docs へ取り込むか（GPL 派生物の範囲）②取り込むなら『事実（アドレス→名前）の記録』に留めコード/ヘッダは書直す方針で足りるか ③出所（xOBSE=GPL / OBVR=GPL / compendium=MIT / 自前命名）を各エントリに明記する運用にするか。対象は OBNG の xobse.csv 限定でなく、RE が引いた 416 件全体（例 Tile::UpdateFloat=0x58CEB0 / Tile::GetContainingMenu=0x5898F0 / IsMenuMode=0x578F60 / Menu::RegisterTile=0x584880 / g_TileMenuArray=0xB13970）。根拠: v611 §3.2・§6、v613 §6。重複タスク #171 は本件に統合してクローズ。
 
 - [ ] **#168** 【作製・低優先（#164 verifier 残 nit）】導入ムービー C-1 コミット 5292aa37 の verifier APPROVE 時に残った nit 4件を整理する。①LOGO_DISPLAY（title_screen.h:24・cpp:402/442/1051/1111）が到達不能化（transitionToLogo 削除で代入元ゼロ）＝enum と未到達ハンドラ＋renderLogoDisplay（cpp:624・呼び出し cpp:443 のみ）と logoFadeAlpha 系が同種の残骸。削除するか「press any key」待ちを残すかは v598(e)（splash→iv ロゴ→メインメニューのみ）と整合させて判断。②New Game 経路で setIntroMovieActive(false) が無条件で music/tes4title を再生（title_screen.cpp:546）。原版 0x6A9C00 は音楽システム再開でありタイトルテーマ限定ではないため、chargen 突入時は移植側の付加。実測では同フレームで updateAreaBgm が上書きするため実害軽微。③startIntroMovie 先頭の finishIntroMovie() が資源ゼロ時に early return し introMovieCompleted をクリアしないため、release 後に完了コールバックが配送された場合のみ次回 New Game が1フレームで終了し得る（MediaPlayer は release 後コールバックを配送しないため確率極小）。④renderIntroMovieOverlay が GL_DEPTH_TEST 無効・ブレンド有効のまま戻る（title_screen.cpp:585-587）。描画パス先頭で深度再設定のため実害なし。 `#android` `#cleanup` `#intro` `#oblivion`
 
@@ -936,6 +937,34 @@
   > ■ 残点
   > - V-623-1（(要素,ページ)->ハンドラ完全表）→ V-623-2（98 の出所）→ V-623-3（ページボタン tile の user0 書き手・155 母数で層別）→ V-623-4（31 名の用途分類）→ V-623-5（0x589980 5 件・未同定 2 件）。
   > round_verify ALL OK（rows 31..598 / total 484 / done 479 / open 5）。
+  > 【v623 検収・trait ID と pane 生成器 2026-11-21: v624（U27）】◪ の記録を実読で訂正。成果物 tmp/re/v624_trait_ids_haircolor_array_pane_creator_ruling.md（台帳 row599・probe u79_1/u80_1/u81_1）
+  > ■ (1) trait ID 同定 [確定(命令)]
+  > - 0xFA5 = stackingtype、0xFAB = depth。XML の <stackingtype> &no_click_past; </stackingtype> に対応。
+  > - builder の GetFloat(menuRoot,0xFA5) → SetFloat(menuRoot,0xFAB,値)（0x5CA15D/0x5CA197）は 重なり順を depth に写す z オーダーの後処理。chargen 固有の意味は無い。
+  > - 0x5CA010 は「XML を読んで tile を作り、最後に depth を振る」汎用解釈器で、chargen 固有なのは 0x40C ガードのみ。
+  > ■ (2) +0x8F0 配列 = hair color（16 件）[確定(命令)]
+  > - int 配列 +0x8F0..+0x92C（stride 4・16 件）= iHairColor00..15（0x5CA1EA mov [ebx],ecx; ebx=esi+0x8F0）。
+  > - char 配列 +0x930..+0x9AC（stride 8・16 件）= sprintf(dst, "%s", sHairColorN)（0xA2F864="%s"）。
+  > - 0x8F0 + 16*4 = 0x930 で整合。査読の算術指摘は正しい（◪ の『16×%s→0x8F4..0x92C』はアドレス誤り。int が 0x8F0 起点、名が 0x930 起点）。
+  > - 上限はハードコード: 0x5CC11E cmp eax,0x10; jl 0x5CC0AB（i<16）。超過スロットなし。
+  > - 16 は hair color 数でありページ数ではない（査読 §5 の推論は否定）。
+  > - 名前はラベル: 0x5CBD16 lea eax,[esi+eax*8+0x930] → mov eax,[eax] → push 0xFB4（=user6）＝ hair color 名を tile.user6 へ。
+  > ■ (3) 0x5C4340 = pane 生成器 [確定(命令)]
+  > - シグネチャ 0x5C4340(menu* this=ecx, Tile* parentTile, int id)、戻り Tile*。
+  > - テンプレート "race_template_pane"（0xA6D2DC）を 0x585410 で名前引き（リスト走査＋__stricmp(0x98262D) → 0x401F00(0x14) 確保 → 0x58CD30 clone）して生成。
+  > - tile.id(0xFA8) = id、tile.listindex(0xFAA)、tile.user0(0xFAE) = id、this->[0x94 + id*4] = tile。id==-1 なら counter [0xB3B5D4] から採番。
+  > - callers_of(0x5C4340) = 21。すべて builder 内で親 [esi+0x28]（同一 window）→ pane 21 個。
+  > - menu+0x94 表は 0x5C4340/0x5C45EE/0x5C47C9/0x5C48E1/0x5C9584/0x5C958B で書き、0x5C64E0/0x5C655C/0x5C6C59/0x5C6D57 等で読む。
+  > ■ (4) buttonID の正体 [確定(命令)]
+  > - 生成 pane/button は id(0xFA8) と user0(0xFAE) の両方に同じ値を持つ → v623 の if (buttonID == GetFloat(GetTile(要素名,ページ名),0xFAE)) が成立する。
+  > - menu+0x94 = pane id→tile 表。名前（sMain/sHair/…/sHairColor0..15）はラベル。
+  > ■ (5) V-619-1 の前提更新 [部分確定]
+  > - 31 名はラベル用途（RaceDescription, HairColor0..15, スライダ名）と識別子用途（Main/Race/Face/Hair/Eyes の GetPage キー、要素名の GetTile キー）の混在。
+  > - 名前を user0 の比較相手と決め打たない（user0 は数値 id）。
+  > ■ 残点
+  > - V-624-1（21 pane の id と親子関係）→ V-624-2（menu+0x94 表の読み手と pane 選択）→ V-624-3（0x585410 の arg 完全同定）→ V-624-4（0xB3B5D4 counter）→ V-623-3（ページボタン tile の user0 書き手）。
+  > round_verify ALL OK（rows 31..599 / total 485 / done 480 / open 5）。
+  > RE v614〜v623（Tile/UI 内部の精査）受領・#96 への影響。全て #96 の実装方針を裏づけ/確認するもの: (1) v623 で RaceSexMenu の vtable slot が xOBSE 名で確定（slot3=HandleClick 0x5CC200 / slot11=Update 0x5CE570 / slot12=HandleKeyboardInput）。従来『slot3=Done dispatch / init』と読んできたのは誤りで、正しくは HandleClick(buttonID, tile)。(2) v623 §1: race_sex_menu.xml の menu 直下 <user0> 注記『what pane/page is currently visible』＋§6 のページ反復（Done で page.user0 を menuRoot.user0 へ書戻し）→ RaceSexMenu.user0 = 現在ページ番号。port の currentPage 方式と整合。(3) v615: builder 0x5CA010 は 0x40C 直値＝chargen 専用。(4) v619/v620/v621: user0(0xFAE) を arg1 に取る setter サイトは 155、うち 29 が 2.0 を書く、5 が削除(0x589980)。(5) v621/v622: 0x5CDF29 系 12 サイトは Hair(Red/Green/Blue/Length/HairColor/Style)・Race(Gender)・Main(Age/Complexion/Eyes) の user0 を読む。→ port のページ/要素対応と一致。port 側の変更は不要（確認のみ）。race_sex_menu.xml は 3 コピー全て md5 d367341334fa89101ba4fc077edb52fe・22156B で一致（v623 §8）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3220,4 +3249,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 23:34:13
+**ai-todo** | Last Updated: 2026-11-22 06:27:43

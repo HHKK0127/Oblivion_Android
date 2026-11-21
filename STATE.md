@@ -4501,3 +4501,13 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **(6) [部分確定]**: buttonID==90 はページ反復 → ページ別ハンドラ（0x5cca77/0x5cca09/0x5cc9c4/0x5cc97f）→ `UpdateFloat(menu->tile,0xFAE,page.user0)`。
 - **残点**: V-623-1（(要素,ページ)->ハンドラ完全表）/ V-623-2（98 の出所）/ V-623-3（ページボタン tile の user0 書き手）/ V-623-4（31 名の分類）/ V-623-5（0x589980 5 件）。
 
+## 2026-11-21 (ng) — trait ID と pane 生成器（v624）: **0xFA5=stackingtype / 0xFAB=depth・+0x8F0 hair color 配列・0x5C4340 = pane 生成器**
+
+- **成果物**: `tmp/re/v624_trait_ids_haircolor_array_pane_creator_ruling.md`（probe u79_1/u80_1/u81_1・EXIT=0）。台帳 **row599**・`round_verify` **ALL OK（rows 31..599 / total 485 / done 480 / open 5）**・U 節 **U27**・ai-todo **#96 note**。
+- **(1) [確定(命令)]**: `0xFA5`=**stackingtype** / `0xFAB`=**depth**。`GetFloat(0xFA5)→SetFloat(0xFAB)` は z オーダーの後処理（chargen 固有でない）。
+- **(2) [確定(命令)]**: `+0x8F0..+0x92C`（16 ints）= hair color 値（`iHairColor00..15`）、`+0x930..+0x9AC`（16 strings, `"%s"`）= hair color 名（`sHairColor0..15`）。`0x8F0+16*4=0x930` で整合。**◪ の `0x8F4` 起点は誤り**。上限 `cmp eax,0x10`。**16 は hair color 数でページ数ではない**。
+- **(3) [確定(命令)]**: `0x5C4340` = **pane 生成器**（`race_template_pane`）。`(this=ecx, parentTile, id)` → `0x585410`（`__stricmp` 表引き→clone）。`tile.id`(0xFA8)=id、`tile.listindex`(0xFAA)、**`tile.user0`(0xFAE)=id**、**`this->[0x94+id*4]=tile`**。id==-1 は counter `[0xB3B5D4]`。callers **21**。
+- **(4) [確定(命令)]**: 生成 tile は id と user0 が同値 → v623 の `GetTile(...).user0 == buttonID` が成立。`menu+0x94` = pane id→tile 表。名前はラベル。
+- **(5) [部分確定]**: V-619-1 の前提を「名前はラベル・識別子は数値 id」に更新。
+- **残点**: V-624-1（21 pane の id と親子関係）/ V-624-2（`menu+0x94` 表の読み手）/ V-624-3（`0x585410` の arg）/ V-624-4（`0xB3B5D4` counter）/ V-623-3（ページボタン tile の user0 書き手）。
+
