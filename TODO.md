@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#169** 【RE 連携・中優先（v611 V-611-1）】OBNG (Naragorn/OBNG) の re/symbols/xobse.csv（実名 2004 件）を我々の tmp/re/cache/named_funcs.txt へ取り込むか方針決定する。xOBSE は GPL-3.0 のため、ライセンス確認のうえ判断（事実＝アドレス・名前の参照は可、リポジトリへの一括コピーは別途）。対象: UI/Tile/Interface 系の実名（0x58CEB0 Tile::UpdateFloat 等）。成果物は v611_obng_crosscheck_ruling.md を参照。 `#RE` `#連携`
+
 - [ ] **#168** 【作製・低優先（#164 verifier 残 nit）】導入ムービー C-1 コミット 5292aa37 の verifier APPROVE 時に残った nit 4件を整理する。①LOGO_DISPLAY（title_screen.h:24・cpp:402/442/1051/1111）が到達不能化（transitionToLogo 削除で代入元ゼロ）＝enum と未到達ハンドラ＋renderLogoDisplay（cpp:624・呼び出し cpp:443 のみ）と logoFadeAlpha 系が同種の残骸。削除するか「press any key」待ちを残すかは v598(e)（splash→iv ロゴ→メインメニューのみ）と整合させて判断。②New Game 経路で setIntroMovieActive(false) が無条件で music/tes4title を再生（title_screen.cpp:546）。原版 0x6A9C00 は音楽システム再開でありタイトルテーマ限定ではないため、chargen 突入時は移植側の付加。実測では同フレームで updateAreaBgm が上書きするため実害軽微。③startIntroMovie 先頭の finishIntroMovie() が資源ゼロ時に early return し introMovieCompleted をクリアしないため、release 後に完了コールバックが配送された場合のみ次回 New Game が1フレームで終了し得る（MediaPlayer は release 後コールバックを配送しないため確率極小）。④renderIntroMovieOverlay が GL_DEPTH_TEST 無効・ブレンド有効のまま戻る（title_screen.cpp:585-587）。描画パス先頭で深度再設定のため実害なし。 `#android` `#cleanup` `#intro` `#oblivion`
 
 - [ ] **#166** 【作製・中優先（ユーザー指摘の実機症状）】タイトル画面の背景動画（map_loop.mp4）が流れず、無言で静止画フォールバックになっている。【実測ログ（2026-11-18 04:46:54・正しい APK 228.1MB）】GameRenderer: Title background selected: map_loop.mp4 → GameRenderer: map_loop.mp4 not found at either oblivion_assets/videos/ or videos/ in /storage/emulated/0/Android/data/com.example.oblivion/files。同じ起動で法務・ロゴ列は再生された（Video playback completed oblivion_legal.mp4）。【真因（コードで確定・連鎖）】①AssetExtractor.extractVideos()（AssetExtractor.kt:92-147）は動画を external filesDir 直下の videos/ へ展開する（:107）。②GameRenderer.findTitleVideoFile（:325-334）は oblivion_assets/videos/ と videos/ の2段だけ見て、見つからなければ null を返す＝**APK 内 assets/videos/ を読む第3段を持たない**。③一方 IntroVideoActivity.findVideoFile（:206-240）は第3段として assets/videos/* を cacheDir へ copy する処理を持つ（:231-239）＝同じアプリ内の**非対称**が欠落の実体。④しかも展開自体が飛んでいる: 11-17 03:50 に assets/videos を欠落させた worktree ビルドをインストールした状態で起動 → assets.list(videos) が空 → No videos directory in assets（:97）で extractVideos が中身ゼロで完了 → profileInstalled マーカーが立つ → 以後は Skipping full asset extraction (profileInstalled exists) で**永久に再生成されない**。【影響】タイトル画面の演出が欠落。加えて initBinkVideo の videoBasePath も oblivion_assets/videos を見るため、#164（OP 動画）にも同じ欠落が効く。【方針候補】①本命＝findTitleVideoFile に第3段を追加（動く実装をそのまま流用: assets.open(videos/name) → cacheDir/name → File で返す。APK 内に動画8本 82.9MB が入っているのはエントリ突合済み＝built 2629 / reference 2629・assets 1709/1709）②恒久化＝profileInstalled があっても videos/ が無いときは extractVideos を走らせる③応急＝profileInstalled を削除して再展開（**ESM 安全性確認済**: listBundledGameData()（:253-260）は .bsa/.esm のみ対象で、APK 内 assets/data は README.md 1件だけ＝file count 1。よって復元済みの files/data/Oblivion.esm 277,504,985B は書換・削除されない）。【検証】emu でタイトル背景が動く／Title video initialized: textureId=.. が出る／not found at either が出ないこと。【関連】#165（worktree の asset 突合＝本件の上流）・#164（OP 動画・videoBasePath が同じ場所を見る）・原版のメニュー背景が動画か自体は RE 依頼 U1③（tmp/re/handoff_20261118_..._bundle.md 追記、TODO_re49.md の U 節）。 `#android` `#assets` `#fix` `#oblivion` `#video`
@@ -2929,11 +2931,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -2957,4 +2954,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 20:04:20
+**ai-todo** | Last Updated: 2026-11-21 20:07:02
