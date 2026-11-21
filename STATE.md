@@ -4440,3 +4440,14 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **row518(V542) の被引用**: 519(V543)/520(V544)/524(V548)/550(V574)/555(V579)/582(V606)。名称訂正は V543/V544/V548/V606 へ波及。
 - **残点**: V-616-1（user0 の書き手完全列挙・153 件との母集団突合）/ V-616-2（GetPage(name) と user0 の関係）/ V-616-3（builder user13×6 の用途）。
 
+## 2026-11-21 (na) — V-616-1 遂行（v617）: **builder caller は `user0==2.0` 判定・user0 の書き手は 116 箇所以上（「builder 4 のみ」を否定）・「153」撤回・12 サイト表**
+
+- **成果物**: `tmp/re/v617_v616_1_user0_writers_ruling.md`（probe u59_1・EXIT=0）。台帳 **row593**・`round_verify` **ALL OK（rows 31..593 / total 479 / done 474 / open 5）**・U 節 **U21**・ai-todo **#96 note**。既存資産のみ使用（新規ツールチェーンなし）。
+- **2-1 [確定(命令)]**: `0x57B7E0` は `GetFloat(menuRoot, 0xFAE)==2.0`(`0xA379B4`) のゲート。`==2.0` の経路で `0x57B8D9` から builder `0x5CA010` を呼ぶ（`0x5790E0` と同一ゲート）。
+- **2-2 [確定(命令)（negative）]**: `0xFAE` 即値は `.text` に **322 箇所**、`push 0xFAE` 直後が call は **setter 116／getter 22／その他 184** → **書き手は 116 箇所以上**（「builder 4 のみ」を否定、v616 §3.3 を撤回）。
+- **「153 件の user0 set サイト」撤回 [確定(命令)（negative）]**: 台帳に出所なし（`153` は row 番号等）。v615/v616 で私が辿らずに書いた数字。実測 322/116/22 で置換。
+- **2-3 [確定(命令)]**: 12 サイトは全て `ページ名グローバル → 0x4028D0×2 → 0x5C3440 → 0x588BD0 GetFloat(0xFAE)`。名前は sMain/sRace/sHair/sColor/sRed/sGreen/sBlue/sStyle/sGender/sAge/sComplexion。
+- **user0 の意味更新 [部分確定]**: `menuRoot.user0==2.0` がゲート（2.0=bool true）→ **bool 的フラグ**の公算大（v610 の「ページ index」は要再確認）。
+- **指示書の感想**: 改訂版はほぼそのまま採用可。2-1〜2-3 は capstone ハーネスのみで完結。iced-x86/rizin/Ghidra 型投入は第2段で正しい。
+- **残点**: V-617-1（user0 の型最終確定）/ V-617-2（chargen に関わる書き手の特定）/ V-617-3（12 サイトの消費先）/ V-617-4（未分類 184）。
+

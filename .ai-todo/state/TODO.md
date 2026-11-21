@@ -781,6 +781,25 @@
   > - 台帳: **519(V543) / 520(V544) / 524(V548) / 550(V574) / 555(V579) / 582(V606)** ＋ 588/589/591。U 節: line 393/396/424。
   > - → V-615-5 の名称訂正（ブック系→g_TileMenuArray）は **V543/V544/V548/V606** へ波及（docs/GT 反映時に一括）。
   > ■ 残点 V-616-1（user0 の書き手完全列挙・153 件との母集団突合）/ V-616-2（GetPage(name) と user0 の関係）/ V-616-3（builder user13×6 の用途）。round_verify ALL OK（rows 31..592 / total 478 / done 473 / open 5）。
+  > 【V-616-1 遂行 2026-11-21: v617（U21）】改訂版指示書の 2-1〜2-3 を実行 → `tmp/re/v617_v616_1_user0_writers_ruling.md`（台帳 row593・probe u59_1）
+  > ■ 2-1 builder caller `0x57B7E0` [確定(命令)]
+  > - `0x57B824 GetSingleton` → `[eax+0x68]`=menuRoot → `push 0xFAE` → `GetFloat` → `fcomp [0xA379B4]`(=2.0) → `jp 0x57B8DF`（!=2.0 はスキップ）。`==2.0` の経路で `0x57B8D9 call 0x5CA010`（builder）。
+  > - → **`menuRoot.user0 == 2.0` が chargen 構築のゲート**。`0x5790E0` と同一ゲート。2.0 は bool の true（xOBSE 1=false/2=true）→ **user0 は bool 的**。
+  > ■ 2-2 `.text` 全域掃引 [確定(命令)（negative）]
+  > - **`0xFAE` 即値は 322 箇所**。うち `push 0xFAE` 直後が call: **setter(WRITE)=116 / getter(READ)=22 / その他=184**。
+  > - → **user0 の書き手は 116 箇所以上**。**『書き手は builder 0x5CA010 の 4 箇所のみ』は否定**（v616 §3.3 の推定を撤回）。
+  > - **『153 件の user0 set サイト』は撤回**: 台帳 grep で出所なし（`153` は row153/`#153`/無関係な集計のみ）。**v615/v616 で私が出所を辿らずに引用した数字**。実測 322/116/22 で置換。
+  > ■ 2-3 12 サイト表 [確定(命令)]
+  > - 全て同一パターン: ページ名グローバル → `0x4028D0`(名前構築)×2 → `0x5C3440`(tile 取得) → `0x588BD0 GetFloat(0xFAE)`。
+  > - 名前: sMain/sRace/sHair/sColor/sRed/sGreen/sBlue/sStyle/sGender/sAge/sComplexion。
+  > - → `0x5CDEF0` = ページ要素を名前で引いて **user0(bool) を読む per-page 更新**。
+  > ■ user0 の意味の更新 [部分確定]
+  > - `menuRoot.user0 == 2.0` がゲート・ページ tile の user0 も bool として読まれる → **user0(0xFAE) は bool（1=false/2=true）的フラグ**の公算大。**v610 の『ページ index』読みは要再確認**（V-617-1）。
+  > ■ 指示書への感想（要点）
+  > - 改訂版は**ほぼそのまま採用可**。特に「Unicorn の価値は下がらない＝消費先を記録する仕様に変える」補正は正しい（私の (a) の指摘を私が過小評価していた）。
+  > - ただし **`153` は私の未検証数字**だったので撤回（レビューの『push 総数では？』という推測より単純に、出所が無かった）。
+  > - iced-x86/rizin/Ghidra 型投入は第2段で正しい。2-1〜2-3 は既存資産（`v307_common.py`＋capstone）だけで完結した。
+  > 残点 V-617-1（user0 の型最終確定）/2（chargen に関わる書き手の特定）/3（12 サイトの消費先）/4（未分類 184）。round_verify ALL OK（rows 31..593 / total 479 / done 474 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3042,6 +3061,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3065,4 +3089,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 21:26:21
+**ai-todo** | Last Updated: 2026-11-21 22:18:22

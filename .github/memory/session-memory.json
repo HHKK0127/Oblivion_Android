@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T01:30:00Z",
+  "lastUpdated": "2026-11-22T02:30:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15468,14 +15468,29 @@
         "todo-96"
       ],
       "content": "2026-11-21 v616 裁定＝v615 の自己訂正（U20・ai-todo #96）。成果物 tmp/re/v616_v615_self_correction_user0_read_ruling.md・台帳 row592。probe u57_1/u58_1 EXIT=0。①[確定(命令)（negative）] 0x5CDEF0 は user0 を読む: 12 サイトの push 0xFAE 直後 callee は全て [0x4028D0,0x4028D0,0x5C3440,0x588BD0]。0x588BD0=Tile::GetFloat＝読み、0x5C3440=ページ/要素 tile 取得、0x4028D0=BSStringT 代入。v615 §3.2『user0 を書く』を訂正。②[確定(命令)（negative）] 0x5790E0 の引数順: 0x5CE572 push 0 / 0x5CE574 push 0x3E9 → cdecl で arg1=0x3E9(menu id), arg2=0(mask)。本体 [esp+8]=arg1→GetTileMenu、[esp+0x10]=arg2(mask)、test edi,edi; je 0x579172（mask==0 で test を踏まない）。v615 の『test [menu+0x24], arg0』は arg を 1 つずらした誤り。③[確定(命令)] V-615-1 決着＝user0 は float: builder 0x5CA010 が 0x58CEB0 UpdateFloat で書き（×4）、0x5CDEF0 が 0x588BD0 GetFloat で読む（×12）→ v610 の float が正・v615 の string は誤り。ページ名グローバル（sMain/sRace/…/sColor）は GetPage(name)(0x5C3110) の引数であって user0 の値ではない。④[確定(命令)] 0x5790E0 の意味: menuId の tile menu 表示判定（mgr 3 回・[mgr+0x1C]!=0・[mgr+0x68](menuRoot)!=0 → GetFloat(menuRoot,0xFAE)==0xA379B4(2.0) → GetTileMenu(menuId) → mask!=0 なら GetContainingMenu()[+0x24]&mask → GetFloat(tileMenu,0xFA1=visible) を [0xA2F948] と比較）。[mgr+0x68]=menuRoot。⑤ row518(V542) の被引用: 519(V543)/520(V544)/524(V548)/550(V574)/555(V579)/582(V606)＋588/589/591。名称訂正は V543/V544/V548/V606 へ波及。残点 V-616-1/2/3。"
+    },
+    {
+      "id": "opencode-v617-user0-writers-20261121",
+      "timestamp": "2026-11-22T02:30:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v617",
+        "racesexmenu",
+        "user0",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v617 裁定＝V-616-1 遂行 2-1〜2-3（U21・ai-todo #96）。成果物 tmp/re/v617_v616_1_user0_writers_ruling.md・台帳 row593。probe u59_1 EXIT=0。既存資産のみ使用。①[確定(命令)] 2-1 builder caller 0x57B7E0: 0x57B824 GetSingleton → [eax+0x68]=menuRoot → push 0xFAE → GetFloat → fcomp [0xA379B4](=2.0) → jp 0x57B8DF（!=2.0 はスキップ）。==2.0 の経路で 0x57B8D9 call 0x5CA010（builder）。→ menuRoot.user0==2.0 が chargen 構築のゲート（0x5790E0 と同一）。2.0 は bool の true → user0 は bool 的。②[確定(命令)（negative）] 2-2 .text 全域掃引: 0xFAE 即値は 322 箇所。push 0xFAE 直後が call は setter(WRITE)=116 / getter(READ)=22 / その他=184。→ user0 の書き手は 116 箇所以上。『書き手は builder 0x5CA010 の 4 箇所のみ』を否定（v616 §3.3 を撤回）。③[確定(命令)（negative）]『153 件の user0 set サイト』撤回: 台帳 grep で出所なし（153 は row153/#153/無関係な集計のみ）。v615/v616 で私が出所を辿らずに引用した数字。実測 322/116/22 で置換。④[確定(命令)] 2-3 12 サイト表: 全て同一パターン ページ名グローバル → 0x4028D0(名前構築)×2 → 0x5C3440(tile 取得) → 0x588BD0 GetFloat(0xFAE)。名前は sMain/sRace/sHair/sColor/sRed/sGreen/sBlue/sStyle/sGender/sAge/sComplexion。→ 0x5CDEF0 = ページ要素を名前で引いて user0(bool) を読む per-page 更新。⑤[部分確定] user0 の意味更新: menuRoot.user0==2.0 がゲート・ページ tile の user0 も bool として読まれる → user0(0xFAE) は bool（1=false/2=true）的フラグの公算大。v610 の『ページ index』読みは要再確認。残点 V-617-1/2/3/4。"
     }
   ],
   "metadata": {
-    "totalEntries": 1040,
+    "totalEntries": 1041,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T01:30:00Z",
-    "entry_count": 1040,
-    "last_updated": "2026-11-22T01:30:00Z"
+    "lastUpdated": "2026-11-22T02:30:00Z",
+    "entry_count": 1041,
+    "last_updated": "2026-11-22T02:30:00Z"
   }
 }
