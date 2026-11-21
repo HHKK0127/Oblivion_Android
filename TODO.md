@@ -2,7 +2,13 @@
 
 ## Tasks
 
-- [ ] **#169** 【RE 連携・中優先（v611 V-611-1）】OBNG (Naragorn/OBNG) の re/symbols/xobse.csv（実名 2004 件）を我々の tmp/re/cache/named_funcs.txt へ取り込むか方針決定する。xOBSE は GPL-3.0 のため、ライセンス確認のうえ判断（事実＝アドレス・名前の参照は可、リポジトリへの一括コピーは別途）。対象: UI/Tile/Interface 系の実名（0x58CEB0 Tile::UpdateFloat 等）。成果物は v611_obng_crosscheck_ruling.md を参照。 `#RE` `#連携`
+- [ ] **#169** 【RE 連携・中優先（v611 V-611-1）】OBNG (Naragorn/OBNG) の re/symbols/xobse.csv（実名 2004 件）を我々の tmp/re/cache/named_funcs.txt へ取り込むか方針決定する。xOBSE は GPL-3.0 のため、ライセンス確認のうえ判断（事実＝アドレス・名前の参照は可、リポジトリへの一括コピーは別途）。対象: UI/Tile/Interface 系の実名（0x58CEB0 Tile::UpdateFloat 等）。成果物は v611_obng_crosscheck_ruling.md を参照。  `#連携` `#RE`
+  > 【v612 追記・ライセンス切り分け（2026-11-21）】追加調査で判明した扱いの切り分け:
+  > - **madpai/game-decomp-compendium は MIT** → `skills/re-binary-recon/scripts/{rtti_scan,pe_info,string_xrefs,aob_scan,pe}.py` と `skills/bethesda-gamebryo-re/scripts/gmst_defaults.py` は**そのまま使用可**（v612 で rtti_scan.py/pe_info.py を実使用し RaceSexMenu vtable 0xA6D38C 等を機械同定）。
+  > - **OBVR/OBNG/OblivionWalkers/OBDLSS5 は GPL-3.0** → 事実（アドレス・オフセット）の参照は可、コードは書直し。OBVR `GameAddresses.h` は g_TileMenuArray=0x00B13970 等のアドレス表を公開している。
+  > - したがって #169 の「xobse.csv 実名取込」は、**xOBSE(GPL) の名前一括コピー**が論点のまま。一方 **compendium(MIT) のスクリプト・手法は制約なく取り込める**。
+  > - compendium は「exe 由来のアドレス表・GMST ダンプは公開リポジトリに置かない」方針。我々の tmp/re は gitignore 済みで整合。
+  > - 成果物: tmp/re/v612_obvr_compendium_crosscheck_ruling.md（台帳 row588）。
 
 - [ ] **#168** 【作製・低優先（#164 verifier 残 nit）】導入ムービー C-1 コミット 5292aa37 の verifier APPROVE 時に残った nit 4件を整理する。①LOGO_DISPLAY（title_screen.h:24・cpp:402/442/1051/1111）が到達不能化（transitionToLogo 削除で代入元ゼロ）＝enum と未到達ハンドラ＋renderLogoDisplay（cpp:624・呼び出し cpp:443 のみ）と logoFadeAlpha 系が同種の残骸。削除するか「press any key」待ちを残すかは v598(e)（splash→iv ロゴ→メインメニューのみ）と整合させて判断。②New Game 経路で setIntroMovieActive(false) が無条件で music/tes4title を再生（title_screen.cpp:546）。原版 0x6A9C00 は音楽システム再開でありタイトルテーマ限定ではないため、chargen 突入時は移植側の付加。実測では同フレームで updateAreaBgm が上書きするため実害軽微。③startIntroMovie 先頭の finishIntroMovie() が資源ゼロ時に early return し introMovieCompleted をクリアしないため、release 後に完了コールバックが配送された場合のみ次回 New Game が1フレームで終了し得る（MediaPlayer は release 後コールバックを配送しないため確率極小）。④renderIntroMovieOverlay が GL_DEPTH_TEST 無効・ブレンド有効のまま戻る（title_screen.cpp:585-587）。描画パス先頭で深度再設定のため実害なし。 `#android` `#cleanup` `#intro` `#oblivion`
 
@@ -670,6 +676,24 @@
   > - **callers 精密化**: `0x5AD440` ← call site 0x5AD734(in 0x5AD700)/0x5ADE2C(in 0x5ADCF0)/0x5AE03E(in 0x5ADEC0)（v608 の関数単位記載は正しい）。
   > ■ 残点 V-611-1（xobse 実名の取込・ライセンス）/2（0x5AD780 完全 decode）/3（OBNG verified 関数は port 範囲外）。
   > 台帳反映＋round_verify ALL OK（rows 31..587 / total 473 / done 468 / open 5）。
+  > 【追加参考先クロスチェック 2026-11-21: v612（U16）】OBVR / compendium を clone して照合 → `tmp/re/v612_obvr_compendium_crosscheck_ruling.md`（台帳 row588・probe u45_1/u46_1/u47_1）
+  > ■ 同一バイナリ [確定(命令)]
+  > - md5 cdd2f0c5eff198d4f26b7b5b54ce4930・**PE timestamp 0x462392c7 (2007-04-16)**・no base relocations（compendium `pe_info.py` で我々の EXE を実測）。
+  > ■ RTTI 機械同定 [確定(外部+実読)]
+  > - compendium の **MIT** `rtti_scan.py` で抽出: **RaceSexMenu vtable = 0xA6D38C**（15 slots・base Menu）・**LoadingMenu = 0xA6C40C**（我々 v611 ctor 実読 `mov [esi],0xa6c40c` と一致）・Menu 系 53 vtables・Tile=0xA690E8 / TileRect=0xA69138 / TileMenu=0xA6AF14。
+  > ■ g_TileMenuArray の特定 [確定(外部+実読)]
+  > - **`NiTArray<TileMenu*>` @ 0x00B13970**（vtable 0xA69680）・data ptr `0x00B13974`・count u16 `0x00B1397A`・**index = menuId − 0x3E9**。
+  > - `0x589B70 GetTileMenu` の実装（`[edx+eax*4−0xFA4]`）と OBVR `GameAddresses.h` が一致（二源）。RaceSex(0x40C)=idx 35・Loading(0x3EF)=idx 6。
+  > ■ Tile レイアウト [確定(外部+実読)]
+  > - `+0x08` name（BSStringT char*先頭）／`+0x10` parent／`+0x18` 値リスト／`+0x24` render node／`+0x34` 子リスト。ノード {next+0x00, data+0x08}。子判定 `data.parent==tile`。
+  > - trait: id 0xFA8 / visible 0xFA1 / x 0xFAD / y 0xFAC / w 0xFCB / h 0xFCA。v610 の 0xFA8/0xFAE/0xFAF/0xFB0/0xFB1/0xFB3 と整合。
+  > ■ メニュー id / IsMenuMode [確定(外部+実読)]
+  > - 0x3E9 起点。RaceSex=0x40C・Loading=0x3EF・Main=0x414。`IsMenuMode 0x578F60` = mgr && [mgr+0x1C]!=0 && [mgr+0x08]!=1。
+  > ■ tile 木走査 probe（具体形）
+  > - `%TEMP%\opencode\u47_1.py`。静的確認＋`--pid <PID>` で稼働プロセスから `g_TileMenuArray[0x40C]` の tile 木を走査。**配列は runtime 構築なので静的には data ptr=0**（実機検証は V-612-1）。
+  > ■ compendium ノート [参照]
+  > - UI はデータ（104 XML・1.22MB）で C++ は user trait を埋めるだけ＝我々の chargen 前提を裏づけ。GMST 既定値 ~2,050 個の静的初期化子スキャン手順（二命令順・二 push 形）。
+  > 残点 V-612-1/2/3/4。round_verify ALL OK（rows 31..588 / total 474 / done 469 / open 5）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -2954,4 +2978,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-21 20:07:02
+**ai-todo** | Last Updated: 2026-11-21 20:24:09

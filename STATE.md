@@ -1,5 +1,17 @@
 # Loop State — My Project
 
+## 2026-11-21 — #96 キャラ作成UI を原版 RaceSexMenu 21ページウィザードへ（worktree feat-chargen-21-pages・未コミット）
+
+- RE **v610**（依頼 U14 A〜E）を受領。21ページ全139要素の行表・Done 遷移・ラベル実値が `[確定(命令)]`。正典の訂正2点を反映: ①**Race/Hair/Face の Done は no-op ではなく Main へ戻る**（`0x5CC816` フォールスルー。v561 §2.2 / v567 §2 の「no-op」は誤り）②**Face は Button×4**（Shape/Tone/Random/Reset。v571 の×3 は誤り）。
+- `ui_character_creation.{h,cpp}` を 5タブ独自 UI から原版 RaceSexMenu 21ページへ全面書き換え。`kPageTable` に全21ページ・全139行を充填（ラベルは GMST 実値、スライダー範囲は XML 既定 0..1/step0.01）。Stage2（属性/スキル）は port 独自レイアウトを維持（canon 未準拠と明記）。
+- `renderer.cpp` の戻るキーを `handleBackKey()` へ委譲（`race_sex_menu.xml:15` の `xbuttonb` = Done と整合）。
+- verifier **APPROVE**（正典値の改変・創作なし）。指摘4件を反映: スクロール実装（6行超ページの到達不能を解消）・Gender 表示の非正典文字列除去・ページ名の空白統一・ヘッダコメント訂正。
+- **emu 実測**（emulator-5554・APK 233.9MB・testzip OK・動画8本）: Main=Race/Face/Hair＋Eyes トグル＋Age/Complexion、Race=Gender/Race(Argonian)/"Race Description"＋Return、Face=Shape/Tone/Random/Reset、Shape=9行＋スクロールバー、Shape スクロール動作、Nose=14スライダー（ラベル v610 §2.2 一致）、Done/Return 連鎖 Nose→Shape→Face→Main、Main Done→Stage2→確定（`name='Adventurer'` / `race formID=0x00023FE9` / `skills 21/21`）、戻るキー=Done、IME 名前入力（"Hero" 反映）。
+- **訂正**: ESM 実データ（`files/data/Oblivion.esm` 走査）で **`0x00023FE9 = Argonian`**（playable 10種の先頭）。前セッションの「0x00023FE9 = Imperial」は誤り（正しくは Imperial = `0x00000907`）。Race ページ表示 "Argonian" と適用 formID は一致。
+- **環境**: Rust 更新で scoop 版 Rust が PATH 上で競合しビルドが一時失敗（`the 'cargo.exe' binary ... is not applicable to the 'stable-x86_64-pc-windows-gnu' toolchain`）。更新完了後は復旧。ソース変更なし。
+- **既知の非退行**: IME がパネル下部（Age/Complexion/Done）を覆うのは master にも無い既存挙動（未マージ `fix-chargen-ime-inset` が対応）。
+- `git diff --check` 通過。テスト: ネイティブビルド `BUILD SUCCESSFUL`・emu 実測上記。
+
 ## 2026-11-09 — #94 v330 v325由来次束Q（L1 report-only）
 
 - Added `tmp/re/v330_v325_next_bundle_Q_ruling.md`; original EXE/ESM/.ess, analysis originals, port source, docs, and existing `tmp/re` reports were not modified.
@@ -4370,4 +4382,17 @@ Run log: 2026-11-09 (ba) — #118 REDUCED-SCOPE bundle Z executed parent-direct 
 - **Tick 進捗則 [確定(命令)]**: しきい値 2500/100/10ms・残量 `sinceLast/1000.0`・trait user3(`0xFB1`)・`0x5AD780`(OBNG 名 RefreshScreen) 再アーム。**callers 精密化**: `0x5AD440` ← 0x5AD734(in 0x5AD700)/0x5ADE2C(in 0x5ADCF0)/0x5AE03E(in 0x5ADEC0)（v608 の関数単位記載は正）。
 - **参照のみ [参照(OBNG)]**: `0x5AD780` の RefreshScreen 名・Tick の PC24 x87 丸め（我々の C++ port には不要）。
 - **残点**: V-611-1（xobse 実名取込・ライセンス）/ V-611-2（0x5AD780 完全 decode）/ V-611-3（OBNG verified 関数は port 範囲外）。
+
+## 2026-11-21 (mv) — 追加参考先クロスチェック裁定（v612）: **OBVR/compendium からの照合・RTTI 機械同定・`g_TileMenuArray` の特定と tile 木走査 probe**
+
+- **成果物**: `tmp/re/v612_obvr_compendium_crosscheck_ruling.md`（probe u45_1/u46_1/u47_1・EXIT=0）。台帳 **row588**・`round_verify` **ALL OK（rows 31..588 / total 474 / done 469 / open 5）**・U 節に **U16** 追記・ai-todo **#96/#169 note**。
+- **同一バイナリ [確定(命令)]**: md5 `cdd2f0c5eff198d4f26b7b5b54ce4930`・**PE timestamp `0x462392c7`(2007-04-16)**・no base relocations・7,898,624 B（compendium `pe_info.py` で実測）。imports に d3d9 無し／d3dx9_27.dll 有り（OBVR 記載と一致）。
+- **RTTI 機械同定 [確定(外部+実読)]**: compendium の **MIT** `rtti_scan.py` で **RaceSexMenu vtable `0xA6D38C`**・**LoadingMenu `0xA6C40C`**（我々 v611 ctor 実読 `mov [esi],0xa6c40c` と一致）・Menu 系 53 vtables・Tile `0xA690E8` / TileRect `0xA69138` / TileMenu `0xA6AF14`。
+- **`g_TileMenuArray` [確定(外部+実読)]**: `NiTArray<TileMenu*>` @ **`0x00B13970`**（vtable `0xA69680`）・data ptr `0x00B13974`・count u16 `0x00B1397A`・**index=`menuId−0x3E9`**。`0x589B70 GetTileMenu` 実読と OBVR `GameAddresses.h` が一致（二源）。RaceSex(`0x40C`)=idx 35・Loading(`0x3EF`)=idx 6。
+- **Tile レイアウト [確定(外部+実読)]**: `+0x08` name（BSStringT char* 先頭）／`+0x10` parent／`+0x18` 値リスト／`+0x24` render node／`+0x34` 子リスト。ノード `{next+0x00, data+0x08}`。子判定 `data.parent==tile`。trait: id `0xFA8`/visible `0xFA1`/x `0xFAD`/y `0xFAC`/w `0xFCB`/h `0xFCA`。v610 の `0xFA8/0xFAE/0xFAF/0xFB0/0xFB1/0xFB3` と整合。
+- **メニュー id / IsMenuMode [確定(外部+実読)]**: 0x3E9 起点・RaceSex=`0x40C`・Loading=`0x3EF`・Main=`0x414`。`IsMenuMode 0x578F60` = mgr && `[mgr+0x1C]!=0` && `[mgr+0x08]!=1`。
+- **tile 木走査 probe**: `%TEMP%\opencode\u47_1.py`（静的確認＋`--pid` 実行時走査）。静的には data ptr=0（runtime 構築）。
+- **compendium ノート [参照]**: UI はデータ（104 XML・1.22MB）・C++ は user trait を埋めるだけ／GMST 既定値 ~2,050 個の静的初期化子スキャン手順（二命令順・二 push 形）。
+- **ライセンス切り分け**: compendium=**MIT**（スクリプト使用可）／OBVR・OBNG=**GPL-3.0**（読んで書直し）。
+- **残点**: V-612-1（実機走査）/ V-612-2（gmst_defaults と gmap 突合）/ V-612-3（openoblivion メニュー実装）/ V-612-4（0x589B70 の 321 callers 分類）。
 
