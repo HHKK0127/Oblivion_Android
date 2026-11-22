@@ -1202,6 +1202,35 @@
   > ■ 残点
   > - V-630-1（arg4 の値）→ V-632-1（+0x94 を読む 5 関数の役割と 0x5CC200/0x5CDEF0 からの到達性）→ V-631-1（実装単位列）→ V-629-1 → V-626-2/3 → row604。
   > round_verify ALL OK（rows 31..609 / total 495 / done 489 / open 6・旧書式 warn 33 baseline 維持）。
+  > 【v632 検収・pane slot と Init 2026-11-21: v633（U36）】査読 5 点を処理。成果物 tmp/re/v633_pane_slots_attribution_init_clear_ruling.md（台帳 row610・probe u99_1/u100_1）
+  > ■ (1) pane slot 配列 [確定(命令)]
+  > - 各 pane 呼出の戻り eax の store 先は pane ごとに別スロット:
+  > Main=0x40 / Race=0x44 / Hair=0x48 / Face=0x4c / Shape=0x50 / Tone=0x54 / GeneralFace=0x58 / Brow=0x5c / Cheeks=0x60 / Chin=0x64 / Eyes=0x68 / Forehead=0x6c / Jaw=0x70 / Mouth=0x74 / Nose=0x78 / GeneralSkin=0x7c / Beard=0x80 / EyesTex=0x84 / Eyebrows=0x88 / MouthLips=0x8c / NoseTex=0x90。
+  > - → 21 pane は menu+0x40..+0x90 の 21 スロットに 1 個ずつ。+0x40/+0x44/+0x90 は同一スロット配列の別要素（独立フィールドではない）。
+  > ■ (1)(2) item の arg1 = 現在の pane スロット [確定(命令)] — 帰属表は正しい
+  > - [esi+0x40] の読みは Main region（0x5CA484..0x5CA57C）にのみ、[esi+0x44] の読みは Race region にのみ。各スロットは自分の region 内でのみ読まれる。
+  > - → item の arg1 = [esi+0x40+i*4]（現在の pane）。v632 §2 の帰属表は正しい。
+  > - 「text は +0x44」は誤読: 最初の text 呼出 0x5CA60B が Race region にあり [esi+0x44](=Race) を読んだだけ。text は 1 件で Race に帰属（表のまま）。
+  > - → 帰属の作り直しは不要。
+  > ■ (3) 入れ子は無い [確定(命令)]
+  > - 21 pane 呼出すべての arg1 = [esi+0x28]（window）（push edx; mov eax,[esi+0x28]; push eax）。
+  > - → 親は全 pane で window（深さ0）。入れ子（深さ1）は 0 件。21 = 21 ページ（+0x44 が「別列」という説明も不要）。
+  > ■ (4) 0x5CBB2F / 0x5CBB47 / 0x5CBB70 [確定(命令)]
+  > - 0x5CBB21 call 0x5C4340（NoseTex）→ 0x5CBB2F mov [esi+0x90],eax → 0x5CBB47 と 0x5CBB70 で +0x90 を 2 回読んで末尾 slider 2 件を生成。
+  > - → +0x90 = 最後の pane スロット。末尾 2 slider は NoseTex に帰属（v632 表の NoseTex=2 と一致）。
+  > ■ (5) Init 0x5C4E40 の +0x94 クリア [確定(命令)]
+  > - 0x5C4E99 mov [esi+0x28],0 / 0x5C4E9C [esi+0x2c],0 / 0x5C4E9F [esi+0x30],0 / 0x5C4EA2 [esi+0x3c],0
+  > - 0x5C4EA7 lea edi,[esi+0x94]; 0x5C4EAD mov ecx,0x1F4; 0x5C4EB2 rep stosd → +0x94..+0x864 の 500 dwords を 0 クリア。
+  > - 0x5C4F3C mov [0xB3B5D4],0xC8（counter→200）。
+  > - +0x94 領域 = 500 dwords。id 最大 429 → +0x94+429*4=0x748 < 0x864 ✓。hair color 配列 0x8F0 との余裕 140 bytes。
+  > - 再 Init で counter が 200 に戻る → id は 500 を超えない。callers_of(0x5C4E40)=1(0x58847A)。
+  > - → V-632-1 の第一仮説「Init が表を走査して破棄」確定（rep stosd）。
+  > ■ (6) 名前→id [確定(命令)]
+  > - 21 pane の名前はすべて mov edx,[0xB38XXX]（名前グローバル）。lea は無し。
+  > - → 名前→id はグローバルで固定。以降の表は id 基準で一意。
+  > ■ 優先度改訂（査読 §3）
+  > - V-632-2【済】（スロットと親子＝入れ子なし）→ V-631-1（実装単位列）→ V-632-1（+0x94 を読む残り 5 関数）→ V-630-1（arg4）→ V-629-1 → V-626-2/3 → row604。
+  > round_verify ALL OK（rows 31..610 / total 496 / done 490 / open 6・旧書式 warn 33 baseline 維持・TOTAL_BASELINE 496）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3463,6 +3492,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3486,4 +3520,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 18:12:25
+**ai-todo** | Last Updated: 2026-11-22 18:18:36

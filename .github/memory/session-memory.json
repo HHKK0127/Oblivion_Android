@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-23T04:00:00Z",
+  "lastUpdated": "2026-11-23T06:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15713,14 +15713,29 @@
         "todo-96"
       ],
       "content": "2026-11-21 v632 裁定＝pane 帰属の修正と +0x94 読み手（U35・ai-todo #96）。成果物 tmp/re/v632_pane_attribution_arg1_94_readers_ruling.md・台帳 row609。probe u98_1 EXIT=0。①[確定(命令)] item の arg1 源: 4 つの item builder の arg1 は [esi+0x40+i*4]（＝pane 配列 menu+0x40）＝直前に生成した pane tile → item は pane の子・生成順は pane 先。よって v631 §6 の表は 1 行ずれ（counts[X] は「X に入る item」）。+0x90 は builder 内で write(0x5CBB2F)/read(0x5CBB47/0x5CBB70) される実フィールド。②[確定(命令)] pane 帰属の修正: Main(201)=2slider/3button/1toggle、Race(210)=0/0/2/1、Hair(214)=4/0/2/0、Face(225)=0/4/0/0、Shape(230)=0/9/0/0、Tone(240)=0/6/0/0、GeneralFace(247)=5/0/0/0、Brow(258)=3、Cheeks(265)=5、Chin(276)=7、Eyes(291)=4、Forehead(300)=3、Jaw(307)=4、Mouth(316)=10、Nose(337)=14、GeneralSkin(366)=5、Beard(377)=6、EyesTex(390)=6、Eyebrows(403)=7、MouthLips(418)=3、NoseTex(425)=2。差分検算（入る側）が 7 行連続一致。末尾 2 slider を回収。Main=3button(タブ)+2slider+1toggle。③[部分確定] +0x94 読み手: 15 件の head = 0x5C0440/0x5C3BE0(vtable slot8)/0x5C4E40/0x5C6390/0x5C6860/0x5C6AF0、基底は RaceSexMenu(this)。→ v631 §5 の『0xB13970 に一本化』は撤回し [部分確定]（+0x94 は vtable 経由で到達可能）。④[確定(命令)] counter 生バイト: 5 関数すべて a1 d4 b5 b3 00(read)/83 c0 01(add)/a3 d4 b5 b3 00(write-back) の後、eax を再ロードせずローカルへ store → 消費値は加算後 → id=counter+1。0x5C93F0 のみ inc 2 回。残点 V-630-1/V-632-1/V-631-1/V-629-1/V-626-2/V-626-3。"
+    },
+    {
+      "id": "opencode-v633-pane-slots-init-clear-20261121",
+      "timestamp": "2026-11-23T06:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v633",
+        "racesexmenu",
+        "pane",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v633 裁定＝pane slot 配列と item 帰属・Init の +0x94 クリア（U36・ai-todo #96）。成果物 tmp/re/v633_pane_slots_attribution_init_clear_ruling.md・台帳 row610。probe u99_1/u100_1 EXIT=0。①[確定(命令)] pane slot 配列 = menu+0x40+i*4: Main=0x40/Race=0x44/Hair=0x48/Face=0x4c/Shape=0x50/Tone=0x54/GeneralFace=0x58/Brow=0x5c/Cheeks=0x60/Chin=0x64/Eyes=0x68/Forehead=0x6c/Jaw=0x70/Mouth=0x74/Nose=0x78/GeneralSkin=0x7c/Beard=0x80/EyesTex=0x84/Eyebrows=0x88/MouthLips=0x8c/NoseTex=0x90。+0x40/+0x44/+0x90 は同一スロット配列の別要素。②[確定(命令)] item の arg1=現在の pane スロット: 各スロットは自 region 内でのみ読まれる → v632 §2 の帰属表は正しい（「text は +0x44」は最初の text 呼出 0x5CA60B が Race region にあるためで誤読）。③[確定(命令)] 入れ子なし: 21 pane 呼出すべて arg1=[esi+0x28]（window）→ 深さ0のみ。21=21 ページ。④[確定(命令)] 0x5CBB2F: 最終 pane(NoseTex) を +0x90 に格納、+0x90 を 2 回読んで末尾 2 slider を生成（表の NoseTex=2 と一致）。⑤[確定(命令)] Init 0x5C4E40 の +0x94 クリア: lea edi,[esi+0x94]; mov ecx,0x1F4; rep stosd → +0x94..+0x864 の 500 dwords を 0 クリア。counter を 200 に戻す。id 最大 429 < 500。hair color 配列 0x8F0 との余裕 140 bytes。V-632-1 の第一仮説「Init が破棄」確定。callers_of(0x5C4E40)=1(0x58847A)。⑥[確定(命令)] 名前→id: 21 pane の名前はすべて mov edx,[0xB38XXX]（lea なし）→ グローバルで固定。残点 V-631-1/V-632-1/V-630-1/V-629-1/V-626-2/V-626-3。"
     }
   ],
   "metadata": {
-    "totalEntries": 1056,
+    "totalEntries": 1057,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-23T04:00:00Z",
-    "entry_count": 1056,
-    "last_updated": "2026-11-23T04:00:00Z"
+    "lastUpdated": "2026-11-23T06:00:00Z",
+    "entry_count": 1057,
+    "last_updated": "2026-11-23T06:00:00Z"
   }
 }

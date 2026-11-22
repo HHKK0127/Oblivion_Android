@@ -4599,3 +4599,16 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **baseline 更新**: TOTAL_BASELINE=495 / OPEN_BASELINE=6。
 - **残点**: V-630-1 / V-632-1 / V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
 
+## 2026-11-21 (nq) — pane slot 配列と item 帰属・Init の `+0x94` クリア（v633）
+
+- **成果物**: `tmp/re/v633_pane_slots_attribution_init_clear_ruling.md`（probe u99_1/u100_1・EXIT=0）。台帳 **row610**・`round_verify` **ALL OK（rows 31..610 / total 496 / done 490 / open 6）**・U 節 **U36**・ai-todo **#96 note**。
+- **(1) [確定(命令)] pane slot 配列 = `menu+0x40 + i*4`**: Main=0x40 / Race=0x44 / Hair=0x48 / Face=0x4c / Shape=0x50 / Tone=0x54 / GeneralFace=0x58 / Brow=0x5c / Cheeks=0x60 / Chin=0x64 / Eyes=0x68 / Forehead=0x6c / Jaw=0x70 / Mouth=0x74 / Nose=0x78 / GeneralSkin=0x7c / Beard=0x80 / EyesTex=0x84 / Eyebrows=0x88 / MouthLips=0x8c / NoseTex=0x90。`+0x40`/`+0x44`/`+0x90` は同一スロット配列の別要素。
+- **(2) [確定(命令)] item の arg1 = 現在の pane スロット**: 各スロットは自 region 内でのみ読まれる → **v632 §2 の帰属表は正しい**（「text は `+0x44`」は最初の text 呼出が Race region にあったための誤読）。
+- **(3) [確定(命令)] 入れ子なし**: 21 pane 呼出すべて arg1=`[esi+0x28]`（window）→ 深さ 0 のみ。**21 = 21 ページ**。
+- **(4) [確定(命令)] `+0x90` = 最終 pane スロット**: 末尾 2 slider は NoseTex に帰属（表の NoseTex=2 と一致）。
+- **(5) [確定(命令)] Init `0x5C4E40` の `+0x94` クリア**: `lea edi,[esi+0x94]; mov ecx,0x1F4; rep stosd` → **`+0x94..+0x864` の 500 dwords を 0 クリア**。counter を 200 に戻す。id 最大 429 < 500 ✓。hair color 配列 `0x8F0` との余裕 140 bytes。**V-632-1 の第一仮説「Init が破棄」確定**。
+- **(6) [確定(命令)] 名前→id**: 21 pane の名前はすべて `mov edx,[0xB38XXX]`（`lea` なし）→ グローバルで固定。
+- **baseline 更新**: TOTAL_BASELINE=496 / OPEN_BASELINE=6。
+- **優先度改訂（査読 §3）**: V-632-2【済】→ V-631-1 → V-632-1 → V-630-1 → V-629-1。
+- **残点**: V-631-1 / V-632-1 / V-630-1 / V-629-1 / V-626-2 / V-626-3 / row604。
+
