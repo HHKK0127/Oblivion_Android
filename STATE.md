@@ -4577,3 +4577,15 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **(6) [確定(命令)]**: `0x5C4340` の +1 は pane 生成の副作用（スロット消費）。
 - **残点**: V-630-1（arg4 の値と 6 store の index 源）/ V-629-1 / V-626-2 / V-626-3 / row604。
 
+## 2026-11-21 (no) — V-630-1 確定版: index 源・counter 順・`+0x94` 読み手（v631）
+
+- **成果物**: `tmp/re/v631_v630_1_index_sources_94_readers_ruling.md`（probe u96_1/u97_1・EXIT=0）。台帳 **row608**・`round_verify` **ALL OK（rows 31..608 / total 494 / done 488 / open 6）**・U 節 **U34**・ai-todo **#96 note**。
+- **(1) [確定(命令)] 予測検証**: `0x5C9588`=`00 00 00`（`mov` の displacement 末尾）で**バイト予測は外れ**。ただし仮説（+2=2 スロット）は当たり＝slider は `[edi+eax*4+0x94]`(id=counter+1) と `[edi+ebp*4+0x94]`(id=counter+2) の 2 store。
+- **(2) [確定(命令)] 6 store の index 源**: pane(`0x5C4444`)=arg4、item builder 4 つは counter 由来。
+- **(3) [確定(命令)] counter 順**: 5 関数すべて read→inc→write → **pane 先頭 = 201**（表は ±0 で正）。
+- **(4) [部分確定] `[reg+0xE8]` writer**: 13 箇所・即値は 0 のみ。`or reg,0xffffffff`/`not` は多数実在 → **`-1` は即値以外でも生成可能＝「無い」ではなく未確定**。arg4=0 の可能性も残る。
+- **(5) [確定(命令)] `+0x94` の読み手**: **`0x5CC200`(HandleClick)〜`0x5CE000`(Update) 帯の load は 0 件**。読み手は `0x5C64E0..0x5C6D6F`。→ id→pane 解決は `0xB13970`/GetTileMenu/by-name に一本化し **V-625-3 を書き直す**。
+- **(6) [部分確定] pane 別クラス内訳**: Main(201)=0/0/0/0、Race(210)=2/3/1/0、Hair(214)=0/0/2/1、Face(225)=4/0/2/0、Shape(230)=0/4/0/0、Tone(240)=0/9/0/0、GeneralFace(247)=0/6/0/0、Brow(258)=5/0/0/0、…、NoseTex(425)=3/0/0/0。実装単位列の充填は `race_sex_panel` 未作成のため保留（V-631-1）。
+- **baseline 更新**: `round_verify` に TOTAL_BASELINE=494 / OPEN_BASELINE=6 を焼き込み。
+- **残点**: V-630-1 / V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
+

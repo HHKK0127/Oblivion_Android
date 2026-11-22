@@ -1118,6 +1118,38 @@
   > ■ 残点
   > - V-630-1（arg4 の値と 6 store の index 源）→ V-629-1（player[0xE8]==-1 の実行時裏取り）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）→ row604（旧書式正規化）。
   > round_verify ALL OK（rows 31..607 / total 493 / done 487 / open 6・旧書式 warn 33 baseline 維持）。
+  > 【v630 検収・V-630-1 確定版 2026-11-21: v631（U34）】査読 5 点を処理。成果物 tmp/re/v631_v630_1_index_sources_94_readers_ruling.md（台帳 row608・probe u96_1/u97_1）
+  > ■ (1) 予測検証 [確定(命令)] — バイト予測は外れ、仮説は当たり
+  > - 予測 0x5C9588..0x5C958A = 83 C2 01 (add edx,1) → 実バイト = 00 00 00（0x5C9584 の mov は 7 バイト 89 B4 87 94 00 00 00 で、差 7 は displacement 末尾）。
+  > - 仮説（+2 = 2 スロット）は当たり: 0x5C9580 mov eax,[esp+0x14]（=counter+1）; 0x5C9584 mov [edi+eax*4+0x94],esi; 0x5C958B mov [edi+ebp*4+0x94],esi（id=counter+2）。
+  > - add edx,1 は 0x5C954C に実在（別位置）。
+  > ■ (2) 6 store の index 源 [確定(命令)]
+  > - 0x5C4444 (pane 0x5C4340): edx = [esp+0x40] = arg4
+  > - 0x5C45EE (button 0x5C4480): [esp+0x18]
+  > - 0x5C47C9 (toggle 0x5C4630): [esp+0x1c]/[esp+0x14]
+  > - 0x5C48E1 (text 0x5C4800): counter 由来
+  > - 0x5C9584/0x5C958B (slider 0x5C93F0): eax=counter+1 / ebp=counter+2
+  > - → pane だけ arg4 由来、item builder 4 つは counter 由来。
+  > ■ (3) counter read/inc/write 順 [確定(命令)]
+  > - 5 関数すべて read → inc → write（0x5C4340: 0x5C438A/0x5C438F/0x5C4392、他も同型。0x5C93F0 は add 1 を 2 回）。
+  > - inc 後 read（=消費値が id）→ pane 先頭 = 201（表は ±0 で正しい）。
+  > ■ (4) [reg+0xE8] writer と -1 [部分確定]
+  > - 13 箇所、即値は 0 のみ（0x5DDC7E mov [ecx+0xe8],0）。他はレジスタ store。
+  > - or reg,0xffffffff / not reg は多数実在（0x40123B 他 25+ 件）→ -1 は即値以外でも生成可能。
+  > - → 「-1 は無い」ではなく「即値 store としては無い＝未確定」。arg4=0 なら +0x94[0] が 21 回上書きされる（「配列は永遠に書かれない」は不成立）。
+  > ■ (5) +0x94 の読み手 [確定(命令)]
+  > - 全 .text の load 455 件、0x5C0000..0x5D0000 は 15 件。0x5CC200(HandleClick)〜0x5CE000(Update) 帯は 0 件。
+  > - 読み手は 0x5C64E0..0x5C6D6F（pane/scroll ロジック）。
+  > - → id→pane 解決は 0xB13970(g_TileMenuArray)/GetTileMenu/by-name に一本化。V-625-3 はその形に書き直す。
+  > ■ (6) pane 別クラス内訳 [部分確定]
+  > - クラス写像（推定）: slider=0x5C93F0 / button=0x5C4480 / toggle=0x5C4630 / text=0x5C4800。
+  > - Main(201)=0/0/0/0、Race(210)=2/3/1/0、Hair(214)=0/0/2/1、Face(225)=4/0/2/0、Shape(230)=0/4/0/0、Tone(240)=0/9/0/0、GeneralFace(247)=0/6/0/0、Brow(258)=5/0/0/0、Cheeks(265)=3/0/0/0、Chin(276)=5/0/0/0、Eyes(291)=7/0/0/0、Forehead(300)=4/0/0/0、Jaw(307)=3/0/0/0、Mouth(316)=4/0/0/0、Nose(337)=10/0/0/0、GeneralSkin(366)=14/0/0/0、Beard(377)=5/0/0/0、EyesTex(390)=6/0/0/0、Eyebrows(403)=6/0/0/0、MouthLips(418)=7/0/0/0、NoseTex(425)=3/0/0/0。
+  > - 差分検算（例 Race: 210-201=9=1+2*2+3+1）✓。
+  > - 実装単位列の充填は race_sex_panel 未作成のため保留（V-631-1）。リポジトリの UI は app/src/main/cpp/ui/*.cpp（race_sex_panel は未作成）。
+  > ■ その他
+  > - round_verify に TOTAL_BASELINE=494 / OPEN_BASELINE=6 を焼き込み。row 追加は --allow-row-delta で通し、baseline を 494 に更新。
+  > - 残点 V-630-1（arg4 の値と pane の +0x94 store の意味）/ V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
+  > round_verify ALL OK（rows 31..608 / total 494 / done 488 / open 6・旧書式 warn 33 baseline 維持）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3379,6 +3411,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3402,4 +3439,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 14:58:41
+**ai-todo** | Last Updated: 2026-11-22 18:06:16

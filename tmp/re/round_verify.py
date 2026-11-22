@@ -25,6 +25,9 @@ LEDGER = os.path.join(BASE, "TODO_re49.md")
 CURRENT_MIN = 540          # 旧書式（セル内パイプ混入）の境界。2026-11-21 時点。row 604 で正規化追跡
 EXPECT_PIPES = 7
 LEGACY_BASELINE = 33       # 旧書式行の baseline（2026-11-21）。増加は ERROR
+TOTAL_BASELINE = 494       # V-row 総数 baseline（2026-11-21）。増減は --allow-row-delta でのみ許可
+OPEN_BASELINE = 6          # open row 数 baseline。増減は --allow-row-delta でのみ許可
+ALLOW_ROW_DELTA = "--allow-row-delta" in sys.argv
 
 rows = {}
 pat = re.compile(r"^\|\s*(\d+)\s*\|(.*)$")
@@ -96,6 +99,14 @@ total = len(nums)
 done = sum(1 for n in nums if rows[n][0] == "x")
 open_ = total - done
 print("rows %d..%d | total %d / done %d / open %d" % (nums[0] if nums else -1, nums[-1] if nums else -1, total, done, open_))
+# 行数・open 数の baseline 固定（V-row 判定が外れた行が黙って計数から消える穴を塞ぐ）
+if not ALLOW_ROW_DELTA:
+    if total != TOTAL_BASELINE:
+        errs.append("total が baseline と不一致（%d != %d）: 行の増減は --allow-row-delta で明示" % (total, TOTAL_BASELINE))
+    if open_ != OPEN_BASELINE:
+        errs.append("open が baseline と不一致（%d != %d）: --allow-row-delta で明示" % (open_, OPEN_BASELINE))
+else:
+    print("[info] --allow-row-delta: total/open baseline チェックを skip（baseline %d/%d）" % (TOTAL_BASELINE, OPEN_BASELINE))
 if missing:
     print("[warn] 未完行の成果物未作成（想定内）: %d 件" % len(missing))
 if warns:
