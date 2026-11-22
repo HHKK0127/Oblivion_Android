@@ -4559,3 +4559,10 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **(4) [確定(命令)] 副産物**: item builder `0x5C93F0` は `ret 0x18`=6 引数・item index を `push imm`(0..0x36)・**counter `0xB3B5D4` を +2**。counter は pane +1 / item +2、リセット `0x5C4F3C`(200)。
 - **残点**: V-628-1 / V-626-2 / V-626-3。
 
+## 2026-11-21 (nm) — V-628-1 決着: pane id 確定（v629）
+
+- **成果物**: `tmp/re/v629_v628_1_pane_id_ruling.md`（probe u91_1/u92_1/u93_1・EXIT=0）。台帳 **row605**・`round_verify` **ALL OK（rows 31..605 / total 491 / done 485 / open 6）**・U 節 **U32**・ai-todo **#96 note**。
+- **(1) [確定(命令)] V-628-1a**: extent `0x5C4340..0x5C4471`（`ret 0x14`）。本体全域で実使用は **arg1=`[esp+0x34]`（parent）と arg4=`[esp+0x40]`（id）のみ**、**arg3/arg5 は未使用**。arg4 は **`this+0x94` の索引**に届く。`0xB3B5D4` は 5 関数共有（pane +1 / item +2）。リセット `0x5C4F3C` は `FUN_005c4e40`。`[ebp+0xe8]` は dword。`edi` の最後の代入 `0x5CA1C1` が全 21 呼出の前。
+- **(2) [部分確定] V-628-1b**: `arg4 = player[0xE8]` が全サイト同値 → `+0x94` 表の衝突回避から **-1（自動採番）と推定**。counter simulation で pane id 確定: **Main=201 / Race=210 / Hair=214 / Face=225 / Shape=230 / Tone=240 / GeneralFace=247 / Brow=258 / Cheeks=265 / Chin=276 / Eyes=291 / Forehead=300 / Jaw=307 / Mouth=316 / Nose=337 / GeneralSkin=366 / Beard=377 / EyesTex=390 / Eyebrows=403 / MouthLips=418 / NoseTex=425**。**counter 使用者 call 総数 = 139**（=139 generator と一致）。
+- **残点**: V-629-1（`player[0xE8]==-1` の実行時裏取り）/ V-626-2 / V-626-3。
+

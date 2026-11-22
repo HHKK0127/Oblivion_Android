@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T20:00:00Z",
+  "lastUpdated": "2026-11-22T22:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15653,14 +15653,29 @@
         "todo-96"
       ],
       "content": "2026-11-21 v628 裁定＝V-625-1: 0x5C4340 の引数対応（U31・ai-todo #96）。成果物 tmp/re/v628_v625_1_arg_mapping_ruling.md・台帳 row603。probe u89_1/u90_1 EXIT=0。①[確定(命令)] prologue 引数対応: ret 0x14=5引数。arg1=[esp+0x34]=parent tile／arg2=[esp+0x38]=name／arg3=[esp+0x3C]=未使用／arg4=[esp+0x40]=id／arg5=[esp+0x44]=未使用。②[部分確定] 21 サイトの引数出所: arg1=レジスタ([esi+0x28]=window)／arg2,arg3=スタックローカル(sub esp,8 の一時 BSStringT=name)／arg4(id)=レジスタ edi／arg5=edi。edi の代入は builder 内 3 箇所のみで最後が 0x5CA1C1 mov edi,[ebp+0xe8]（ebp=player）＝Character[0xE8]。③[未確定] V-628-1: arg4 が 21 サイトで同値となり pane ごとの id と矛盾。完全な symbolic stack simulation が必要。推測で埋めない。④[確定(命令)] 副産物: item builder 0x5C93F0 は ret 0x18=6引数で item index を push imm(0..0x36) で渡し、counter 0xB3B5D4 を +2。counter は pane で +1 / item で +2、リセットは 0x5C4F3C(mov [0xB3B5D4],0xC8=200)。0x5C4480=ret 0x1C、0x5C4800=ret 0xC、0x585410=ret 0xC。"
+    },
+    {
+      "id": "opencode-v629-pane-id-resolved-20261121",
+      "timestamp": "2026-11-22T22:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v629",
+        "racesexmenu",
+        "pane",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v629 裁定＝V-628-1 決着（U32・ai-todo #96）。成果物 tmp/re/v629_v628_1_pane_id_ruling.md・台帳 row605。probe u91_1/u92_1/u93_1 EXIT=0。①[確定(命令)] V-628-1a: extent 0x5C4340..0x5C4471（ret 0x14）。本体全域で実使用は arg1=[esp+0x34]=parent と arg4=[esp+0x40]=id のみ、arg3([esp+0x3C])/arg5([esp+0x44]) は一度も読まれず未使用。arg4 は this+0x94 の索引に届く（0x5C443F mov edx,[esp+0x40]; 0x5C4444 mov [ebx+edx*4+0x94],esi）。0xB3B5D4 は 5 関数共有（0x5C4340=+1 / 0x5C4480=+1 / 0x5C4630=+1 / 0x5C4800=+1 / 0x5C93F0=+2）。リセット 0x5C4F3C は FUN_005c4e40（menu Init 相当）。[ebp+0xe8] は dword ロード。edi の 3 代入の最後 0x5CA1C1 が全 21 呼出の前。②[部分確定] V-628-1b: arg4=player[0xE8] は全 21 サイト同値 → +0x94 表の衝突回避から -1（自動採番）と推定。builder 線形 simulation（counter 初期 200）で pane id 確定: Main=201/Race=210/Hair=214/Face=225/Shape=230/Tone=240/GeneralFace=247/Brow=258/Cheeks=265/Chin=276/Eyes=291/Forehead=300/Jaw=307/Mouth=316/Nose=337/GeneralSkin=366/Beard=377/EyesTex=390/Eyebrows=403/MouthLips=418/NoseTex=425。counter 使用者 call 総数 139 = 139 generator と一致。③残点 V-629-1（player[0xE8]==-1 の実行時裏取り）・V-626-2・V-626-3。"
     }
   ],
   "metadata": {
-    "totalEntries": 1052,
+    "totalEntries": 1053,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T20:00:00Z",
-    "entry_count": 1052,
-    "last_updated": "2026-11-22T20:00:00Z"
+    "lastUpdated": "2026-11-22T22:00:00Z",
+    "entry_count": 1053,
+    "last_updated": "2026-11-22T22:00:00Z"
   }
 }
