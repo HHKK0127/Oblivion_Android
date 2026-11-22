@@ -4543,3 +4543,10 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **残点**: V-627-1（pane id 全件）/ V-626-2（`menu+0x94` の読み手）/ V-626-3（item builder と template）。
 - **停止条件**: V-626-2/3 が閉じたら chargen lane を一旦停止。
 
+## 2026-11-21 (nk) — プロセス改訂: AGENTS.md 再発防止節・台帳「実装単位」列・chargen 完了条件
+
+- **AGENTS.md**: `## 算術・引用・根拠（再発防止）` を新設（算術は python 検算・半開区間 / tool 表示のみ引用 / 知り方は散文のみ・判定語彙 5 段階不変 / 長出力は slice / 訂正は negative で残す）。
+- **台帳 TODO_re49.md**: V-row 末尾に **実装単位** セルを追加（機械移行・行数不変・全 488 行に `-`）。`round_verify.py` 更新（実装単位の空チェック / done の `?` 禁止 / row>=540 は pipes=7 必須・旧行は警告のみ）。移行前後とも **ALL OK（total 488 / done 483 / open 5）**。
+- **chargen lane 完了条件（固定）**:
+  > 完了条件: race_sex_menu.xml の構造（21 pane・id・user0・式木・ページ遷移）を、**XML を一度も開かずに説明できる**こと。以降は人間ゲート待ちとして停止する。
+
