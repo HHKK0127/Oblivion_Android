@@ -1150,6 +1150,58 @@
   > - round_verify に TOTAL_BASELINE=494 / OPEN_BASELINE=6 を焼き込み。row 追加は --allow-row-delta で通し、baseline を 494 に更新。
   > - 残点 V-630-1（arg4 の値と pane の +0x94 store の意味）/ V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
   > round_verify ALL OK（rows 31..608 / total 494 / done 488 / open 6・旧書式 warn 33 baseline 維持）。
+  > 【v631 検収・pane 帰属の修正 2026-11-21: v632（U35）】査読 5 点を処理。成果物 tmp/re/v632_pane_attribution_arg1_94_readers_ruling.md（台帳 row609・probe u98_1）
+  > ■ (2) item の arg1 源 [確定(命令)] — これで 1 の向きが確定
+  > - slider 0x5CA55E: mov eax,[esi+0x40]; push eax; mov ecx,esi; call 0x5C93F0
+  > - button 0x5CA491: mov eax,[esi+0x40]; push eax; ... call 0x5C4480
+  > - toggle 0x5CA53A: mov eax,[esi+0x40]; push eax; ... call 0x5C4630
+  > - text   0x5CA60B: mov eax,[esi+0x44]; push eax; ... call 0x5C4800
+  > - → item の arg1 = [esi+0x40+i*4]（＝pane 配列 menu+0x40、v627）= 直前に生成した pane tile。
+  > - → item は pane の子、生成順は pane 先 → v631 §6 の表は 1 行ずれ（counts[X] は「X に入る item」）。
+  > - +0x90 は builder 内で write(0x5CBB2F)/read(0x5CBB47/0x5CBB70) される実フィールド。
+  > ■ (1) pane 帰属の修正 [確定(命令)]（pane X の直後の item を X に帰属・サイト実アドレスで計数）
+  > | pane | id | slider | button | toggle | text |
+  > |---|---|---|---|---|---|
+  > | Main | 201 | 2 | 3 | 1 | 0 |
+  > | Race | 210 | 0 | 0 | 2 | 1 |
+  > | Hair | 214 | 4 | 0 | 2 | 0 |
+  > | Face | 225 | 0 | 4 | 0 | 0 |
+  > | Shape | 230 | 0 | 9 | 0 | 0 |
+  > | Tone | 240 | 0 | 6 | 0 | 0 |
+  > | GeneralFace | 247 | 5 | 0 | 0 | 0 |
+  > | Brow | 258 | 3 | 0 | 0 | 0 |
+  > | Cheeks | 265 | 5 | 0 | 0 | 0 |
+  > | Chin | 276 | 7 | 0 | 0 | 0 |
+  > | Eyes | 291 | 4 | 0 | 0 | 0 |
+  > | Forehead | 300 | 3 | 0 | 0 | 0 |
+  > | Jaw | 307 | 4 | 0 | 0 | 0 |
+  > | Mouth | 316 | 10 | 0 | 0 | 0 |
+  > | Nose | 337 | 14 | 0 | 0 | 0 |
+  > | GeneralSkin | 366 | 5 | 0 | 0 | 0 |
+  > | Beard | 377 | 6 | 0 | 0 | 0 |
+  > | EyesTex | 390 | 6 | 0 | 0 | 0 |
+  > | Eyebrows | 403 | 7 | 0 | 0 | 0 |
+  > | MouthLips | 418 | 3 | 0 | 0 | 0 |
+  > | NoseTex | 425 | 2 | 0 | 0 | 0 |
+  > - 差分検算（入る側）: Race 210-201=9=1+2*2+3+1 / Hair 4=1+0+0+2+1 / Face 11=1+2*4+0+2 / Shape 5=1+4 / Tone 10=1+9 / GeneralFace 7=1+6 / Brow 11=1+2*5 → 7 行連続一致。
+  > - 末尾 2 slider を回収（NoseTex: 429-425=4=1+2*2）。Main = 3button(タブ)+2slider+1toggle。
+  > ■ (3) +0x94 読み手 [部分確定] — 一本化は撤回
+  > - 15 件の head: 0x5C0440 / 0x5C3BE0(vtable slot8) / 0x5C4E40 / 0x5C6390(5件) / 0x5C6860(2件) / 0x5C6AF0(5件)。
+  > - 基底レジスタは esi/ebp/edi = RaceSexMenu(this)。
+  > - 0x5C3BE0 は RaceSexMenu の vtable slot 8（0xA6D3AC）→ +0x94 は vtable 経由で到達可能。
+  > - → v631 §5 の『0xB13970/by-name に一本化』は撤回し [部分確定]（+0x94 は pane 解決に使われている）。
+  > ■ (4) counter 生バイト [確定(命令)]
+  > - 5 関数すべて同一形: a1 d4 b5 b3 00 (mov eax,[0xB3B5D4]) / 83 c0 01 (add eax,1) / a3 d4 b5 b3 00 (mov [0xB3B5D4],eax)。
+  > - 直後に eax を再ロードせずローカルへ store（0x5C4340: 89 44 24 40 と 89 44 24 14、0x5C4630: 89 44 24 18、0x5C4800: 8b e8、0x5C93F0: 89 44 24 14）。
+  > - → 消費値は加算後 → id = counter+1（pane 先頭 201）。語順は「read → inc → write-back → 加算後値を消費」。
+  > - 0x5C93F0 のみ inc 2 回（counter+1 と counter+2 の 2 スロット）。
+  > ■ (5) 小さい
+  > - TOTAL_BASELINE / OPEN_BASELINE = 495 / 6（毎回報告）。
+  > - --allow-row-delta を使ったコミットはメッセージに明記（今回 row609 追加で使用）。
+  > - row604 の desc は 196 文字（行全体）で長すぎない。
+  > ■ 残点
+  > - V-630-1（arg4 の値）→ V-632-1（+0x94 を読む 5 関数の役割と 0x5CC200/0x5CDEF0 からの到達性）→ V-631-1（実装単位列）→ V-629-1 → V-626-2/3 → row604。
+  > round_verify ALL OK（rows 31..609 / total 495 / done 489 / open 6・旧書式 warn 33 baseline 維持）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3411,11 +3463,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3439,4 +3486,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 18:06:16
+**ai-todo** | Last Updated: 2026-11-22 18:12:25

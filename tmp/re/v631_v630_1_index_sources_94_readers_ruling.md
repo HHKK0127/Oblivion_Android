@@ -61,6 +61,10 @@
 - → 査読 §4-6 適用: **id→pane 解決は HandleClick/Update では `0xB13970`（`g_TileMenuArray`）/GetTileMenu/by-name 経由に一本化**。
   **V-625-3 はその形に書き直す**。
 
+> **撤回（v632）**: 上記の「一本化」は **[部分確定] に格下げ**。読み手は `0x5C0440`/`0x5C3BE0`（**vtable slot 8**）/
+> `0x5C4E40`/`0x5C6390`/`0x5C6860`/`0x5C6AF0` に実在し、`+0x94` は **vtable 経由で到達可能**。
+> HandleClick/Update が直接読まないのは事実だが、到達不能ではない。→ v632 §3。
+
 ## 6. pane 別クラス内訳（査読 §5）[部分確定]
 
 クラス写像（関数→種別）: slider=`0x5C93F0` / button=`0x5C4480` / toggle=`0x5C4630` / text=`0x5C4800`（推定）。

@@ -4589,3 +4589,13 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **baseline 更新**: `round_verify` に TOTAL_BASELINE=494 / OPEN_BASELINE=6 を焼き込み。
 - **残点**: V-630-1 / V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
 
+## 2026-11-21 (np) — pane 帰属の修正と `+0x94` 読み手（v632）
+
+- **成果物**: `tmp/re/v632_pane_attribution_arg1_94_readers_ruling.md`（probe u98_1・EXIT=0）。台帳 **row609**・`round_verify` **ALL OK（rows 31..609 / total 495 / done 489 / open 6）**・U 節 **U35**・ai-todo **#96 note**。
+- **(1) [確定(命令)] item の arg1 源**: 4 つの item builder の arg1 = **`[esi+0x40+i*4]`（＝pane 配列 `menu+0x40`）** = 直前に生成した pane tile。→ **item は pane の子・生成順は pane 先**。よって v631 §6 の表は **1 行ずれ**。`+0x90` は builder 内で write/read される実フィールド。
+- **(2) [確定(命令)] pane 帰属の修正**（pane X の直後の item を X に帰属）: Main(201)=**2slider/3button/1toggle**、Race(210)=0/0/2/1、Hair(214)=4/0/2/0、Face(225)=0/4/0/0、Shape(230)=0/9/0/0、Tone(240)=0/6/0/0、GeneralFace(247)=5/0/0/0、Brow(258)=3、Cheeks(265)=5、Chin(276)=7、Eyes(291)=4、Forehead(300)=3、Jaw(307)=4、Mouth(316)=10、Nose(337)=14、GeneralSkin(366)=5、Beard(377)=6、EyesTex(390)=6、Eyebrows(403)=7、MouthLips(418)=3、**NoseTex(425)=2**。差分検算（入る側）が 7 行連続一致。
+- **(3) [部分確定] `+0x94` 読み手**: 15 件の head = `0x5C0440` / **`0x5C3BE0`（vtable slot 8）** / `0x5C4E40` / `0x5C6390` / `0x5C6860` / `0x5C6AF0`。基底は RaceSexMenu(this)。→ v631 §5 の「一本化」は**撤回**（`+0x94` は vtable 経由で到達可能）。
+- **(4) [確定(命令)] counter 生バイト**: 5 関数すべて `a1 d4 b5 b3 00`(read) / `83 c0 01`(add) / `a3 d4 b5 b3 00`(write-back) の後、**eax を再ロードせず**ローカルへ store → 消費値は加算後 → **id = counter+1**。`0x5C93F0` のみ inc 2 回。
+- **baseline 更新**: TOTAL_BASELINE=495 / OPEN_BASELINE=6。
+- **残点**: V-630-1 / V-632-1 / V-631-1 / V-629-1 / V-626-2 / V-626-3 / row604。
+
