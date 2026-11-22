@@ -1088,6 +1088,36 @@
   > ■ 残点
   > - V-629-1（player[0xE8] == -1 の実行時裏取り・runtime 依存）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）。
   > round_verify ALL OK（rows 31..605 / total 491 / done 485 / open 6・実装単位 ! 付き）。
+  > 【v629 検収・generator 増分と +0x90/+0x94 2026-11-21: v630（U33）】査読 5 点を処理。成果物 tmp/re/v630_generator_increments_90_94_sweep_ruling.md（台帳 row607・probe u94_1/u95_1）
+  > ■ (1) v629 §2 の訂正 [確定(命令)（negative）]
+  > - 「item +2」は一般化の誤り。正しくは 増分は generator 関数の性質（0x5C93F0=+2、他4関数=+1）。pane id の数値は不変。
+  > - 偶数差分（4, 10）は間の +1 群の寄与。総数は合う。
+  > ■ (2) generator 件数と増分 [確定(命令)]
+  > - 0x5C4340 = 21 (pane, +1)
+  > - 0x5C93F0 = 90 (slider, +2)
+  > - 0x5C4480 = 22 (button 推定, +1)
+  > - 0x5C4630 = 5 (toggle 推定, +1)
+  > - 0x5C4800 = 1 (text 推定, +1)
+  > - 合計 139。検算 21+180+22+5+1=229、200+229=429。
+  > - 139 = 21+90+22+5+1 が generator 関数別件数と 1:1 対応。
+  > ■ (3) 0x5C93F0 = slider [部分確定]
+  > - 90 回 = Slider 90。push imm 0..0x36（最大 54）は slider の型/テンプレート番号であって id ではない。id は counter 側。
+  > ■ (4) +0x90/+0x94 の掃引 [部分確定]
+  > - 0x5C4340 内の +0x90/+0x94 参照は 1 箇所のみ（0x5C4444 mov [ebx+edx*4+0x94],esi、edx=arg4）。
+  > - 全 .text の [reg+idx*4+0x94] store は 6 箇所、すべて RaceSexMenu builder 内（0x5C4444/0x5C45EE/0x5C47C9/0x5C48E1/0x5C9584/0x5C958B）。
+  > - [reg+idx*4+0x90] は 5 箇所（0x773192/0x77320C/0x7BF062/0x7BF097/0x812177、いずれも別モジュール）。
+  > - 含意: +0x94 は indexed write される → arg4==-1 なら配列は永遠に書かれない（査読指摘どおり両立しない）。
+  > - 読み（推定）: +0x90 = pane cache（arg4=-1 のときの格納先）、+0x94 = item id→tile 配列（item builder が非負 id で書く）。
+  > - → V-630-1 [未確定]: arg4 の値と 6 store 各々の index 源。
+  > ■ (5) Character+0xE8 の writer [部分確定]
+  > - [reg+0xE8] への store は 13 箇所、mov [reg+0xE8],-1 は存在しない（0x5DDC7E mov [ecx+0xe8],0 は 0 であって -1 ではない）。
+  > - → 静的に -1 を確定できない。V-629-1 は runtime のまま。
+  > ■ (6) 0x5C4340 の +1 の意味 [確定(命令)]
+  > - pane 生成の副作用で counter を 1 進める（0x5C438A..0x5C4392）。arg4==-1 のとき id = counter 値。
+  > - すなわち +1 は「スロット消費」であり、id 採番そのものではない。
+  > ■ 残点
+  > - V-630-1（arg4 の値と 6 store の index 源）→ V-629-1（player[0xE8]==-1 の実行時裏取り）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）→ row604（旧書式正規化）。
+  > round_verify ALL OK（rows 31..607 / total 493 / done 487 / open 6・旧書式 warn 33 baseline 維持）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3349,11 +3379,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3377,4 +3402,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 14:44:37
+**ai-todo** | Last Updated: 2026-11-22 14:58:41

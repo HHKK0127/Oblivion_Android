@@ -4566,3 +4566,14 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **(2) [部分確定] V-628-1b**: `arg4 = player[0xE8]` が全サイト同値 → `+0x94` 表の衝突回避から **-1（自動採番）と推定**。counter simulation で pane id 確定: **Main=201 / Race=210 / Hair=214 / Face=225 / Shape=230 / Tone=240 / GeneralFace=247 / Brow=258 / Cheeks=265 / Chin=276 / Eyes=291 / Forehead=300 / Jaw=307 / Mouth=316 / Nose=337 / GeneralSkin=366 / Beard=377 / EyesTex=390 / Eyebrows=403 / MouthLips=418 / NoseTex=425**。**counter 使用者 call 総数 = 139**（=139 generator と一致）。
 - **残点**: V-629-1（`player[0xE8]==-1` の実行時裏取り）/ V-626-2 / V-626-3。
 
+## 2026-11-21 (nn) — generator 別増分と `+0x90`/`+0x94` の掃引（v630）
+
+- **成果物**: `tmp/re/v630_generator_increments_90_94_sweep_ruling.md`（probe u94_1/u95_1・EXIT=0）。台帳 **row607**・`round_verify` **ALL OK（rows 31..607 / total 493 / done 487 / open 6）**・U 節 **U33**・ai-todo **#96 note**。
+- **(1) [確定(命令)（negative）] v629 §2 の訂正**: 「item +2」は一般化の誤り。正しくは **増分は generator 関数の性質**（`0x5C93F0`=+2、他 4 関数=+1）。pane id の数値は不変。
+- **(2) [確定(命令)] generator 件数**: `0x5C4340`=21(pane,+1) / `0x5C93F0`=90(slider,+2) / `0x5C4480`=22(button 推定,+1) / `0x5C4630`=5(toggle 推定,+1) / `0x5C4800`=1(text 推定,+1) = **139**。`21+180+22+5+1=229`、`200+229=429`。
+- **(3) [部分確定] `0x5C93F0`=slider**: `push imm 0..0x36` は型/テンプレート番号で id ではない。
+- **(4) [部分確定] `+0x90`/`+0x94`**: `0x5C4340` 内は 1 箇所のみ。全 .text の `[reg+idx*4+0x94]` store は **6 箇所すべて RaceSexMenu builder 内**。→ **arg4==-1 なら配列は永遠に書かれない（両立しない）**。読み: `+0x90`=pane cache、`+0x94`=item id→tile 配列。
+- **(5) [部分確定] `Character+0xE8`**: `[reg+0xE8]` store 13 箇所に `mov [reg+0xE8],-1` は無し → V-629-1 は runtime のまま。
+- **(6) [確定(命令)]**: `0x5C4340` の +1 は pane 生成の副作用（スロット消費）。
+- **残点**: V-630-1（arg4 の値と 6 store の index 源）/ V-629-1 / V-626-2 / V-626-3 / row604。
+
