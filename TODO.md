@@ -1046,6 +1046,31 @@
   > - V-627-1（pane id 全件）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）。
   > - V-626-2/3 が閉じたら chargen lane を一旦停止（残りは人間ゲート待ち）。
   > round_verify ALL OK（rows 31..602 / total 488 / done 483 / open 5）。
+  > 【v627 検収・V-625-1 2026-11-21: v628（U31）】査読指定の手順で 0x5C4340 の引数対応を実読。成果物 tmp/re/v628_v625_1_arg_mapping_ruling.md（台帳 row603・probe u89_1/u90_1）
+  > ■ (1) prologue の引数対応 [確定(命令)]（ret 0x14 = 5 引数）
+  > - arg1 = [esp+0x34]（entry+4） = parent tile（0x5C4369 → 0x585410 へ、0x5C43FF で GetFloat(parent,0xFD0)）
+  > - arg2 = [esp+0x38]（entry+8） = name 文字列（0x5C43AD → sprintf の %s）
+  > - arg3 = [esp+0x3C] = 未使用（読み無し）
+  > - arg4 = [esp+0x40]（entry+0x10） = id（0x5C4381 mov eax,[esp+0x40]; 0x5C4385 cmp eax,-1）
+  > - arg5 = [esp+0x44] = 未使用
+  > - id==-1 なら 0x5C438A で counter [0xB3B5D4] から採番（add 1）。
+  > ■ (2) 21 サイトの引数出所 [部分確定]（例 Cheeks 0x5CAE1B）
+  > - push edi(arg5) / push edi(arg4=id) / sub esp,8(arg3,arg2=一時 BSStringT=name) / push edx(name, 0x419B10 が ret 4 で消費) / push eax(arg1=parent)
+  > - arg1=レジスタ([esi+0x28]=window)、arg2,arg3=スタックローカル、arg4(id)=レジスタ edi、arg5=edi。
+  > - edi の代入は builder 内 3 箇所のみ: 0x5CA0B3 / 0x5CA0C5 / 0x5CA1C1 mov edi,[ebp+0xe8]（ebp=player）＝ Character[0xE8]。
+  > ■ (3) 未確定 [V-628-1]
+  > - arg4（id）が 21 サイトで同値（Character[0xE8]）となり、pane ごとに異なる id という前提と矛盾。
+  > - arg4 が id であることは確定だが、供給源が edi（定数）である点が説明できない。
+  > - → 完全な symbolic stack simulation（各 call の ret N と sub/add esp を反映してスタック内容を追う）が必要。
+  > - 後方 esp 追跡（u89_1）と edi 追跡（u90_1）はいずれも決定的でなかった。推測で埋めない。
+  > ■ (4) 副産物 [確定(命令)]
+  > - item builder 0x5C93F0 は ret 0x18 = 6 引数。item index を push imm（0,1,2,…,0x36。逆コンパイル uStack_4 と一致）で渡す。
+  > - 0x5C93F0 も counter 0xB3B5D4 を使い +2 する（0x5C941E add eax,1; 0x5C9425 add eax,1; 0x5C942D mov [0xB3B5D4],eax）。
+  > - → counter は pane で +1 / item で +2 の混在。リセットは 0x5C4F3C（mov [0xB3B5D4],0xC8=200）。
+  > - ret N 一覧: 0x5C4340=0x14 / 0x5C93F0=0x18 / 0x5C4480=0x1C / 0x5C4800=0xC / 0x585410=0xC。
+  > ■ 残点
+  > - V-628-1（pane ごとの id・未確定）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）。
+  > round_verify ALL OK（rows 31..603 / total 489 / done 484 / open 5・実装単位列チェック込み）。
 
 - [ ] **#82** 外部確認リスト（静的解析で確定不可・人間/実機アクション待ちの追跡）: ①実 .ess サンプルの取得（#76 時 8 系統検索で不在確定・取得後は SAVE_LOAD_RE_FOLLOWUP_v313.md §1 の動的照合5項=ヘッダsize照合/offset38境界/圧縮物理位置/change form・global・quest・cell・AI 実境界/FUN_45D5F0 name-thumb 実データ照合が実行可能に）②B13 型実機 .data ダンプ（=既存 #63 と同一・相互参照）③ContainerMenu の実機再オープン挙動確認（別セッション系・ophilosophy 参照）④実 .ess ヘッダ長と実ファイル総長の照合・⑤圧縮データの物理位置確認（①入手後の副次項目）。取得手段=ユーザー実行待ち。関連: #63/#76/指示書 SAVE_LOAD_RE_FOLLOWUP_v313.md `#external-verification` `#oblivion` `#re` `#user-execution`
   > 【受け取り準備・整備 2026-11-07】ユーザーが選択肢2（.ess 取得トリガー）を選択。観測専用ツール `tmp/re/ess_sample_inspect.py` を新規作成（python tmp/re/ess_sample_inspect.py <file.ess>）。内容=既知確定事実との照合と生の観測のみ（①マジック TES4SAVEGAME ②offset14..29 SYSTEMTIME デコード ③offset30..33 version u32（現行125・ゲート列照合）④offset34..37 ⑤total=38+size 式照合 ⑥78 9C/01/DA 圧縮マジック位置の事実出力 ⑦先頭128B hexdump ⑧先頭2KB 文字列列挙 ⑨末尾64B）— **境界推定・パーサ化はしない**（推測確定禁止・静的束との突合裁定は受領後フローで実施）。入手手順: ①Oblivion インストール PC の Documents\My Games\Oblivion\Saves\*.ess（クイックセーブ含む）②クラウド/別機のセーブ ③新規ならゲーム内クイックセーブ。本マシンには v313 の8系統検索で0件。受領後: ツール実行→動的照合5項（指示書§1）→本タスク①解消→#84 start→#85 段階2解放。
@@ -3307,11 +3332,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3335,4 +3355,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-22 07:16:49
+**ai-todo** | Last Updated: 2026-11-22 14:32:30
