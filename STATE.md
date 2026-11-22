@@ -4550,3 +4550,12 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **chargen lane 完了条件（固定）**:
   > 完了条件: race_sex_menu.xml の構造（21 pane・id・user0・式木・ページ遷移）を、**XML を一度も開かずに説明できる**こと。以降は人間ゲート待ちとして停止する。
 
+## 2026-11-21 (nl) — V-625-1: `0x5C4340` の引数対応（id は未確定）（v628）
+
+- **成果物**: `tmp/re/v628_v625_1_arg_mapping_ruling.md`（probe u89_1/u90_1・EXIT=0）。台帳 **row603**・`round_verify` **ALL OK（rows 31..603 / total 489 / done 484 / open 5）**・U 節 **U31**・ai-todo **#96 note**。
+- **(1) [確定(命令)] prologue 引数対応**: `ret 0x14`=5 引数。`arg1=[esp+0x34]`=parent／`arg2=[esp+0x38]`=name／`arg3`=未使用／**`arg4=[esp+0x40]`=id**／`arg5`=未使用。
+- **(2) [部分確定] 21 サイトの引数出所**: arg1=レジスタ(`[esi+0x28]`=window)／arg2,arg3=スタックローカル(一時 BSStringT=name)／**arg4(id)=`edi`**／arg5=`edi`。`edi` の代入は builder 内 3 箇所のみで最後が `0x5CA1C1 mov edi,[ebp+0xe8]`（`ebp`=player）＝**`Character[0xE8]`**。
+- **(3) [未確定] V-628-1**: arg4 が 21 サイトで同値となり pane ごとの id と矛盾。**symbolic stack simulation** が必要。推測で埋めない。
+- **(4) [確定(命令)] 副産物**: item builder `0x5C93F0` は `ret 0x18`=6 引数・item index を `push imm`(0..0x36)・**counter `0xB3B5D4` を +2**。counter は pane +1 / item +2、リセット `0x5C4F3C`(200)。
+- **残点**: V-628-1 / V-626-2 / V-626-3。
+

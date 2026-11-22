@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-22T18:00:00Z",
+  "lastUpdated": "2026-11-22T20:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15638,14 +15638,29 @@
         "impl-unit"
       ],
       "content": "2026-11-21 プロセス改訂（外部レビュー反映）。(a) AGENTS.md に `## 算術・引用・根拠（再発防止）` を新設: 算術は暗算せず python 検算・範囲は半開区間 [start,end) / 引用は tool 表示のみ・未確認は明記 / 知り方（命令・データ・実行・推測）は散文のみで判定語彙 5 段階は不変 / 長出力はファイル→slice / 訂正は [確定(命令)(negative)] で残す。(b) 台帳 TODO_re49.md の V-row 末尾に 実装単位 セルを追加（機械移行・行数 1510 不変・全 488 行 `-`）。round_verify.py を更新（実装単位の空 ERROR / done の `?` ERROR / row>=540 は pipes=7 必須・旧行 33 件は警告）。移行前後とも ALL OK（total 488 / done 483 / open 5）。(c) chargen lane 完了条件を固定: race_sex_menu.xml の構造（21 pane・id・user0・式木・ページ遷移）を XML を一度も開かずに説明できること。以降は人間ゲート待ち。不採用: 静的再コンパイルへの pivot（既に Rust+6 C ABI の手書きポート・UI は engine recreation 方針）、claude-reverse-engineering-skill の丸ごと導入（REA 導入済み）。rea は既導入。"
+    },
+    {
+      "id": "opencode-v628-v625-1-arg-mapping-20261121",
+      "timestamp": "2026-11-22T20:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v628",
+        "racesexmenu",
+        "pane",
+        "todo-96"
+      ],
+      "content": "2026-11-21 v628 裁定＝V-625-1: 0x5C4340 の引数対応（U31・ai-todo #96）。成果物 tmp/re/v628_v625_1_arg_mapping_ruling.md・台帳 row603。probe u89_1/u90_1 EXIT=0。①[確定(命令)] prologue 引数対応: ret 0x14=5引数。arg1=[esp+0x34]=parent tile／arg2=[esp+0x38]=name／arg3=[esp+0x3C]=未使用／arg4=[esp+0x40]=id／arg5=[esp+0x44]=未使用。②[部分確定] 21 サイトの引数出所: arg1=レジスタ([esi+0x28]=window)／arg2,arg3=スタックローカル(sub esp,8 の一時 BSStringT=name)／arg4(id)=レジスタ edi／arg5=edi。edi の代入は builder 内 3 箇所のみで最後が 0x5CA1C1 mov edi,[ebp+0xe8]（ebp=player）＝Character[0xE8]。③[未確定] V-628-1: arg4 が 21 サイトで同値となり pane ごとの id と矛盾。完全な symbolic stack simulation が必要。推測で埋めない。④[確定(命令)] 副産物: item builder 0x5C93F0 は ret 0x18=6引数で item index を push imm(0..0x36) で渡し、counter 0xB3B5D4 を +2。counter は pane で +1 / item で +2、リセットは 0x5C4F3C(mov [0xB3B5D4],0xC8=200)。0x5C4480=ret 0x1C、0x5C4800=ret 0xC、0x585410=ret 0xC。"
     }
   ],
   "metadata": {
-    "totalEntries": 1051,
+    "totalEntries": 1052,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-22T18:00:00Z",
-    "entry_count": 1051,
-    "last_updated": "2026-11-22T18:00:00Z"
+    "lastUpdated": "2026-11-22T20:00:00Z",
+    "entry_count": 1052,
+    "last_updated": "2026-11-22T20:00:00Z"
   }
 }
