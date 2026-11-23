@@ -64,10 +64,10 @@
 ## C. Race ページ説明文本体の供給元（#177）`[部分確定]`
 
 - Race ページの Text（builder 生成サイト `0x5CA60B`）の string は **`[0xB38FB0]`**（実行時ポインタ）。
-- `[0xB38FB0]` の参照元: `FUN_005ca010`（builder）, `FUN_005c7ba0`, `FUN_005cda30`。→ builder が初期 string を入れ、**`0x5C7BA0` が更新**する可能性が高い（`0x5C7BA0` は race 一覧の populate も担う）。
-- `0xFB4`(user6) の実際の用途: `FUN_005C7BA0` が **race/項目名**を入れる（`0x5C8100 SetString(tile,0xFB4,名前)`）、builder が Main ボタン名を入れる（`0x5CBD21`）。
-  → **`0xFB4` は「項目の表示名」であって説明文本体ではない**（v283 の「sRaceDescription→0xFB4」は見出し/項目名側の記録）。
-- → 本文明の書手・trait は **V-660-C1 [未確定]**（次段: `0x5C7BA0` の `[0xB38FB0]` サイトと RACE DESC の供給元）。
+- **`0x5C7BA0` は RACE の `DESC` サブレコードを読む**（`0x5C81E5: push 0x43534544`＝ASCII **"DESC"**、`ecx=[ebp+0x24]+0x24` のメソッド `[[ebp+0x24]+0x10]` を呼ぶ）。取得結果は **`0xFB4`(user6) へ `SetString`**（`0x5C8205`/`0x5C8236` の 2 サイト、`push 0xFB4`）。**DESC が無い場合のフォールバックは `0xA36430` = `" "`（空白 1 文字）**。
+- したがって **`0xFB4`(user6) は「項目の表示名」と「説明文本体」の両方**に使われる（tile ごとに違う）。v283 の「sRaceDescription→0xFB4」は本文明側と整合する。
+- 見出し "Race Description"（`sRaceDescription` GMST）は別（builder が `0x5CA60B` で `[0xB38FB0]` を text の string に入れる）。
+- → **残**: 説明文を受ける tile の特定（`0x5C3440` に渡る `[0xB38F78]`/tile#10 の実名）と、見出し/本体の最終的な割当 → **V-660-C1 [部分確定]（DESC の書手と trait は判明）**。
 
 ---
 
@@ -78,7 +78,7 @@
 | V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
 | V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
 | V-660-B1 | Main "Eyes" トグルの制御対象（汎用経路 `0x5CC8BA`〜） | `[未確定]` |
-| V-660-C1 | Race 説明文本体の書手と trait（`0x5C7BA0` の `[0xB38FB0]` サイト／RACE DESC 供給元） | `[未確定]` |
+| V-660-C1 | Race 説明文本体の供給元。**DESC サブレコード（`0x43534544`）を `0x5C7BA0` が読み `0xFB4`(user6) へ SetString**（フォールバック `" "`=`0xA36430`）まで判明。残は受ける tile の実名と見出し/本体の割当 | `[部分確定]` |
 
 ## spec 訂正
 

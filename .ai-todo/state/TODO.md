@@ -2,6 +2,18 @@
 
 ## Tasks
 
+- [ ] **#177** 【RE レーン依頼・中優先】Race ページの説明文本体（選択種族の DESC）の供給元と流し込み先 trait。#96 で「見出しのみ描画」とした箇所の解消。既知: Race ページの Text 行の string は sRaceDescription="Race Description"（見出し）。実際の種族説明は選択種族の DESC をコードが流し込む（v610 §1.2 注記）。v283 は sRaceDescription GMST の読者 → chargen 変数 `0xFB4` と記録。未確定: (1)選択種族の説明文（RACE レコードの DESC サブレコード等）を EXE がどの tile のどの trait へ書くか（書手アドレスと trait id）。`0xFB4`（user6 相当）が sRaceDescription の**見出し**用か本文明用か、実際の用途 (2)見出し GMST と本文明の関係、XML の該当 tile（`race_name` 等）との対応 (3)本文明が更新されるタイミング（種族トグル変更時か、ページ表示時か）。根拠: tmp/re/v610_racesexmenu_page_rows_ruling.md §1.2、v283_v62_residuals4.md §項目1、v296 §6-1。対象 md5 cdd2f0c5eff198d4f26b7b5b54ce4930。 `#RE` `#chargen` `#oblivion` `#string`
+  > 【2026-11-23 送信済み】RE セッション（ses_e55f5e1e1ffeqZJLiJKVdeB9rI）へ依頼を送信（opencode api post /api/session/<id>/prompt・returncode 0・メッセージ id msg_208322599001Wc64CfPfHcV9Yl）。#175/#176/#177 の3件を1プロンプトにまとめて送付（依頼A/B/C）。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。受領は tmp/re の v635 以降を待つ。
+  > v660 裁定: Race ページ Text（builder 0x5CA60B）の string は [0xB38FB0]（実行時ポインタ）。参照元は FUN_005ca010（builder）/FUN_005c7ba0/FUN_005cda30 → builder が初期値を入れ 0x5C7BA0 が更新する可能性が高い。0xFB4(user6) は FUN_005C7BA0 が race/項目名を、builder が Main ボタン名を入れる＝『項目の表示名』であって説明文本体ではない（v283 の sRaceDescription→0xFB4 は見出し/項目名側）。本文明の書手・trait は V-660-C1 [未確定]（次段: 0x5C7BA0 の [0xB38FB0] サイトと RACE DESC 供給元）。成果物 tmp/re/v660_random_reset_eyes_race_ruling.md §C、probe D:\re\v660_probe.py（EXIT=0）、台帳 row658。
+
+- [ ] **#176** 【RE レーン依頼・中優先】Main ページの Toggle "Eyes"（sEyes）が何を制御するか（V-610-A1 の決着）。#96 で「値リストを作らず行のみ」とした箇所の解消。既知: Main の Toggle ラベルは sEyes（v610 §1.2）。未確定: (1)このトグルの id（`GetTile(elem,page).user0` と比較される値）と HandleClick `0x5CC200` 内の該当分岐アドレス (2)クリック時に書く trait（user 番号）と値、および XML のどの `<visible>`/式に効くか (3)状態が chargen データ（顔/種族/性別）や TESNPC へ与える効果（見た目のみか）(4)生成直後の既定値。根拠: tmp/re/v610_racesexmenu_page_rows_ruling.md §1.2、v623 §3（HandleClick の buttonID チェーン）。対象 md5 cdd2f0c5eff198d4f26b7b5b54ce4930。 `#RE` `#chargen` `#oblivion` `#toggle`
+  > 【2026-11-23 送信済み】RE セッション（ses_e55f5e1e1ffeqZJLiJKVdeB9rI）へ依頼を送信（opencode api post /api/session/<id>/prompt・returncode 0・メッセージ id msg_208322599001Wc64CfPfHcV9Yl）。#175/#176/#177 の3件を1プロンプトにまとめて送付（依頼A/B/C）。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。受領は tmp/re の v635 以降を待つ。
+  > v660 裁定: Main 'Eyes' トグル（id 204）専用の分岐は存在しない [確定(命令)(negative)]。FUN_005CC200 が arg1(ebx) と比較する即値は 0x5A(90)/0xA(10)/0x62(98) の 3 つのみ（全走査）。クリックは汎用経路 0x5CC8BA〜（[0xB38FF0] の tile の 0xFA8=id を読む）で処理される。→ 制御対象は id からは決まらず V-610-A1 は V-660-B1 として [未確定] 継続（次段: 汎用経路 0x5CC8BA〜 の解析）。成果物 tmp/re/v660_random_reset_eyes_race_ruling.md §B、probe D:\re\v660_probe.py（EXIT=0）、台帳 row658。
+
+- [ ] **#175** 【RE レーン依頼・中優先】RaceSexMenu の Random/Reset 実行本体の全容（確認ダイアログ `FUN_00579C10` 経由）。#96 で「確認ダイアログ未移植」として止めた箇所の解消。既知（v570 §4）: Random=`0x579C10(text=[0xB39450]="Randomize face?", yes=[0xB38CF8], no=[0xB38D00], flag=1, cb=0x5C9FC0)`＋flg `[0xB3B4C8]`／Reset=`0x579C10(text=[0xB39448]="Reset face?", flag=1, cb=0x5C9F70)`＋flg `[0xB3B4C9]`。cb は al==2(Yes) で実行本体へ jmp。`FUN_00579C10`=message_menu.xml 汎用ダイアログ（b20 §）。未確定: (1)Random 本体 `0x5C9CD0`／Reset 本体 `0x5C9C70` が触る trait（顔モーフ軸 user7=0xFB5 等）の列挙と書込値の範囲/分布（一様乱数か軸別既定値表か）(2)Reset が戻す既定値の実体（0.5 固定か軸別テーブルか・性別/種族依存か、テーブルならアドレスと要素数）(3)乱数源関数とスケール (4)終端の再確認ループ（0x578D70()==2）の意図とキャンセル時に状態が不変であることの確認 (5)yes/no ボタン id と message_menu.xml 対応（al==2=Yes の根拠）＋文字列2件の完全形。根拠: tmp/re/v570_racenotify_dispatch_ruling.md §4、b20_impl_5071d0.md。対象 md5 cdd2f0c5eff198d4f26b7b5b54ce4930。 `#RE` `#chargen` `#dialog` `#oblivion`
+  > 【2026-11-23 送信済み】RE セッション（ses_e55f5e1e1ffeqZJLiJKVdeB9rI）へ依頼を送信（opencode api post /api/session/<id>/prompt・returncode 0・メッセージ id msg_208322599001Wc64CfPfHcV9Yl）。#175/#176/#177 の3件を1プロンプトにまとめて送付（依頼A/B/C）。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。受領は tmp/re の v635 以降を待つ。
+  > v660 裁定: Random 本体=0x5C9CD0（cb 0x5C9FC0 が 0x5C9FFC: jmp）/ Reset 本体=0x5C9C70（cb 0x5C9F70 が 0x5C9FAC: jmp）。Random が書く trait は 0xFB1(user3) のみ（顔モーフ軸 0xFB5 等への直接書込なし）。Reset 本体は trait 非書込で 0x521E40(actor)→0x5C91E0→0x5C7BA0(base,0) へ委譲。定数 15.0/50.0/-2.0/0.25/0.0。cb は 0x578D70()!=2 でフラグ [0xB3B4C8]/[0xB3B4C9] を 0 にして ret＝キャンセル時は本体不実行（状態不変）。ダイアログ FUN_00579C10（message_menu.xml）のボタンは button_1..button_10 = id 4..13、Yes は 0x578D70()==2（コールバック側の規約）。成果物 tmp/re/v660_random_reset_eyes_race_ruling.md、probe D:\re\v660_probe.py（EXIT=0）、台帳 row658。残点 V-660-A1（Reset 既定値の実体=0x5528F0/0x5538D0）/ V-660-A2（乱数源と分布）は [未確定]。
+
 - [ ] **#174** 【RE レーン依頼・中優先】LoadingMenu のエンジン層（v611 §4.3-4.4 の残点）を確定する。#170 の (B) として port 実装が見送られた項目。質問3点: ①`0xB14120..0xB1412C`（fPercentageOfBar0..3 = 0.06/0.35/0.44/0.15）の**読み手が未同定**（tmp/re 全走査で v611 §4.2 の定義1箇所のみ）。ctor の合計検証以外に、どの関数がこの4値を読み、何を制御するのか（スライド滞留時間の配分か、4枚のスライド画像の選択比率か）を xref で確定してほしい。②`0x5AD780`（RefreshScreen）が step ごとに `user1`(0xFAF, 背景画像パス) へ何を書き込むか。4段階のスライド画像が存在するのか、`load_in_game_default.dds` 固定なのか。③`user3`(0xFB1) の書き手は LoadingMenu Tick（shownStep, 0..99 のステップ番号）だけか、それとも loader `0x5AD440` が実ロード進捗（0..100）も書くのか。XML 側は `width = user3/user4*180`（user4=100）なので、user3 が『ステップ番号』か『実進捗』かで port の setProgress の意味が変わる。根拠: tmp/re/v611_obng_crosscheck_ruling.md §4.2-4.4、tools/BSAFileExtractor/extracted/menus/loading_menu.xml:129-141。port 側は現状『外部 setProgress(0..1) の連続バー』で、正典の step 駆動には未移行（#170 の (A) 視覚層のみ実装済み）。 `#RE` `#loadingmenu` `#oblivion` `#runtime`
 
 - [ ] **#173** 【人間承認待ち・中優先】docs/RE_EXE_REPORT.md の Menu vtable slot 3 の誤ラベル訂正（RE v623 §0・§2 が指摘）。現状は slot 3 を『init』、slot 11 を『handler』と記述しているが、xOBSE 一次資料＋我々の実読で正しくは slot3=HandleClick（例 RaceSexMenu=0x5CC200）／slot11=Update 相当（例 RaceSexMenu=0x5CE570）／slot12=HandleKeyboardInput（0x5C3DD0）。該当箇所: 2977行（列ヘッダ `[0] dtor | [3] init | [11] handler`）／3040行（`[3]=FUN_005cc200（大規模キャラクタ生成初期化）`）／3123行 §29.4（`**[3] init FUN_005cc200**: 1586 行の大規模初期化`）／3078行 §29.2 HUDMainMenu（`[3] init FUN_005a68c0`）／3097行 §29.3 DialogMenu（`[3] init FUN_0059f010`）。正しくは RaceSexMenu の構築＝non-virtual builder FUN_005ca010（chargen 専用・0x40C 直値。v615）で、FUN_005cc200 は buttonID を `GetTile(elem,page).user0` と比較して分岐するクリックハンドラ（v623 §3）。#104 により docs/RE_EXE_REPORT.md は自動コミット対象外のため承認が必要。訂正は他メニュー（HUDMain/Dialog 等）の slot3 記述にも波及するため、§29 全体の整合を取る。根拠: tmp/re/v623_user_handleclick_xmlids_nametable_ruling.md §0/§2/§3。 `#approval` `#docs` `#oblivion` `#re` `#vtable`
@@ -3542,6 +3554,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3565,4 +3582,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-23 14:54:55
+**ai-todo** | Last Updated: 2026-11-23 20:50:50
