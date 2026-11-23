@@ -241,6 +241,9 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-653-1 | `[0xB39440]`（`race_name` の値の片方）の設定元。`.data` 実行時初期化で `.text` に絶対書き込み 0 件（§10.1） | `[未確定]` |
 | V-653-2 | **選択 race の出所は判明**（Race トグル id 211、レンジ/文字列は `FUN_005C7BA0` が `[player+0xE8]+0xA8` のリンクリストから設定＝§10.4）。残るは `[0xB37D00]`（選択 race FormID）の**書き手**と、commit `0x5C9CD0` の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割 | `[部分確定]` |
 | V-653-3 | 名前検証の成功/失敗時のダイアログ文言と `0x5C2BA0` callback の動作（§10.3） | `[未確定]` |
+| V-654-1 | **close**。port に race 受け皿あり（一覧 `ESMManager::getAllRaces()` ＋ playable フィルタ `(flags & 1u)`、適用 `NpcManager::initializePlayerFromESM()` ＋ `Player::raceFormID`）。§10.5 | `[確定(データ)]` |
+| V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
+| V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -465,4 +468,19 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
   - `0x5C80EE`〜`0x5C8100`: `[node+0x1C]`（race 名。0 なら空文字 `0xA2F7EC`）→ `push 0xFB4` → **`SetString(tile, user6, race名)`**。
 - したがって **race 選択は Race トグル（id 211）の左右巡回**で、レンジは「プレイヤーの選択可能 race 数」、表示は race 名。選択結果は commit 時に読む。
 - `FUN_005C7BA0` はこのほか `0xFB3`/`0xFB4` を複数サイトで書く（`0x5C7BA0` の head 内 4+ sites）＝トグル群の範囲と文字列をまとめて設定する関数。
+
+### 10.5 port 側の race 受け皿（item 1 の答え）`[確定(データ)]`
+
+**両方あり**（Legacy UI `ui_character_creation.cpp` / `renderer.cpp` が既に使用中）:
+
+| 用途 | API | 根拠 |
+|---|---|---|
+| race 一覧 | `ESMManager::getAllRaces()` → `std::vector<RaceData>` | `esm_reader.h:1665`、`ui_character_creation.cpp:715` |
+| playable フィルタ | `(race.flags & 1u)` | `ui_character_creation.cpp:721`（原作の race リスト走査 bit `[TESRace+0x70]` bit0 = DATA byte32 bit0, RE v369 と同一） |
+| race 適用 | `NpcManager::initializePlayerFromESM(player, raceFormID, classFormID, birthsignFormID)` | `npc_manager.h:77` |
+| 選択 race の保持 | `Player::raceFormID` | `npc.h:31`、`renderer.cpp:924` |
+| 名前の適用 | `player->name = character.name` | `renderer.cpp:922` |
+
+- `RaceData` に `fullName` / `description` / `maleModelPath` / `femaleModelPath` / `attr*` / `startingHealth` / `spellFormIDs` / `skillBonuses`（`esm_reader.h:692`）＝トグルの表示（race 名）と `Race Description` text に使える。
+- → **`V-654-1` はクローズ**。`commit()` は選択 race を適用できる（Legacy と同じ `player->raceFormID` ＋ `initializePlayerFromESM`）。
 
