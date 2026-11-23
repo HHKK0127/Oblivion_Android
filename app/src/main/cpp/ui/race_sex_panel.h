@@ -224,10 +224,26 @@ public:
     // listindex -> runtime id (build order), or -1 when out of range.
     int elementIdAt(int slot, int row) const;
 
-    // §9.4: race_scroll_bar.user7 (rows scrolled). Not wired to input yet
-    // (TBD: the scroll bar's own hit-test), so it stays 0 in the app.
-    float scrollRows() const { return scroll_rows_; }
-    void setScrollRows(float rows) { scroll_rows_ = rows; }
+    // §9.4: race_scroll_bar.user7 (rows scrolled). Clamped to
+    // [0, max(0, itemCount(current_page_) - visibleRows)]; a change re-lays out
+    // through the on-layout-changed hook (set by instantiate()).
+    int scrollRows() const { return scroll_rows_; }
+    void setScrollRows(int rows);
+
+    // --- Scroll input (spec §9.7) ---
+    // A touch inside the scroll-bar rect captures the drag: Δy / (93*scale) rows
+    // are accumulated from the row the drag started on. The bar only exists when
+    // the page overflows the window.
+    bool isScrollBarHit(float screen_x, float screen_y) const;
+    bool beginScrollDrag(float screen_x, float screen_y);
+    void updateScrollDrag(float screen_y);
+    void endScrollDrag();
+    bool isScrollDragging() const { return scroll_dragging_; }
+
+    // The device-only layout hook: instantiate() points this at applyLayout().
+    // The host suite leaves it empty, so the pure logic links without the GL
+    // stack.
+    void setOnLayoutChanged(std::function<void()> cb) { on_layout_changed_ = std::move(cb); }
 
     // Pane-local (race_window) hit test -> runtime id; DONE_ID for the Done
     // button; -1 for the scroll gutter, empty rows, or a hidden panel.
@@ -311,8 +327,17 @@ private:
     // row (arg1 == 90), i.e. the chargen exit.
     int current_page_ = PAGE_MAIN;
     std::function<void()> on_done_;
-    // §9.4 scroll offset in rows (race_scroll_bar.user7). 0 = top.
-    float scroll_rows_ = 0.0f;
+    // §9.4 scroll offset in rows (race_scroll_bar.user7). 0 = top. int: the
+    // original stores whole rows.
+    int scroll_rows_ = 0;
+    // Device-only layout hook (see setOnLayoutChanged).
+    std::function<void()> on_layout_changed_;
+
+    // Scroll-drag state (spec §9.7).
+    bool scroll_dragging_ = false;
+    float scroll_drag_last_y_ = 0.0f;
+    float scroll_drag_accum_px_ = 0.0f;
+    int scroll_drag_start_rows_ = 0;
 
     // Device-only widgets for the pane-external controls (spec §9.3). Created by
     // instantiate(); null until then (and on the host, which never instantiates).

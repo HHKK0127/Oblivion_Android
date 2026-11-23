@@ -8234,17 +8234,22 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
     if (isPanelChargenActive()) {
-        // spec §9: screen -> pane-local (hitTestScreen), row/listindex -> id.
-        // Done is the race_button_done rect (id 90), checked inside hitTest()
-        // before the pane, so a tap on it drives the chain's Done path.
+        // spec §9.7: the scroll bar owns the touch first, so a drag on it never
+        // falls through to a Done/pane hit. The pane hit uses hitTestScreen,
+        // which shares the bar's transform.
         if (action == 0 || action == 5) {
-            const int id = raceSexPanel->hitTestScreen(x, y);
-            if (id >= 0) {
-                raceSexPanel->handleClick(id);
-                // A tab click changes the current page; re-place and re-cull the
-                // widgets (spec §9.5).
-                raceSexPanel->applyLayout();
+            if (!raceSexPanel->beginScrollDrag(x, y)) {
+                const int id = raceSexPanel->hitTestScreen(x, y);
+                if (id >= 0) {
+                    // handleClick resets the scroll and fires the layout hook on
+                    // a page change (spec §9.7).
+                    raceSexPanel->handleClick(id);
+                }
             }
+        } else if (action == 2) {
+            raceSexPanel->updateScrollDrag(y);
+        } else if (action == 1 || action == 3 || action == 6) {
+            raceSexPanel->endScrollDrag();
         }
         return;
     }

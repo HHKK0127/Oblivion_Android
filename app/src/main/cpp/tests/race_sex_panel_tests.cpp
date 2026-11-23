@@ -447,13 +447,16 @@ bool RaceSexPanelTests::runAllTests() {
         // row == count -> -1 (6 items * 93).
         record("hitTest: row == count -> -1", g.hitTest(10, 6 * 93) == -1);
 
-        // §9.4 scroll rows 2: the same y lands two rows lower.
-        g.setScrollRows(2.0f);
-        record("hitTest: scroll_rows 2 -> row 2", g.hitTest(10, 0) == 203,
+        // §9.4 scroll rows 2: the same y lands two rows lower. Main has only 6
+        // items (max scroll 0), so use Shape (9 items, max scroll 3).
+        g.setCurrentPage(Page::PAGE_SHAPE);
+        g.setScrollRows(2);
+        record("hitTest: scroll_rows 2 -> row 2", g.hitTest(10, 0) == 232,
                "got " + std::to_string(g.hitTest(10, 0)));
         // Above the scrolled viewport -> -1.
         record("hitTest: y above scrolled viewport -> -1", g.hitTest(10, -200) == -1);
-        g.setScrollRows(0.0f);
+        g.setScrollRows(0);
+        g.setCurrentPage(Page::PAGE_MAIN);
 
         // §9.2 right gutter (scroll bar side) -> -1; the same x is live on a
         // 6-item page (no gutter) so the difference is the gutter itself.
@@ -510,17 +513,20 @@ bool RaceSexPanelTests::runAllTests() {
         p.setVisible(true);
         p.setCurrentPage(Page::PAGE_MAIN);
 
-        // Canvas rect (spec §9.1): y = row*93 - scroll*93.
+        // Canvas rect (spec §9.1): y = row*93 - scroll*93. Shape (9 items) can
+        // scroll; Main (6 items) is clamped to 0.
         const auto c0 = p.itemRectCanvas(Page::PAGE_MAIN, 0);
         const auto c5 = p.itemRectCanvas(Page::PAGE_MAIN, 5);
         record("itemRectCanvas: item 0 y=0, item 5 y=465",
                close(c0.y, 0.0f) && close(c5.y, 465.0f),
                "y0=" + std::to_string(c0.y) + " y5=" + std::to_string(c5.y));
-        p.setScrollRows(2.0f);
-        const auto cs = p.itemRectCanvas(Page::PAGE_MAIN, 0);
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        p.setScrollRows(2);
+        const auto cs = p.itemRectCanvas(Page::PAGE_SHAPE, 0);
         record("itemRectCanvas: scroll=2 -> item 0 y=-186", close(cs.y, -186.0f),
                "y=" + std::to_string(cs.y));
-        p.setScrollRows(0.0f);
+        p.setScrollRows(0);
+        p.setCurrentPage(Page::PAGE_MAIN);
 
         // Device rect: canvas -> layoutScale + panelOrigin. 1280x960 is 1:1.
         const auto d0 = p.itemRectDevice(Page::PAGE_MAIN, 0);
@@ -531,11 +537,13 @@ bool RaceSexPanelTests::runAllTests() {
                "d0=(" + std::to_string(d0.x) + "," + std::to_string(d0.y) + "," +
                    std::to_string(d0.w) + "," + std::to_string(d0.h) + ") d5y=" +
                    std::to_string(d5.y));
-        p.setScrollRows(2.0f);
-        const auto ds = p.itemRectDevice(Page::PAGE_MAIN, 0);
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        p.setScrollRows(2);
+        const auto ds = p.itemRectDevice(Page::PAGE_SHAPE, 0);
         record("itemRectDevice: scroll=2 -> device y=9", close(ds.y, 9.0f),
                "y=" + std::to_string(ds.y));
-        p.setScrollRows(0.0f);
+        p.setScrollRows(0);
+        p.setCurrentPage(Page::PAGE_MAIN);
 
         // 1920x1080: everything scales by 1.125 and shifts by the origin.
         p.setScreenSize(1920, 1080);
@@ -561,14 +569,14 @@ bool RaceSexPanelTests::runAllTests() {
                    p.isElementVisible(Page::PAGE_SHAPE, 5) &&
                    !p.isElementVisible(Page::PAGE_SHAPE, 6) &&
                    !p.isElementVisible(Page::PAGE_SHAPE, 8));
-        p.setScrollRows(2.0f);
+        p.setScrollRows(2);
         record("culling: scroll=2 hides rows 0/1, keeps 2..7, hides 8",
                !p.isElementVisible(Page::PAGE_SHAPE, 0) &&
                    !p.isElementVisible(Page::PAGE_SHAPE, 1) &&
                    p.isElementVisible(Page::PAGE_SHAPE, 2) &&
                    p.isElementVisible(Page::PAGE_SHAPE, 7) &&
                    !p.isElementVisible(Page::PAGE_SHAPE, 8));
-        p.setScrollRows(0.0f);
+        p.setScrollRows(0);
 
         // Non-current pages are never draw targets.
         record("culling: non-current page is hidden",
@@ -592,6 +600,137 @@ bool RaceSexPanelTests::runAllTests() {
         const int barHit = p.hitTestScreen(bar.x + bar.w * 0.5f, bar.y + bar.h * 0.5f);
         record("scrollBarRectDevice center -> hitTestScreen == -1 (gutter)", barHit == -1,
                "hit=" + std::to_string(barHit));
+    }
+
+    // --- scroll input (spec §9.7; pure logic) ---
+    {
+        const auto close = [](float a, float b) { return std::fabs(a - b) < 1e-3f; };
+        (void)close;
+
+        RaceSexPanel p;
+        p.setScreenSize(1280, 960);  // scale 1
+        p.init();
+        p.setVisible(true);
+
+        // clamp: [0, count - visibleRows].
+        p.setCurrentPage(Page::PAGE_MAIN);  // 6 items -> max 0
+        p.setScrollRows(-1);
+        const bool mainLo = (p.scrollRows() == 0);
+        p.setScrollRows(999);
+        record("setScrollRows: count<=6 stays 0", mainLo && p.scrollRows() == 0,
+               "v=" + std::to_string(p.scrollRows()));
+
+        p.setCurrentPage(Page::PAGE_SHAPE);  // 9 items -> max 3
+        p.setScrollRows(999);
+        const bool shapeHi = (p.scrollRows() == 3);
+        p.setScrollRows(-1);
+        const bool shapeLo = (p.scrollRows() == 0);
+        record("setScrollRows: Shape clamps to [0,3]", shapeHi && shapeLo,
+               "hi=" + std::to_string(shapeHi) + " lo=" + std::to_string(shapeLo));
+
+        // The layout hook fires only on an actual change.
+        int layouts = 0;
+        p.setOnLayoutChanged([&layouts]() { ++layouts; });
+        p.setScrollRows(0);  // no change
+        const bool noChange = (layouts == 0);
+        p.setScrollRows(1);  // change
+        const bool oneChange = (layouts == 1);
+        p.setScrollRows(1);  // no change
+        record("setScrollRows: re-layout only on change",
+               noChange && oneChange && layouts == 1, "layouts=" + std::to_string(layouts));
+
+        // Bar hit-testing.
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        p.setScrollRows(0);
+        const auto bar = p.scrollBarRectDevice();
+        const float bx = bar.x + bar.w * 0.5f;
+        const float by = bar.y + 10.0f;
+        record("isScrollBarHit: bar centre captured", p.isScrollBarHit(bx, by));
+        record("isScrollBarHit: a pane row is not the bar",
+               !p.isScrollBarHit(100.0f, 300.0f));
+        p.setCurrentPage(Page::PAGE_MAIN);
+        const bool noBar6 = !p.isScrollBarHit(bx, by);
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        record("isScrollBarHit: 6-item page has no bar", noBar6);
+
+        // +93px drag = +1 row (scale 1), and back.
+        p.setScrollRows(0);
+        const bool captured = p.beginScrollDrag(bx, by);
+        p.updateScrollDrag(by + 93.0f);
+        const bool dragDown = (p.scrollRows() == 1);
+        p.updateScrollDrag(by);
+        const bool dragBack = (p.scrollRows() == 0);
+        p.endScrollDrag();
+        record("drag: +93px -> +1 row, back -> 0", captured && dragDown && dragBack,
+               "down=" + std::to_string(dragDown) + " back=" + std::to_string(dragBack));
+
+        // -93px -> -1 row (from scroll 2).
+        p.setScrollRows(2);
+        p.beginScrollDrag(bx, by);
+        p.updateScrollDrag(by - 93.0f);
+        const bool dragUp = (p.scrollRows() == 1);
+        p.endScrollDrag();
+        record("drag: -93px -> -1 row", dragUp, "v=" + std::to_string(p.scrollRows()));
+
+        // A drag that does not start on the bar is not captured.
+        record("beginScrollDrag: off-bar -> false",
+               !p.beginScrollDrag(100.0f, 300.0f) && !p.isScrollDragging());
+
+        // scale 1.125: the row pitch scales with layoutScale.
+        p.setScreenSize(1920, 1080);
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        p.setScrollRows(0);
+        const auto bar2 = p.scrollBarRectDevice();
+        const float bx2 = bar2.x + bar2.w * 0.5f;
+        const float by2 = bar2.y + 10.0f;
+        p.beginScrollDrag(bx2, by2);
+        p.updateScrollDrag(by2 + 104.625f);  // exactly one row at 1.125
+        const bool dragHi = (p.scrollRows() == 1);
+        p.updateScrollDrag(by2 + 93.0f);     // 93px < one row -> still rounds to 1
+        const bool drag93 = (p.scrollRows() == 1);
+        p.endScrollDrag();
+        record("drag: 1.125 scale (104.625px / 93px) -> +1", dragHi && drag93,
+               "hi=" + std::to_string(dragHi) + " 93=" + std::to_string(drag93));
+        p.setScreenSize(1280, 960);
+
+        // The drag updates the culling.
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        p.setScrollRows(0);
+        const bool row0Before = p.isElementVisible(Page::PAGE_SHAPE, 0);
+        p.setScrollRows(2);
+        const bool rowsAfter = !p.isElementVisible(Page::PAGE_SHAPE, 0) &&
+                               p.isElementVisible(Page::PAGE_SHAPE, 2);
+        record("drag re-culls rows", row0Before && rowsAfter);
+
+        // A page switch resets the scroll (user7 is shared).
+        p.setScrollRows(2);
+        p.handleClick(90);  // Shape Done -> Face
+        record("page switch resets scroll to 0",
+               p.currentPage() == Page::PAGE_FACE && p.scrollRows() == 0,
+               "page=" + std::to_string(p.currentPage()) +
+                   " scroll=" + std::to_string(p.scrollRows()));
+
+        // A tap on the bar is captured, so Done(90) must not fire (the renderer's
+        // fall-through only runs when beginScrollDrag returns false).
+        RaceSexPanel q;
+        q.setScreenSize(1280, 960);
+        q.init();
+        q.setVisible(true);
+        int done = 0;
+        q.setOnDone([&done]() { ++done; });
+        q.setCurrentPage(Page::PAGE_SHAPE);
+        const auto qbar = q.scrollBarRectDevice();
+        const float qbx = qbar.x + qbar.w * 0.5f;
+        const float qby = qbar.y + qbar.h * 0.5f;
+        const bool qCaptured = q.beginScrollDrag(qbx, qby);
+        if (!qCaptured) {
+            const int id = q.hitTestScreen(qbx, qby);
+            if (id >= 0) q.handleClick(id);
+        }
+        q.endScrollDrag();
+        record("bar tap: captured, Done(90) not fired",
+               qCaptured && done == 0 && q.currentPage() == Page::PAGE_SHAPE,
+               "captured=" + std::to_string(qCaptured) + " done=" + std::to_string(done));
     }
 
     return getFailCount() == 0;

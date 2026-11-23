@@ -372,12 +372,18 @@ bool RaceSexPanel::handleClick(int arg1) {
                 if (row.next == -1) {
                     if (on_done_) on_done_();
                 } else {
+                    // §9.7: user7 is shared by every page, so a page switch starts
+                    // at the top rather than inheriting the previous offset.
                     current_page_ = row.next;
+                    scroll_rows_ = 0;
+                    if (on_layout_changed_) on_layout_changed_();
                 }
                 return true;
             }
         }
         current_page_ = PAGE_MAIN;
+        scroll_rows_ = 0;
+        if (on_layout_changed_) on_layout_changed_();
         return true;
     }
 
@@ -389,6 +395,8 @@ bool RaceSexPanel::handleClick(int arg1) {
         if (e && e->id == arg1) {
             if (row.target != -1) {
                 current_page_ = row.target;
+                scroll_rows_ = 0;
+                if (on_layout_changed_) on_layout_changed_();
             }
             return true;
         }
@@ -530,8 +538,7 @@ RaceSexPanel::RectF RaceSexPanel::scrollBarRectDevice() const {
 
 bool RaceSexPanel::isRowVisible(int row) const {
     if (row < 0) return false;
-    const int first = static_cast<int>(std::floor(scroll_rows_));
-    return row >= first && row < first + visibleRows();
+    return row >= scroll_rows_ && row < scroll_rows_ + visibleRows();
 }
 
 bool RaceSexPanel::isElementVisible(int slot, int row) const {
@@ -549,4 +556,49 @@ int RaceSexPanel::rowOfElement(int element_id) const {
     }
     return -1;
 }
+
+// ---------------------------------------------------------------------------
+// Scroll input (spec §9.7). Pure logic: the drag math and the clamp are
+// host-testable; only the re-layout behind setScrollRows is device-only.
+// ---------------------------------------------------------------------------
+
+void RaceSexPanel::setScrollRows(int rows) {
+    const int max_rows = std::max(0, itemCount(current_page_) - visibleRows());
+    if (rows < 0) rows = 0;
+    if (rows > max_rows) rows = max_rows;
+    if (rows == scroll_rows_) return;  // re-layout only on an actual change
+    scroll_rows_ = rows;
+    if (on_layout_changed_) on_layout_changed_();
+}
+
+bool RaceSexPanel::isScrollBarHit(float screen_x, float screen_y) const {
+    if (!isVisible()) return false;
+    // §9.2: the bar only exists when the page overflows the window.
+    if (itemCount(current_page_) <= SCROLL_VISIBLE) return false;
+    const RectF r = scrollBarRectDevice();
+    return screen_x >= r.x && screen_x < r.x + r.w && screen_y >= r.y &&
+           screen_y < r.y + r.h;
+}
+
+bool RaceSexPanel::beginScrollDrag(float screen_x, float screen_y) {
+    if (!isScrollBarHit(screen_x, screen_y)) return false;
+    scroll_dragging_ = true;
+    scroll_drag_last_y_ = screen_y;
+    scroll_drag_accum_px_ = 0.0f;
+    scroll_drag_start_rows_ = scroll_rows_;
+    return true;
+}
+
+void RaceSexPanel::updateScrollDrag(float screen_y) {
+    if (!scroll_dragging_) return;
+    scroll_drag_accum_px_ += screen_y - scroll_drag_last_y_;
+    scroll_drag_last_y_ = screen_y;
+    // One row is 93 canvas px; on screen that is ROW_HEIGHT * layoutScale().
+    const float row_px = static_cast<float>(ROW_HEIGHT) * layoutScale();
+    if (row_px <= 0.0f) return;
+    const float rows = scroll_drag_accum_px_ / row_px;
+    setScrollRows(scroll_drag_start_rows_ + static_cast<int>(std::lround(rows)));
+}
+
+void RaceSexPanel::endScrollDrag() { scroll_dragging_ = false; }
 

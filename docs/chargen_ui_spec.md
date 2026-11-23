@@ -235,8 +235,9 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-646-3 | fld 反復の増分定数の用途 | `[未確定]` |
 | V-629-1 | `player[0xE8]==-1` の実行時裏取り（pane id には不要） | `[未確定]` |
 | V-631-1b | `RaceSexPanel` の配線は **row651 で完了**（`ChargenUi::Panel`、console `chargenpanel`、Done=`setOnDone`→close）。device 実機での表示・タップ確認は**未実施**（`ChargenUi::Panel` は dev トグル既定 OFF） | `[確定(データ)]` |
-| V-652-1 | スクロールバー自身の hit-test（`user7` の更新）は**未実装**。`scrollRows()` は 0 固定で、`setScrollRows()` を呼ぶ経路が無い（TBD） | `[部分確定]` |
+| V-652-1 | **close**。スクロールバーの hit-test と `user7`（`scrollRows`）の更新を実装（§9.7: `isScrollBarHit`/`beginScrollDrag`/`updateScrollDrag`、クランプ、ページ切替で 0 リセット） | `[確定(データ)]` |
 | V-652-2 | **close**。`screen()` の canvas 1280x960 はアプリ既存規約（`ui_inventory_panel`）に追従して `[確定]` に上げ、描画側も同じ変換（`layoutScale`＋`panelOrigin`）を通した（§9.5） | `[確定(データ)]` |
+| V-652-3 | マウスホイール/キーボードによるスクロールは**対象外**（原典未計測）。ドラッグ入力のみ実装 | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -365,9 +366,19 @@ return elementIdAt(row)                        // §9.4
 - scroll 変化・ページ切替のたびに再計算（`applyLayout()`）。
 - **指示との差分**: 依頼時のテスト値「`visibleRows=7` で row 7 が非表示」は 1 大きい。`558/93 = 6`（python 検算）および `user8=6` に合わせて **6** を採用（row 6 が最初の非表示行）。
 
+### 9.7 scroll 入力（実装仕様）`[確定(データ)]`
+
+- `setScrollRows(int rows)`: `[0, max(0, itemCount(current_page_) - visibleRows)]` にクランプ。**値が変化したときだけ** layout hook（`setOnLayoutChanged` → `applyLayout()`）を呼ぶ。
+- ドラッグ: `scrollBarRectDevice()` 内の touch down で捕捉（`beginScrollDrag`）。`Δy / (93 * layoutScale())` を行数に換算し、ドラッグ開始行に加算（`lround`）。移動は `updateScrollDrag`、離すと `endScrollDrag`。
+- バーは `itemCount > SCROLL_VISIBLE(6)` のページにのみ存在（`isScrollBarHit` はそれ以外で false）。
+- **優先順位**: renderer は touch down で**まずバーを判定**し、捕捉できたら `hitTestScreen`/`handleClick` に流さない（バー上で Done を踏まない）。
+- **ページ切替で `scroll = 0` にリセット**（`user7` は 1 本の scrollbar を全ページが共有するため、前ページの値を引き継がない）`[部分確定]`。
+- **ホイールは対象外**（原典未計測）→ `V-652-3`。
+
 ### 9.6 結論
 
 - **`Element` に x/y/w/h を持たせない**。幾何は式（`x=0`, `w=pane幅`, `h=93`, `y=listindex*93`）から算出する。
 - `renderer.cpp` の Panel 分岐は `hitTestScreen(x,y)` → `handleClick(id)`（`id>=0` のときのみ）。ページが変わったら `applyLayout()` で再配置・再カリング。
 - **描画実装（row653）**: `RaceSexPanel::instantiate()`（device-only）が widget を作り、`applyLayout()` が §9.5b の矩形を適用して可視集合を決める。pane 外の Done / scroll bar も同じ変換を通す。`UIPanel` のタイトルバー/閉じるボタンは無効化（`setTitleBarHeight(0)`/`setCloseButtonVisible(false)`）。
 - host テストは**矩形と可視集合**まで（pixel 比較はしない。device 目視は人間ゲート）。
+- **scroll 入力（row654）**: `setScrollRows` のクランプ＋変化時 layout hook、`beginScrollDrag`/`updateScrollDrag`/`endScrollDrag`、バー優先の touch 分岐。ページ切替で scroll=0。ホイールは `V-652-3`。

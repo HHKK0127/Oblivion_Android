@@ -102,6 +102,10 @@ void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
     setTitleBarHeight(0.0f);
     setCloseButtonVisible(false);
 
+    // Page switches and scroll changes go through setScrollRows/handleClick, which
+    // call this hook to re-place and re-cull the widgets (spec §9.7).
+    setOnLayoutChanged([this]() { applyLayout(); });
+
     applyLayout();
 }
 
