@@ -58,4 +58,22 @@ void glUniform4fv(GLint, GLsizei, const GLfloat*) {}
 void glUniformMatrix4fv(GLint, GLsizei, GLboolean, const GLfloat*) {}
 void glUseProgram(GLuint) {}
 
+// UI-panel draw path (ui/ui_panel.cpp, ui/ui_component.cpp).
+void glGetBooleanv(GLenum, GLboolean* data) { if (data) *data = 0; }
+void glDisable(GLenum) {}
+void glEnable(GLenum) {}
+void glBlendFunc(GLenum, GLenum) {}
+void glUniform4f(GLint, GLfloat, GLfloat, GLfloat, GLfloat) {}
+void glDrawArrays(GLenum, GLint, GLsizei) {}
+void glActiveTexture(GLenum) {}
+void glUniform2f(GLint, GLfloat, GLfloat) {}
+void glUniform3f(GLint, GLfloat, GLfloat, GLfloat) {}
+void glDisableVertexAttribArray(GLuint) {}
+void glViewport(GLint, GLint, GLsizei, GLsizei) {}
+void glDepthFunc(GLenum) {}
+void glClear(GLbitfield) {}
+void glClearColor(GLfloat, GLfloat, GLfloat, GLfloat) {}
+void glScissor(GLint, GLint, GLsizei, GLsizei) {}
+void glUniformMatrix3fv(GLint, GLsizei, GLboolean, const GLfloat*) {}
+
 }  // extern "C"

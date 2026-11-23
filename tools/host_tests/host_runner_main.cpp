@@ -40,6 +40,7 @@
 #include "tests/dds_upload_tests.h"
 #include "tests/fader_slot_array_tests.h"
 #include "tests/input_router_tests.h"
+#include "tests/race_sex_panel_tests.h"
 
 // Print a suite summary and report whether it passed.
 static void runSuite(const char* name, bool ok, const std::string& summary, int& failed) {
@@ -286,6 +287,15 @@ int main() {
             DdsUploadTests t;
             const bool ok = t.runAllTests();
             runSuite("DdsUploadTests", ok, t.getSummary(), failed);
+        }
+
+        {
+            // RaceSexMenu chargen wizard (docs/chargen_ui_spec.md): 21 pages /
+            // 118 items with runtime ids, plus a full walk of both transition
+            // tables. No assets or device state needed.
+            RaceSexPanelTests t;
+            const bool ok = t.runAllTests();
+            runSuite("RaceSexPanelTests", ok, t.getSummary(), failed);
         }
 
         std::printf("\n=== HOST RUNNER: %s (%d suite(s) failed) ===\n", failed ? "FAILED" : "ALL GREEN", failed);
