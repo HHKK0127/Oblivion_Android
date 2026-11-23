@@ -26,6 +26,7 @@
 #include "../ui/video_display_ui.h"
 #include "../ui/controls_options_ui.h"
 #include "../ui/ui_pause_menu.h"
+#include "../ui/race_sex_panel.h"
 #include "../ui/menu_fade_system.h"
 #include "../ui/ui_message_box.h"
 #include "../ui/game_console.h"
@@ -135,6 +136,11 @@ private:
     std::unique_ptr<QuestUI> questUI;
     std::unique_ptr<InventoryUI> inventoryUI;
     std::unique_ptr<TextRenderer> textRenderer;
+    // Spec-faithful RaceSexMenu (docs/chargen_ui_spec.md) reconstruction. Declared
+    // right after textRenderer so it is destroyed BEFORE textRenderer: its
+    // setOnDone callback binds Renderer's `this` and its widgets borrow the
+    // TextRenderer, so Renderer (and textRenderer) must outlive it.
+    std::unique_ptr<RaceSexPanel> raceSexPanel;
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
     std::unique_ptr<SaveLoadUI> saveLoadUI;
@@ -221,7 +227,25 @@ private:
     std::unique_ptr<UIQuickKeysMenu> quickKeysMenuUI;
     std::unique_ptr<FastTravelController> fastTravelController;
     std::unique_ptr<UICharacterCreation> characterCreationUI;
-    bool showCharacterCreation = false;
+    // Which chargen UI owns the screen. One enum (not two bools) so the legacy
+    // panel and RaceSexPanel can never both be "active" — the gates below all go
+    // through the helpers so a divergence is a compile-time, not a behavioural,
+    // problem. None = chargen closed.
+    enum class ChargenUi { None, Legacy, Panel };
+    ChargenUi chargenUi_ = ChargenUi::None;
+    // All gates go through these so a divergence between them is impossible;
+    // Panel and Legacy are mutually exclusive by construction.
+    bool isChargenUiActive() const { return chargenUi_ != ChargenUi::None; }
+    bool isLegacyChargenActive() const {
+        return chargenUi_ == ChargenUi::Legacy && characterCreationUI &&
+               characterCreationUI->isVisible();
+    }
+    bool isPanelChargenActive() const {
+        return chargenUi_ == ChargenUi::Panel && raceSexPanel && raceSexPanel->isVisible();
+    }
+    // Switch the active chargen UI (creates + instantiates RaceSexPanel on first
+    // Panel use). Defined in renderer.cpp because it needs the complete types.
+    void setChargenUi(ChargenUi ui);
     bool hudVisible = true;
     // bCrossHair: when off, the crosshair is not drawn (also hidden behind menus).
     bool crosshairEnabled = true;

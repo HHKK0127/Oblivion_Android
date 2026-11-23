@@ -935,6 +935,7 @@ void GameConsole::registerBuiltinCommands() {
     registerCommand("closemenu", "Close current menu", [this](const std::vector<std::string>& args) { cmdCloseMenu(args); });
     registerCommand("message", "Show MessageMenu: message <text>[|option1|option2]", [this](const std::vector<std::string>& args) { cmdMessage(args); });
     registerCommand("debugmenu", "Toggle debug menu", [this](const std::vector<std::string>& args) { cmdDebugMenu(args); });
+    registerCommand("chargenpanel", "Toggle the RaceSexPanel chargen UI", [this](const std::vector<std::string>& args) { cmdChargenPanel(args); });
     registerCommand("vc", "Toggle/set the virtual controller: vc [on|off]", [this](const std::vector<std::string>& args) { cmdVirtualController(args); });
 
     // Phase 65: Extended Debug Commands
@@ -2707,6 +2708,15 @@ void GameConsole::cmdDebugMenu(const std::vector<std::string>& args) {
         appendOutput("Debug menu toggled");
     } else {
         appendOutput("Debug menu not connected");
+    }
+}
+
+void GameConsole::cmdChargenPanel(const std::vector<std::string>& args) {
+    if (gameRefs.toggleChargenPanel) {
+        gameRefs.toggleChargenPanel();
+        appendOutput("Chargen UI toggled (Legacy <-> RaceSexPanel)");
+    } else {
+        appendOutput("Chargen panel not connected");
     }
 }
 

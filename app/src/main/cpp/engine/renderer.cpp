@@ -915,7 +915,7 @@ bool Renderer::initGameSystems() {
             LOGW("CharacterCreation: AssetManager is not ready; ESM will be wired before New Game");
         }
         characterCreationUI->setOnConfirm([this](const CharacterStatus& character) {
-            showCharacterCreation = false;
+            chargenUi_ = ChargenUi::None;
             // Rename player, apply stats
             if (playerController && playerController->getPlayer()) {
                 Player* player = playerController->getPlayer().get();
@@ -2032,6 +2032,11 @@ bool Renderer::initGameSystems() {
     };
     refs.toggleDebugMenu = [this]() {
         if (debugMenu) debugMenu->toggle();
+    };
+    refs.toggleChargenPanel = [this]() {
+        // Dev switch for the chargen UI (default Legacy). Panel creates and
+        // instantiates RaceSexPanel on first use.
+        setChargenUi(chargenUi_ == ChargenUi::Panel ? ChargenUi::Legacy : ChargenUi::Panel);
     };
     refs.setTitlePlainStyle = [this](bool plain) {
         if (titleScreen) titleScreen->setPlainStyleDisabled(plain);
@@ -4995,7 +5000,7 @@ void Renderer::render(float deltaTime) {
                 return;
             }
             showTitleScreen = false;
-            showCharacterCreation = true;
+            chargenUi_ = ChargenUi::Legacy;
             if (characterCreationUI) {
                 characterCreationUI->setESMManager(&assetManager->getEsmManager());
                 characterCreationUI->open();
@@ -5050,9 +5055,13 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
         }
 
         // Character creation overlay on top of title screen
-        if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
+        if (isLegacyChargenActive()) {
             characterCreationUI->update(deltaTime);
             characterCreationUI->render();
+        }
+        if (isPanelChargenActive()) {
+            raceSexPanel->update(deltaTime);
+            raceSexPanel->render();
         }
 
         // Skip frame rate control for quick return
@@ -5427,8 +5436,7 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
     // field labels (#158), so it is dropped while that panel is up. The rest of
     // the time it behaves exactly as before; what belongs on the top left during
     // normal play is #156's call, not this one.
-    if (debugHUD && !(showCharacterCreation && characterCreationUI &&
-                      characterCreationUI->isVisible())) {
+    if (debugHUD && !isChargenUiActive()) {
         debugHUD->render();
     }
 
@@ -5502,8 +5510,7 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
                               (videoOptionsUI && videoOptionsUI->isVisible()) ||
                               (videoDisplayUI && videoDisplayUI->isVisible()) ||
                               (controlsOptionsUI && controlsOptionsUI->isVisible()) ||
-                              (showCharacterCreation && characterCreationUI &&
-                               characterCreationUI->isVisible());
+                              isChargenUiActive();
 
     // Render Phase 9 UI Framework components (overlays on top of existing UI)
     if (uiSystem && !saveLoadOpen) {
@@ -5638,9 +5645,13 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
     // Character creation is opened after the world is initialized, so it must
     // be rendered in the gameplay pass rather than only in the title-screen
     // pass. Keep it as the front-most modal overlay while it owns input.
-    if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
+    if (isLegacyChargenActive()) {
         characterCreationUI->update(deltaTime);
         characterCreationUI->render();
+    }
+    if (isPanelChargenActive()) {
+        raceSexPanel->update(deltaTime);
+        raceSexPanel->render();
     }
 
     // Frame rate control - enforce target FPS
@@ -8214,11 +8225,20 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
 
-    // Mirror the render gate (showCharacterCreation && isVisible()) so the panel
-    // cannot swallow touches while the character creation flow is not active.
-    if (showCharacterCreation && characterCreationUI && characterCreationUI->isVisible()) {
+    // Mirror the render gate so the panel cannot swallow touches while the
+    // character creation flow is not active.
+    if (isLegacyChargenActive()) {
         if (action == 0 || action == 5) {
             characterCreationUI->onTouchDown(x, y, pointerId);
+        }
+        return;
+    }
+    if (isPanelChargenActive()) {
+        // Dev-only overlay (default OFF). Widget layout / hit-test-to-id is not
+        // built yet, so a tap drives the chain's Done (arg1 == 90); this is what
+        // connects the Done exit (setOnDone -> close) end to end.
+        if (action == 0 || action == 5) {
+            raceSexPanel->handleClick(90);
         }
         return;
     }
@@ -8888,10 +8908,36 @@ void Renderer::startGame() {
 }
 
 bool Renderer::isCharacterNameInputActive() const {
-    // Mirror the render gate: the panel is only on screen when showCharacterCreation
-    // is set, and the keyboard belongs to it only while the NAME tab is selected.
-    return showCharacterCreation && characterCreationUI &&
-           characterCreationUI->isVisible() && characterCreationUI->isNameInputActive();
+    // Mirror the render gate: the keyboard belongs to the legacy NAME tab only.
+    return isLegacyChargenActive() && characterCreationUI->isNameInputActive();
+}
+
+void Renderer::setChargenUi(ChargenUi ui) {
+    // Single switch point: the two chargen UIs are mutually exclusive and
+    // RaceSexPanel is created + instantiated before it is first shown.
+    if (ui == ChargenUi::Panel) {
+        if (!raceSexPanel) {
+            raceSexPanel = std::make_unique<RaceSexPanel>();
+            raceSexPanel->setScreenSize(static_cast<int>(screenWidth),
+                                        static_cast<int>(screenHeight));
+            raceSexPanel->init();
+            // Done (arg1 == 90 on Main) closes chargen. Renderer outlives the
+            // panel (both are members), so capturing `this` is safe.
+            raceSexPanel->setOnDone([this]() { setChargenUi(ChargenUi::None); });
+        }
+        if (textRenderer) {
+            raceSexPanel->instantiate(textRenderer.get());
+        }
+        raceSexPanel->setVisible(true);
+        if (characterCreationUI) characterCreationUI->close();
+    } else if (ui == ChargenUi::Legacy) {
+        if (raceSexPanel) raceSexPanel->setVisible(false);
+        if (characterCreationUI) characterCreationUI->open();
+    } else {
+        if (raceSexPanel) raceSexPanel->setVisible(false);
+        if (characterCreationUI) characterCreationUI->close();
+    }
+    chargenUi_ = ui;
 }
 
 void Renderer::setCharacterName(const std::string& name) {
@@ -9443,8 +9489,7 @@ bool Renderer::anyMenuOpen() const {
     if (videoDisplayUI && videoDisplayUI->isVisible()) return true;
     if (controlsOptionsUI && controlsOptionsUI->isVisible()) return true;
     if (settingsUI && settingsUI->isVisible()) return true;
-    if (showCharacterCreation && characterCreationUI &&
-        characterCreationUI->isVisible()) return true;
+    if (isChargenUiActive()) return true;
     if (saveLoadUI && saveLoadUI->isVisible()) return true;
     if (questUI && questUI->getVisibility()) return true;
     if (inventoryUI && inventoryUI->isVisible()) return true;
@@ -9565,8 +9610,7 @@ bool Renderer::handleBackKey() {
         //      pause-menu/exit branches and change mid-flow behavior. The
         //      original RaceSexMenu back/cancel behavior is pending the RE
         //      ruling (#130), so consume the key without changing state.
-        if (showCharacterCreation && characterCreationUI &&
-            characterCreationUI->isVisible()) {
+        if (isChargenUiActive()) {
             LOGI("handleBackKey: Character creation - back consumed (cancel behavior pending RE #130)");
             return true;
         }

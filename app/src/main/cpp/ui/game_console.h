@@ -172,6 +172,7 @@ public:
         std::function<void(const std::string&)> openMenu;
         std::function<void()> closeMenu;
         std::function<void()> toggleDebugMenu;
+        std::function<void()> toggleChargenPanel;
         std::function<void(bool)> setTitlePlainStyle;
         std::function<bool()> getTitlePlainStyle;
         // MessageMenu (0x3e9). Empty option labels fall back to sOk ("Ok"),
@@ -484,6 +485,7 @@ private:
     void cmdCloseMenu(const std::vector<std::string>& args);
     void cmdMessage(const std::vector<std::string>& args);
     void cmdDebugMenu(const std::vector<std::string>& args);
+    void cmdChargenPanel(const std::vector<std::string>& args);
     void cmdVirtualController(const std::vector<std::string>& args);
 
     // Sound commands
