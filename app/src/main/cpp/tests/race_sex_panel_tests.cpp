@@ -500,5 +500,99 @@ bool RaceSexPanelTests::runAllTests() {
                    s.hitTestScreen(362.5f, 219.375f) == 201);
     }
 
+    // --- layout / draw rects + row culling (spec §9.5; pure logic) ---
+    {
+        const auto close = [](float a, float b) { return std::fabs(a - b) < 1e-3f; };
+
+        RaceSexPanel p;
+        p.setScreenSize(1280, 960);  // scale 1, origin (100,195)
+        p.init();
+        p.setVisible(true);
+        p.setCurrentPage(Page::PAGE_MAIN);
+
+        // Canvas rect (spec §9.1): y = row*93 - scroll*93.
+        const auto c0 = p.itemRectCanvas(Page::PAGE_MAIN, 0);
+        const auto c5 = p.itemRectCanvas(Page::PAGE_MAIN, 5);
+        record("itemRectCanvas: item 0 y=0, item 5 y=465",
+               close(c0.y, 0.0f) && close(c5.y, 465.0f),
+               "y0=" + std::to_string(c0.y) + " y5=" + std::to_string(c5.y));
+        p.setScrollRows(2.0f);
+        const auto cs = p.itemRectCanvas(Page::PAGE_MAIN, 0);
+        record("itemRectCanvas: scroll=2 -> item 0 y=-186", close(cs.y, -186.0f),
+               "y=" + std::to_string(cs.y));
+        p.setScrollRows(0.0f);
+
+        // Device rect: canvas -> layoutScale + panelOrigin. 1280x960 is 1:1.
+        const auto d0 = p.itemRectDevice(Page::PAGE_MAIN, 0);
+        const auto d5 = p.itemRectDevice(Page::PAGE_MAIN, 5);
+        record("itemRectDevice: 1280x960 item 0 (100,195,500,93), item 5 y=660",
+               close(d0.x, 100.0f) && close(d0.y, 195.0f) && close(d0.w, 500.0f) &&
+                   close(d0.h, 93.0f) && close(d5.y, 660.0f),
+               "d0=(" + std::to_string(d0.x) + "," + std::to_string(d0.y) + "," +
+                   std::to_string(d0.w) + "," + std::to_string(d0.h) + ") d5y=" +
+                   std::to_string(d5.y));
+        p.setScrollRows(2.0f);
+        const auto ds = p.itemRectDevice(Page::PAGE_MAIN, 0);
+        record("itemRectDevice: scroll=2 -> device y=9", close(ds.y, 9.0f),
+               "y=" + std::to_string(ds.y));
+        p.setScrollRows(0.0f);
+
+        // 1920x1080: everything scales by 1.125 and shifts by the origin.
+        p.setScreenSize(1920, 1080);
+        const auto h0 = p.itemRectDevice(Page::PAGE_MAIN, 0);
+        record("itemRectDevice: 1920x1080 item 0 (352.5,219.375,562.5,104.625)",
+               close(h0.x, 352.5f) && close(h0.y, 219.375f) && close(h0.w, 562.5f) &&
+                   close(h0.h, 104.625f),
+               "(" + std::to_string(h0.x) + "," + std::to_string(h0.y) + "," +
+                   std::to_string(h0.w) + "," + std::to_string(h0.h) + ")");
+        p.setScreenSize(1280, 960);
+
+        // Pane width reaches the item width (500 without gutter / 460 with).
+        record("item width reflects paneWidth (500 Main / 460 Shape)",
+               close(p.itemRectCanvas(Page::PAGE_MAIN, 0).w, 500.0f) &&
+                   close(p.itemRectCanvas(Page::PAGE_SHAPE, 0).w, 460.0f));
+
+        // §9.5 culling: visibleRows = race_scroll_bar.user8 = 6 = 558/93.
+        record("visibleRows = 6 (558/93 == race_scroll_bar.user8)",
+               p.visibleRows() == 6, std::to_string(p.visibleRows()));
+        p.setCurrentPage(Page::PAGE_SHAPE);  // 9 items
+        record("culling: scroll=0 keeps rows 0..5, hides row 6",
+               p.isElementVisible(Page::PAGE_SHAPE, 0) &&
+                   p.isElementVisible(Page::PAGE_SHAPE, 5) &&
+                   !p.isElementVisible(Page::PAGE_SHAPE, 6) &&
+                   !p.isElementVisible(Page::PAGE_SHAPE, 8));
+        p.setScrollRows(2.0f);
+        record("culling: scroll=2 hides rows 0/1, keeps 2..7, hides 8",
+               !p.isElementVisible(Page::PAGE_SHAPE, 0) &&
+                   !p.isElementVisible(Page::PAGE_SHAPE, 1) &&
+                   p.isElementVisible(Page::PAGE_SHAPE, 2) &&
+                   p.isElementVisible(Page::PAGE_SHAPE, 7) &&
+                   !p.isElementVisible(Page::PAGE_SHAPE, 8));
+        p.setScrollRows(0.0f);
+
+        // Non-current pages are never draw targets.
+        record("culling: non-current page is hidden",
+               !p.isElementVisible(Page::PAGE_MAIN, 0) &&
+                   !p.isElementVisible(Page::PAGE_NOSE, 0) &&
+                   p.isElementVisible(Page::PAGE_SHAPE, 0));
+
+        // rowOfElement == build order within the page.
+        record("rowOfElement: Main Race=0, Complexion=5",
+               p.rowOfElement(201) == 0 && p.rowOfElement(207) == 5 &&
+                   p.rowOfElement(99999) == -1);
+
+        // Done / scroll bar rects are the same transform hitTestScreen() uses.
+        p.setCurrentPage(Page::PAGE_MAIN);
+        const auto done = p.doneRectDevice();
+        const int doneHit = p.hitTestScreen(done.x + done.w * 0.5f, done.y + done.h * 0.5f);
+        record("doneRectDevice center -> hitTestScreen == 90", doneHit == 90,
+               "hit=" + std::to_string(doneHit));
+        p.setCurrentPage(Page::PAGE_SHAPE);  // 9 items -> 460 pane, scroll gutter
+        const auto bar = p.scrollBarRectDevice();
+        const int barHit = p.hitTestScreen(bar.x + bar.w * 0.5f, bar.y + bar.h * 0.5f);
+        record("scrollBarRectDevice center -> hitTestScreen == -1 (gutter)", barHit == -1,
+               "hit=" + std::to_string(barHit));
+    }
+
     return getFailCount() == 0;
 }

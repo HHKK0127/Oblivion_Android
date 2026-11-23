@@ -27,17 +27,22 @@ void UISlider::render() {
     const glm::vec4 fillColor(0.70f, 0.60f, 0.30f, 1.0f);
     const glm::vec4 handleColor(0.95f, 0.90f, 0.70f, 1.0f);
 
+    // Draw in absolute (screen) coordinates so the slider lands correctly under
+    // a parent whose origin is not (0,0) - UIButton and MenuTextComponent already
+    // do this. The chargen panel is the only user of this widget.
+    const glm::vec2 abs = getAbsolutePosition();
+
     const float trackH = size.y * 0.25f;
-    const float trackY = position.y + (size.y - trackH) * 0.5f;
+    const float trackY = abs.y + (size.y - trackH) * 0.5f;
     const float handleW = size.x * 0.06f;
 
-    UIDrawHelper::drawColoredQuad(position.x, trackY, size.x, trackH, trackColor,
+    UIDrawHelper::drawColoredQuad(abs.x, trackY, size.x, trackH, trackColor,
                                   screenWidth, screenHeight);
-    UIDrawHelper::drawColoredQuad(position.x, trackY, size.x * normalized(), trackH,
+    UIDrawHelper::drawColoredQuad(abs.x, trackY, size.x * normalized(), trackH,
                                   fillColor, screenWidth, screenHeight);
 
-    const float handleX = position.x + (size.x - handleW) * normalized();
-    UIDrawHelper::drawColoredQuad(handleX, position.y, handleW, size.y, handleColor,
+    const float handleX = abs.x + (size.x - handleW) * normalized();
+    UIDrawHelper::drawColoredQuad(handleX, abs.y, handleW, size.y, handleColor,
                                   screenWidth, screenHeight);
 
     renderChildren();

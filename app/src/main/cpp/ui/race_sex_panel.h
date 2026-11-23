@@ -241,6 +241,39 @@ public:
     float panelOriginX() const;
     float panelOriginY() const;
 
+    // --- Layout / draw (spec §9.5) ---
+    // Device-space rectangle. The draw side and hitTestScreen() must share ONE
+    // transform (canvas 1280x960 -> device via layoutScale() + race_window
+    // origin), or a tap and its pixels drift apart.
+    struct RectF {
+        float x = 0.0f;
+        float y = 0.0f;
+        float w = 0.0f;
+        float h = 0.0f;
+    };
+
+    // Canvas rect of item `row` on page `slot`: (0, row*93 - scroll*93, pane_w, 93).
+    RectF itemRectCanvas(int slot, int row) const;
+    // The same rect in device pixels.
+    RectF itemRectDevice(int slot, int row) const;
+    RectF doneRectDevice() const;       // §9.3 Done (id 90), pane-external
+    RectF scrollBarRectDevice() const;  // §9.3 race_scroll_bar, pane-external
+
+    // §9.5 row culling: UIComponent has no clip, so rows outside the window are
+    // hidden instead. visibleRows = race_scroll_bar.user8 = 6, which is also
+    // race_window.height / ROW_HEIGHT (558 / 93 = 6).
+    int visibleRows() const { return WINDOW_HEIGHT / ROW_HEIGHT; }
+    bool isRowVisible(int row) const;
+    // True only for the current page's in-window rows.
+    bool isElementVisible(int slot, int row) const;
+    // 0-based row (listindex) of an element within its page, or -1.
+    int rowOfElement(int element_id) const;
+
+    // Device-only: place the widgets built by instantiate() at the rects above
+    // and hide the off-window / off-page ones; also disables the UIPanel title
+    // bar. Defined in race_sex_panel_instantiator.cpp (host never calls it).
+    void applyLayout();
+
     // TILE_* registry index -> element label (used by the family walk).
     static const char* tileLabel(int tile);
 
@@ -280,6 +313,11 @@ private:
     std::function<void()> on_done_;
     // §9.4 scroll offset in rows (race_scroll_bar.user7). 0 = top.
     float scroll_rows_ = 0.0f;
+
+    // Device-only widgets for the pane-external controls (spec §9.3). Created by
+    // instantiate(); null until then (and on the host, which never instantiates).
+    std::shared_ptr<UIComponent> done_widget_;
+    std::shared_ptr<UIComponent> scroll_bar_widget_;
 
     // Find the element on a page by its label (family walk helper).
     const Element* find_on_page(int slot, const char* label) const;

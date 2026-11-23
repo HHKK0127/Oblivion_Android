@@ -236,6 +236,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-629-1 | `player[0xE8]==-1` の実行時裏取り（pane id には不要） | `[未確定]` |
 | V-631-1b | `RaceSexPanel` の配線は **row651 で完了**（`ChargenUi::Panel`、console `chargenpanel`、Done=`setOnDone`→close）。device 実機での表示・タップ確認は**未実施**（`ChargenUi::Panel` は dev トグル既定 OFF） | `[確定(データ)]` |
 | V-652-1 | スクロールバー自身の hit-test（`user7` の更新）は**未実装**。`scrollRows()` は 0 固定で、`setScrollRows()` を呼ぶ経路が無い（TBD） | `[部分確定]` |
+| V-652-2 | **close**。`screen()` の canvas 1280x960 はアプリ既存規約（`ui_inventory_panel`）に追従して `[確定]` に上げ、描画側も同じ変換（`layoutScale`＋`panelOrigin`）を通した（§9.5） | `[確定(データ)]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -339,11 +340,34 @@ return elementIdAt(row)                        // §9.4
 ```
 
 - `scroll_rows` = `race_scroll_bar.user7`。実装は `scrollRows()` / `setScrollRows()` で、**入力への接続は未実装**（V-652-1）。
-- 画面→ローカル: `scale = min(screenW/1280, screenH/960)`、`origin = レターボックス + race_window の canvas 位置 (100,195)`。`hitTestScreen()` が変換して `hitTest()` を呼ぶ。canvas 1280x960 はアプリ既存の XML 再構築（`ui_inventory_panel`）と同じ規約 `[部分確定]`。
-- 実装: `RaceSexPanel::hitTest` / `hitTestScreen` / `paneWidth` / `elementIdAt` / `itemCount`。host テストで 12 項目を固定。
+- 画面→ローカル: `scale = min(screenW/1280, screenH/960)`、`origin = レターボックス + race_window の canvas 位置 (100,195)`。`hitTestScreen()` が変換して `hitTest()` を呼ぶ。canvas 1280x960 はアプリ既存の XML 再構築（`ui_inventory_panel`）と同じ規約 **`[確定]`**（V-652-2 close）。
+- 実装: `RaceSexPanel::hitTest` / `hitTestScreen` / `paneWidth` / `elementIdAt` / `itemCount`。host テストで固定。
+
+### 9.5b 描画レイアウト（実装仕様）`[確定(データ)]`
+
+**描画とヒットテストは同一の変換を共有する**（片方だけ canvas 座標のままだと必ずズレる）。
+
+| 対象 | canvas 矩形 | device 矩形 |
+|---|---|---|
+| item (slot,row) | `(0, row*93 - scroll*93, pane_w, 93)` | `x = originX + cx*scale`, `y = originY + cy*scale`, `w = cw*scale`, `h = ch*scale` |
+| Done (id 90) | `(323, 591, 177, 44)`（§9.3） | 同上 |
+| scroll bar | `(480, 25, 20, 508)`（§9.3: `500-20`, `25`, `20`, `558-50`） | 同上 |
+
+- `scale = layoutScale()`、`origin = (panelOriginX(), panelOriginY())`（§9.5 と同じ式）。
+- **親は (0,0) 固定・size = 画面サイズ**。子は device 座標を直接持ち、`getAbsolutePosition()` が足す親オフセットは (0,0) なので二重加算にならない。
+- `UISlider`/`UIToggle` の `render()` は `getAbsolutePosition()` を使うよう統一（`UIButton`/`MenuTextComponent` と同じ）。従来は `position` 直読みで、親原点が (0,0) 以外だとずれた。
+- ラベルの `scale_` にも `layoutScale()` を掛ける（`UIButton::setLabelScale` / `MenuTextComponent::setTextScale`）。
+
+**行カリング（クリップ代替）** `[確定(データ)]`:
+- `UIComponent` にクリップ機構が無い（XML の `clipwindow`/`clips` は未実装）ため、窓外の行は `setVisible(false)` にする。
+- `visibleRows = race_window.height / ROW_HEIGHT = 558/93 = 6`。XML の `race_scroll_bar.user8`（`<!-- How many items are visible at once -->`）も **6** で一致。
+- 可視条件: `slot == current_page_` かつ `floor(scroll) <= row < floor(scroll) + visibleRows`。
+- scroll 変化・ページ切替のたびに再計算（`applyLayout()`）。
+- **指示との差分**: 依頼時のテスト値「`visibleRows=7` で row 7 が非表示」は 1 大きい。`558/93 = 6`（python 検算）および `user8=6` に合わせて **6** を採用（row 6 が最初の非表示行）。
 
 ### 9.6 結論
 
 - **`Element` に x/y/w/h を持たせない**。幾何は式（`x=0`, `w=pane幅`, `h=93`, `y=listindex*93`）から算出する。
-- `renderer.cpp` の Panel 分岐は `hitTestScreen(x,y)` → `handleClick(id)`（`id>=0` のときのみ）。
-- 描画（widget の実位置設定）は未実装。`instantiate()` は widget を作るだけで座標を設定していない（次段）。
+- `renderer.cpp` の Panel 分岐は `hitTestScreen(x,y)` → `handleClick(id)`（`id>=0` のときのみ）。ページが変わったら `applyLayout()` で再配置・再カリング。
+- **描画実装（row653）**: `RaceSexPanel::instantiate()`（device-only）が widget を作り、`applyLayout()` が §9.5b の矩形を適用して可視集合を決める。pane 外の Done / scroll bar も同じ変換を通す。`UIPanel` のタイトルバー/閉じるボタンは無効化（`setTitleBarHeight(0)`/`setCloseButtonVisible(false)`）。
+- host テストは**矩形と可視集合**まで（pixel 比較はしない。device 目視は人間ゲート）。

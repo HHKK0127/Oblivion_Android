@@ -8241,6 +8241,9 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             const int id = raceSexPanel->hitTestScreen(x, y);
             if (id >= 0) {
                 raceSexPanel->handleClick(id);
+                // A tab click changes the current page; re-place and re-cull the
+                // widgets (spec §9.5).
+                raceSexPanel->applyLayout();
             }
         }
         return;

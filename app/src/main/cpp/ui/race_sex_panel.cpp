@@ -480,3 +480,73 @@ int RaceSexPanel::hitTestScreen(float screen_x, float screen_y) const {
     const float py = (screen_y - panelOriginY()) / s;
     return hitTest(static_cast<int>(std::floor(px)), static_cast<int>(std::floor(py)));
 }
+
+// ---------------------------------------------------------------------------
+// Layout / draw (spec §9.5). Pure logic: the host suite pins the rects and the
+// visibility set; the device-only applyLayout() consumes them.
+// ---------------------------------------------------------------------------
+
+RaceSexPanel::RectF RaceSexPanel::itemRectCanvas(int slot, int row) const {
+    RectF r;
+    r.x = 0.0f;
+    r.y = static_cast<float>(row * ROW_HEIGHT) - scroll_rows_ * static_cast<float>(ROW_HEIGHT);
+    r.w = static_cast<float>(paneWidth(slot));
+    r.h = static_cast<float>(ROW_HEIGHT);
+    return r;
+}
+
+RaceSexPanel::RectF RaceSexPanel::itemRectDevice(int slot, int row) const {
+    const RectF c = itemRectCanvas(slot, row);
+    const float s = layoutScale();
+    RectF r;
+    r.x = panelOriginX() + c.x * s;
+    r.y = panelOriginY() + c.y * s;
+    r.w = c.w * s;
+    r.h = c.h * s;
+    return r;
+}
+
+RaceSexPanel::RectF RaceSexPanel::doneRectDevice() const {
+    const float s = layoutScale();
+    RectF r;
+    r.x = panelOriginX() + static_cast<float>(DONE_X) * s;
+    r.y = panelOriginY() + static_cast<float>(DONE_Y) * s;
+    r.w = static_cast<float>(DONE_WIDTH) * s;
+    r.h = static_cast<float>(DONE_HEIGHT) * s;
+    return r;
+}
+
+RaceSexPanel::RectF RaceSexPanel::scrollBarRectDevice() const {
+    // race_scroll_bar (spec §9.3): x = parent.w-20, y = 25, w = 20, h = parent.h-50
+    // with parent = race_window (500x558).
+    const float s = layoutScale();
+    RectF r;
+    r.x = panelOriginX() + static_cast<float>(WINDOW_WIDTH - 20) * s;
+    r.y = panelOriginY() + 25.0f * s;
+    r.w = 20.0f * s;
+    r.h = static_cast<float>(WINDOW_HEIGHT - 50) * s;
+    return r;
+}
+
+bool RaceSexPanel::isRowVisible(int row) const {
+    if (row < 0) return false;
+    const int first = static_cast<int>(std::floor(scroll_rows_));
+    return row >= first && row < first + visibleRows();
+}
+
+bool RaceSexPanel::isElementVisible(int slot, int row) const {
+    return slot == current_page_ && isRowVisible(row);
+}
+
+int RaceSexPanel::rowOfElement(int element_id) const {
+    const Element* e = find_element(element_id);
+    if (!e) return -1;
+    int row = 0;
+    for (const Element& x : elements_) {
+        if (x.page_slot != e->page_slot) continue;
+        if (x.id == e->id) return row;
+        ++row;
+    }
+    return -1;
+}
+
