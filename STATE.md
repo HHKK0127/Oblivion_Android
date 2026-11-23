@@ -1,5 +1,13 @@
 # Loop State — My Project
 
+## 2026-11-23 — chargen Random/Reset port 実装（Face 227/228・台帳 row662・spec §10.7）
+
+- **実装**: `RaceSexPanel` に Random/Reset 本体を追加。`rngNext()` に CRT `rand()` MSVC LCG（`seed=seed*214013+2531011; (seed>>16)&0x7fff`、`uint32_t`）。`init()` で `std::time` シード（原作 `0x47DF80(arg=0)` 経路）＋テスト用 `setSeed()`。`doRandom()`＝全 **90** スライダーを builder 順に `value=rngNext()/32767.0`（原作 `raw=rand/32767*50+15` の [15,65] clamp → `(raw-15)/50` と同値）＋(Main,Age)/(Main,Complexion) の 2 tile へ `user3`(0xFB1) 3 連書き（sentinel→算出値→`0.0`、最終 0.0）。`doReset()`＝全 90 を `0.0`（`V-660-A1`、actor モーフ全 130 ぶん初期化）。
+- **確認フラグ**: `handleRandom`/`handleReset` は初回クリックで `on_confirm_`（Yes/No、既存 `UIMessageBox` 配線を再利用）を出し `random_armed_`/`reset_armed_` を立て、armed 中クリックは本体直行（`0x5CCBE5`/`0x5CCCC8`）。**No は cb がフラグ解除**（原作 `0x5C9FC0`/`0x5C9F70`）→ 次回クリックで再表示。ページ離脱では解除しない（原作はグローバル）。`handleClick(227/228)` dispatch 済み、ページは Face のまま。renderer 変更なし。
+- **範囲**: `V-654-4`（morph 未適用）の範囲内。`morph→slider` は builder 順 1:1 近似。既定 `Panel` 化は引き続き**実験的**（実機は人間ゲート）。
+- **検証**: host `-NoAsan` 完走で **ALL GREEN（0 suite failed）**、`RaceSexPanelTests` **81/81**（新規 9 件）。台帳 row662、`round_verify ALL OK`（total 548/open 7）、precheck OK。commit `43af438d`（実装＋row662）/`bde3f990`（baseline 547→548）。
+- **RE 正典**: `tmp/re/v663_random_reset_impl_ruling.md`（`D:\re\v663_probe.py` EXIT=0）、spec §10.7。V-660-A1/A2/C1 は v663 で close 済み。
+
 ## 2026-11-23 — chargen 実装 lane 完了（RaceSexPanel widget 化＋renderer 配線）
 
 - **row650/651 完了**（master にマージ・push 済み）: `RaceSexPanel` を 21 ページ/118 item の descriptor として実装し、widget 化を device-only の `RaceSexPanel::instantiate(TextRenderer*)`（`race_sex_panel_instantiator.cpp`）に分離（Button→`UIButton`, Text→`MenuTextComponent`, Toggle→`UIToggle`, Slider→`UISlider`）。`add_*` シグネチャ不変＝パリティスクリプト `verify_race_sex_impl.py` 無変更。
