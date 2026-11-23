@@ -164,6 +164,12 @@ public:
         float jump = 0.1f;
         bool checked = false;
 
+        // Random writes the user3 trait (0xFB1) three times per affected tile
+        // (sentinel -> value -> 0.0); the port records the final value and the
+        // write count so the host suite can pin "only (Main,Age)/(Main,Complexion)".
+        float user3 = 0.0f;
+        int user3_writes = 0;
+
         // Real widget, created by instantiate() (device-only; see
         // race_sex_panel_instantiator.cpp). Null until then, so the host suite
         // exercises the descriptor without pulling in the GL / text stack.
@@ -194,6 +200,27 @@ public:
     int currentPage() const { return current_page_; }
     void setOnDone(std::function<void()> cb) { on_done_ = std::move(cb); }
     bool handleClick(int arg1);
+
+    // --- Random / Reset (spec §10.7) ---
+    // The RNG is the MSVC CRT rand() LCG ported verbatim: the caller draws
+    // [0,32767] and normalises to value = rngNext()/32767.0. setSeed() is for
+    // tests; init() seeds from the clock (the original's arg==0 path).
+    void setSeed(uint32_t seed) { rng_seed_ = seed; }
+    uint32_t seed() const { return rng_seed_; }
+    int rngNext();  // seed = seed*214013 + 2531011; return (seed>>16) & 0x7FFF
+    // All sliders, builder order: value = rngNext()/32767.0f. Also writes the
+    // user3 trait (sentinel -> value -> 0.0) on (Main, Age)/(Main, Complexion)
+    // only (the original's 0xFB1 3-write). Re-lays out via the layout hook.
+    void doRandom();
+    // All sliders, builder order: value = 0.0. Re-lays out via the layout hook.
+    void doReset();
+    int sliderCount() const;
+    // First click shows the confirm dialog and arms; an armed click runs the
+    // body directly (the original's [0xB3B4C8]/[0xB3B4C9] flags). A No answer
+    // clears the flag (the original's cb); a page change never does (the flags
+    // are global). Both keep the page on Face.
+    bool randomArmed() const { return random_armed_; }
+    bool resetArmed() const { return reset_armed_; }
 
     // --- Race selection (spec §10.4) ---
     // One selectable race. The port fills this from
@@ -279,6 +306,9 @@ public:
     // Race page elements (spec §10.4): the race toggle and its description text.
     static constexpr int RACE_TOGGLE_ID = 211;
     static constexpr int RACE_DESC_ID = 212;
+    // Face page 4 buttons (spec §10.7): builder order Shape/Tone/Random/Reset.
+    static constexpr int RANDOM_BUTTON_ID = 227;
+    static constexpr int RESET_BUTTON_ID = 228;
     // race_window's top-left on the canvas: race_background x=70 plus
     // race_window x=30; y = (960-740)/2 (background centred) + race_window y=85.
     static constexpr float CANVAS_WIDTH = 1280.0f;
@@ -440,6 +470,17 @@ private:
     std::function<void(const std::string&)> on_notify_;
     std::function<void(const std::string&, std::function<void(bool)>)> on_confirm_;
     std::function<void()> on_commit_;
+
+    // Random / Reset state (spec §10.7): the MSVC LCG seed and the per-button
+    // "dialog already shown" flags (the original's [0xB3B4C8]/[0xB3B4C9]).
+    uint32_t rng_seed_ = 0;
+    bool random_armed_ = false;
+    bool reset_armed_ = false;
+
+    // First click shows the confirm dialog and arms; an armed click runs the
+    // body. Both keep the page on Face.
+    void handleRandom();
+    void handleReset();
 
     // Find the element on a page by its label (family walk helper).
     const Element* find_on_page(int slot, const char* label) const;

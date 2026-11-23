@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ctime>
 #include <stdexcept>
 
 // Skeleton for the RaceSexMenu (chargen) 21-page wizard.
@@ -41,6 +42,11 @@ bool RaceSexPanel::init() {
     elements_.clear();
     counter_ = 200;
     current_page_ = PAGE_MAIN;
+    // spec §10.7: seed the RNG from the clock on open (the original's arg==0
+    // path through 0x47DF80, which calls _srand(__time64())). setSeed()
+    // overrides it for tests. The two "dialog shown" flags are NOT reset here:
+    // the original's [0xB3B4C8]/[0xB3B4C9] are global and outlive a rebuild.
+    rng_seed_ = static_cast<uint32_t>(std::time(nullptr));
     for (int i = 0; i < PAGE_COUNT; ++i) {
         build_page(i);
     }
@@ -370,6 +376,18 @@ bool RaceSexPanel::handleClick(int arg1) {
     // and does nothing (spec §10.4). The renderer routes id 211 to
     // cycleRaceFromTap before calling handleClick.
     if (arg1 == RACE_TOGGLE_ID) return true;
+
+    // Random (227) / Reset (228): never a page transition (spec §10.7). The
+    // first click shows the confirm dialog and arms; an armed click runs the
+    // body directly. The page stays on Face.
+    if (arg1 == RANDOM_BUTTON_ID) {
+        handleRandom();
+        return true;
+    }
+    if (arg1 == RESET_BUTTON_ID) {
+        handleReset();
+        return true;
+    }
 
     // Layer 1: chain (spec §6.2). arg1 == 90 is Done/Return; the row whose pane
     // is the current page decides. Main's row (next == -1) is the chargen exit;
@@ -740,5 +758,111 @@ void RaceSexPanel::commit() {
     confirmed_ = true;
     // The owner applies the race (only when changed) and the name, then closes.
     if (on_commit_) on_commit_();
+}
+
+// ---------------------------------------------------------------------------
+// Random / Reset (spec §10.7). Pure logic, host-testable: the RNG, the slider
+// writes and the two confirm flags are all descriptor state. Only the re-layout
+// behind the layout hook is device-only.
+// ---------------------------------------------------------------------------
+
+namespace {
+// The original's 0xFB1 (user3) 3-write stores [0xa6d2d8] = 0x80000000 first,
+// which read as a float is -0.0 (the trait's "unset" sentinel); the middle write
+// is the computed value, the last is 0.0. Only the final value and the count are
+// observable, so the port records those.
+constexpr float kUser3Sentinel = -0.0f;
+}  // namespace
+
+int RaceSexPanel::sliderCount() const {
+    int n = 0;
+    for (const Element& e : elements_) {
+        if (e.type == ElemType::Slider) ++n;
+    }
+    return n;
+}
+
+int RaceSexPanel::rngNext() {
+    // MSVC CRT rand() ported verbatim (0x9859DD): the LCG state wraps in 32 bits.
+    //   seed = seed * 214013 + 2531011; return (seed >> 16) & 0x7FFF
+    // so the caller draws [0, 32767].
+    rng_seed_ = rng_seed_ * 214013u + 2531011u;
+    return static_cast<int>((rng_seed_ >> 16) & 0x7FFFu);
+}
+
+void RaceSexPanel::doRandom() {
+    // spec §10.7: all sliders, in builder order. The original maps
+    //   raw = rand()/32767*50 + 15   (clamped to [15,65] in 0x5273A0)
+    //   value = (raw - 15)/50
+    // which is exactly rand()/32767 in [0,1]. The morph->slider pairing is a
+    // 1:1 builder-order approximation (V-654-4).
+    for (Element& e : elements_) {
+        if (e.type != ElemType::Slider) continue;
+        e.value = static_cast<float>(rngNext()) / 32767.0f;
+    }
+    // user3 (0xFB1) 3-write on (Main, Age)/(Main, Complexion) only: the original
+    // writes 2 tiles x 3 (sentinel -> value -> 0.0). The port records the final
+    // value and the count so the host suite can pin "only these two".
+    for (Element& e : elements_) {
+        if (e.page_slot != PAGE_MAIN) continue;
+        if (e.label != "Age" && e.label != "Complexion") continue;
+        e.user3 = kUser3Sentinel; ++e.user3_writes;  // [0xa6d2d8]
+        e.user3 = e.value;        ++e.user3_writes;  // computed value
+        e.user3 = 0.0f;           ++e.user3_writes;  // final
+    }
+    if (on_layout_changed_) on_layout_changed_();
+}
+
+void RaceSexPanel::doReset() {
+    // spec §10.7 / V-660-A1: the original resets the actor's whole morph array to
+    // 0.0 (page-independent, 3 groups of 50/30/50), so every slider goes to 0.0.
+    for (Element& e : elements_) {
+        if (e.type != ElemType::Slider) continue;
+        e.value = 0.0f;
+    }
+    if (on_layout_changed_) on_layout_changed_();
+}
+
+void RaceSexPanel::handleRandom() {
+    // The original's flag [0xB3B4C8]: 0 -> show the dialog and set it (0x5CC966);
+    // set -> run the body directly (0x5CCBE5 -> 0x5C9CD0). The dialog text is a
+    // runtime pointer ([0xB39450]) so it is a placeholder here.
+    if (random_armed_) {
+        doRandom();
+        return;
+    }
+    random_armed_ = true;
+    if (on_confirm_) {
+        // cb 0x5C9FC0: Yes (0x578D70()==2) runs the body; any other answer
+        // clears the flag and returns (no body).
+        on_confirm_("Randomize your character's appearance?", [this](bool yes) {
+            if (yes) {
+                doRandom();
+            } else {
+                random_armed_ = false;
+            }
+        });
+    }
+}
+
+void RaceSexPanel::handleReset() {
+    // The original's flag [0xB3B4C9]: 0 -> show the dialog and set it; set -> run
+    // the body directly (0x5CCCC8 -> 0x5C9C70). The dialog text is a runtime
+    // pointer ([0xB39448]) so it is a placeholder here.
+    if (reset_armed_) {
+        doReset();
+        return;
+    }
+    reset_armed_ = true;
+    if (on_confirm_) {
+        // cb 0x5C9F70: Yes runs the body; any other answer clears the flag.
+        on_confirm_("Reset your character's appearance?", [this](bool yes) {
+            if (yes) {
+                doReset();
+            } else {
+                reset_armed_ = false;
+            }
+        });
+    }
 }
 

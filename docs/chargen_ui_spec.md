@@ -506,3 +506,14 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **Main "Eyes" トグル（id 204）/ Complexion スライダー（id 207）**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**。以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」で、**`0x5CC8BA` = Random ボタン**。**family（28）に (Main, Eyes)/(Main, Complexion) は無く、HandleClick にメニュー側ハンドラも無い＝no menu handler**（**204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常**。HandleClick の不在とは独立）。family 全不一致は `0x5CDA11`（epilogue）で return（Main 復帰ではない）。`V-660-B1` は **close** `[確定(命令)(negative)]`（v662 / probe `D:\re\v662_probe.py` EXIT=0）。
 - **Race 説明文**: `0x5C7BA0` が RACE の **`DESC` サブレコード**（`0x5C81E5 push 0x43534544`）を読み、**`0xFB4`(user6)** へ `SetString`（`0x5C8205`/`0x5C8236`、フォールバック `0xA36430`=`" "`）。見出し（`sRaceDescription` GMST）は別。残は受ける tile の実名と割当（`V-660-C1` `[部分確定]`）。
 
+### 10.7 Random / Reset の port 実装（v663 / ai-todo #175-#177）`[部分確定]`
+
+詳細: `tmp/re/v663_random_reset_impl_ruling.md`（probe `D:\re\v663_probe.py` EXIT=0）。実装: `app/src/main/cpp/ui/race_sex_panel.cpp`（`doRandom`/`doReset`/`handleRandom`/`handleReset`/`rngNext`）、host テスト `race_sex_panel_tests.cpp`。
+
+- **Face 4 ボタン** `[確定(命令)]`: builder `0x5CA726..0x5CA85B`（Face pane id 224）で **225 Shape / 226 Tone / 227 Random / 228 Reset**。port は `RANDOM_BUTTON_ID=227` / `RESET_BUTTON_ID=228`。
+- **RNG = CRT `rand()`（MSVC LCG）** `[確定(命令)]`（`0x9859DD`）: `seed = seed*214013 + 2531011; return (seed>>16) & 0x7FFF`（[0,32767]、`uint32_t` 桁溢れ）。port は `rngNext()`。open 時（`init()`）に `std::time` でシード（原作 `0x47DF80(arg=0)` 経路）。`setSeed()` はテスト用。
+- **`doRandom()`** `[確定(命令)]`: 全 **90 スライダー**を **builder 順**に `value = rngNext()/32767.0`。原作は `raw=rand()/32767*50+15`（`0x5273A0` で [15,65] クランプ）→ `value=(raw-15)/50` で、これは `rand()/32767 ∈ [0,1]` と同値。加えて (Main,Age)/(Main,Complexion) の 2 tile に **`user3`(0xFB1) 3 連書き**（sentinel `[0xa6d2d8]` → 算出値 → `0.0`、**最終 0.0**）。ページは Face のまま。
+- **`doReset()`** `[確定(命令)]`（`V-660-A1`）: 全 90 スライダー `value = 0.0`（原作は actor のモーフ配列全体を 3 群 50/30/50 = 130 ぶん `0.0` 初期化、カレントページ非依存）。trait は書かない。ページは Face のまま。
+- **確認ダイアログ** `[確定(命令)]`: Random `[0xB3B4C8]` / Reset `[0xB3B4C9]`。初回クリックで `on_confirm_`（Yes/No）を出しフラグを立て、armed 中クリックは本体直行（`0x5CCBE5`/`0x5CCCC8`）。**No は cb がフラグを 0 に戻す**（次回クリックで再度ダイアログ）。ページ離脱ではフラグをリセットしない（原作はグローバル）。ダイアログ本文 `[0xB39450]`/`[0xB39448]` は実行時ポインタのため port はプレースホルダ文字列。
+- **`V-654-4` の範囲内** `[方針]`: morph への実際の適用は未配線（`Player` は `NPC&` を取る API を呼べない）。`morph → slider` の対応は未確定のため **builder 順 1:1 近似**で引き、値は descriptor の `value` に留まる（widget は `applyLayout()` が反映）。
+

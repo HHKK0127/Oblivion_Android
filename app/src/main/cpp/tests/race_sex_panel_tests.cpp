@@ -599,6 +599,175 @@ bool RaceSexPanelTests::runAllTests() {
         }
     }
 
+    // --- Random / Reset (spec §10.7; pure logic) ---
+    {
+        // The 90 slider values, in builder order.
+        auto sliderValues = [](const RaceSexPanel& p) {
+            std::vector<float> v;
+            for (const auto& e : p.elements()) {
+                if (e.type == ElemType::Slider) v.push_back(e.value);
+            }
+            return v;
+        };
+
+        // sliderCount == 90 (spec §2: 90 sliders over the 21 pages).
+        {
+            RaceSexPanel p;
+            p.init();
+            record("random/reset: sliderCount == 90", p.sliderCount() == 90,
+                   std::to_string(p.sliderCount()));
+        }
+
+        // (a) Random: first click asks once and leaves values alone; Yes changes
+        // them; the flag stays set, so the second click runs with no dialog.
+        {
+            RaceSexPanel p;
+            p.init();
+            p.setSeed(12345);
+            p.setCurrentPage(Page::PAGE_FACE);
+            int confirms = 0;
+            std::function<void(bool)> pending;
+            p.setOnConfirm([&confirms, &pending](const std::string&,
+                                                 std::function<void(bool)> done) {
+                ++confirms;
+                pending = std::move(done);
+            });
+            const auto before = sliderValues(p);
+            const bool consumed = p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            record("random: first click -> confirm once, values unchanged",
+                   consumed && confirms == 1 && sliderValues(p) == before &&
+                       p.randomArmed() && p.currentPage() == Page::PAGE_FACE,
+                   "confirms=" + std::to_string(confirms));
+
+            if (pending) pending(true);
+            const auto afterYes = sliderValues(p);
+            record("random: Yes -> values change, page stays Face",
+                   afterYes != before && p.currentPage() == Page::PAGE_FACE);
+
+            const int confirmsBefore = confirms;
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            record("random: second click -> no dialog, immediate change",
+                   confirms == confirmsBefore && sliderValues(p) != afterYes,
+                   "confirms=" + std::to_string(confirms));
+        }
+
+        // (b) Random: No leaves values alone and clears the flag (the original's
+        // cb clears [0xB3B4C8] on a non-Yes answer), so the next click asks again.
+        {
+            RaceSexPanel p;
+            p.init();
+            p.setSeed(777);
+            p.setCurrentPage(Page::PAGE_FACE);
+            int confirms = 0;
+            std::function<void(bool)> pending;
+            p.setOnConfirm([&confirms, &pending](const std::string&,
+                                                 std::function<void(bool)> done) {
+                ++confirms;
+                pending = std::move(done);
+            });
+            const auto before = sliderValues(p);
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            if (pending) pending(false);  // No
+            record("random: No -> values unchanged, flag cleared",
+                   confirms == 1 && sliderValues(p) == before && !p.randomArmed());
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            record("random: after No the next click asks again",
+                   confirms == 2 && p.randomArmed(),
+                   "confirms=" + std::to_string(confirms));
+        }
+
+        // (c) Random: fixed seed reproduces the draw; all values in [0,1].
+        {
+            auto draw = [&sliderValues](uint32_t seed) {
+                RaceSexPanel p;
+                p.init();
+                p.setSeed(seed);
+                p.setCurrentPage(Page::PAGE_FACE);
+                std::function<void(bool)> pending;
+                p.setOnConfirm([&pending](const std::string&,
+                                          std::function<void(bool)> done) {
+                    pending = std::move(done);
+                });
+                p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+                if (pending) pending(true);
+                return sliderValues(p);
+            };
+            const auto a = draw(2026);
+            const auto b = draw(2026);
+            const auto c = draw(2027);
+            bool inRange = (a.size() == 90);
+            for (float v : a) {
+                if (!(v >= 0.0f && v <= 1.0f)) inRange = false;
+            }
+            record("random: 90 values in [0,1], fixed seed reproducible",
+                   inRange && a == b && a != c, "n=" + std::to_string(a.size()));
+        }
+
+        // (d) user3 (0xFB1) 3-writes land only on (Main, Age)/(Main, Complexion).
+        {
+            RaceSexPanel p;
+            p.init();
+            p.setSeed(5);
+            p.setCurrentPage(Page::PAGE_FACE);
+            std::function<void(bool)> pending;
+            p.setOnConfirm([&pending](const std::string&,
+                                      std::function<void(bool)> done) {
+                pending = std::move(done);
+            });
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            if (pending) pending(true);
+            int touched = 0;
+            bool onlyTwo = true;
+            for (const auto& e : p.elements()) {
+                if (e.user3_writes == 0) continue;
+                ++touched;
+                const bool isMainAge =
+                    (e.page_slot == Page::PAGE_MAIN && e.label == "Age");
+                const bool isMainComp =
+                    (e.page_slot == Page::PAGE_MAIN && e.label == "Complexion");
+                if (!(isMainAge || isMainComp) || e.user3_writes != 3 ||
+                    e.user3 != 0.0f) {
+                    onlyTwo = false;
+                }
+            }
+            record("random: user3 3-writes only on (Main,Age)/(Main,Complexion)",
+                   touched == 2 && onlyTwo, "touched=" + std::to_string(touched));
+        }
+
+        // (e) Reset: Yes zeroes every slider and keeps the page on Face.
+        {
+            RaceSexPanel p;
+            p.init();
+            p.setSeed(99);
+            p.setCurrentPage(Page::PAGE_FACE);
+            int confirms = 0;
+            std::function<void(bool)> pending;
+            p.setOnConfirm([&confirms, &pending](const std::string&,
+                                                 std::function<void(bool)> done) {
+                ++confirms;
+                pending = std::move(done);
+            });
+            // Randomize first so the sliders are non-zero.
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);
+            if (pending) pending(true);
+            bool anyNonZero = false;
+            for (float v : sliderValues(p)) {
+                if (v != 0.0f) anyNonZero = true;
+            }
+            // Reset: first click asks, Yes zeroes.
+            p.handleClick(RaceSexPanel::RESET_BUTTON_ID);
+            if (pending) pending(true);
+            const auto resetVals = sliderValues(p);
+            bool allZero = (resetVals.size() == 90);
+            for (float v : resetVals) {
+                if (v != 0.0f) allZero = false;
+            }
+            record("reset: Yes -> all 90 sliders 0.0, page stays Face",
+                   anyNonZero && allZero && p.currentPage() == Page::PAGE_FACE,
+                   "n=" + std::to_string(resetVals.size()));
+        }
+    }
+
     // --- geometry + hitTest (spec §9; pure logic) ---
     {
         RaceSexPanel g;
