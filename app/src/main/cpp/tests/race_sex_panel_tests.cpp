@@ -651,6 +651,30 @@ bool RaceSexPanelTests::runAllTests() {
                    "confirms=" + std::to_string(confirms));
         }
 
+        // (a2) the flag is set BEFORE the dialog is shown: a click that arrives
+        // while the first dialog is still open runs the body directly (no second
+        // confirm). This pins the "armed=true -> on_confirm_" order.
+        {
+            RaceSexPanel p;
+            p.init();
+            p.setSeed(4242);
+            p.setCurrentPage(Page::PAGE_FACE);
+            int confirms = 0;
+            std::function<void(bool)> pending;
+            p.setOnConfirm([&confirms, &pending](const std::string&,
+                                                 std::function<void(bool)> done) {
+                ++confirms;
+                pending = std::move(done);
+            });
+            const auto before = sliderValues(p);
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);  // dialog 1 (left open)
+            const bool armedAfterFirst = p.randomArmed();
+            p.handleClick(RaceSexPanel::RANDOM_BUTTON_ID);  // flag already set -> body
+            record("random: flag set before the dialog (2nd click skips it)",
+                   confirms == 1 && armedAfterFirst && sliderValues(p) != before,
+                   "confirms=" + std::to_string(confirms));
+        }
+
         // (b) Random: No leaves values alone and clears the flag (the original's
         // cb clears [0xB3B4C8] on a non-Yes answer), so the next click asks again.
         {

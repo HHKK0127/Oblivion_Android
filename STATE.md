@@ -7,6 +7,8 @@
 - **範囲**: `V-654-4`（morph 未適用）の範囲内。`morph→slider` は builder 順 1:1 近似。既定 `Panel` 化は引き続き**実験的**（実機は人間ゲート）。
 - **検証**: host `-NoAsan` 完走で **ALL GREEN（0 suite failed）**、`RaceSexPanelTests` **81/81**（新規 9 件）。台帳 row662、`round_verify ALL OK`（total 548/open 7）、precheck OK。commit `43af438d`（実装＋row662）/`bde3f990`（baseline 547→548）。
 - **RE 正典**: `tmp/re/v663_random_reset_impl_ruling.md`（`D:\re\v663_probe.py` EXIT=0）、spec §10.7。V-660-A1/A2/C1 は v663 で close 済み。
+- **仕上げ（v664 / row663）**: ①armed は **`on_confirm_` より先**に設定（テスト「flag set before the dialog」）。②**No でフラグ解除**→次回再ダイアログ（テスト「after No the next click asks again」）。③**ダイアログ本文＝GameSetting 既定値** `sRandomizeFace`="Randomize face?" / `sResetFace`="Reset face?"。`[0xB39450]`/`[0xB39448]` は **GameSetting オブジェクト**で、起動時 init thunk `0x9f7b70`/`0x9f7b50` が ctor `0x419a70(EDID,既定値)` で構築（`%s` 組み立てではない）。既定値は exe `0xa63b40`/`0xa63b24` に実在、`Oblivion.esm` には無い（生検索未検出）→ port はこの 2 文字列を使用（プレースホルダ廃止）。probe **`D:\re\v664_probe.py`（EXIT=0）**。host `RaceSexPanelTests` **82/82**（新規 1 件）。**`V-664-1` close**。台帳 row663、`round_verify ALL OK`（total 549/open 7）。
+- **lane 残**: `V-654-4`（`Player` への race 適用＝morph/bonus/HP/spell/mesh 未配線）。次は ESS lane（人間ゲート）か morph 配線を選択。
 
 ## 2026-11-23 — chargen 実装 lane 完了（RaceSexPanel widget 化＋renderer 配線）
 

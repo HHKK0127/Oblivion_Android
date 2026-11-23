@@ -825,8 +825,9 @@ void RaceSexPanel::doReset() {
 
 void RaceSexPanel::handleRandom() {
     // The original's flag [0xB3B4C8]: 0 -> show the dialog and set it (0x5CC966);
-    // set -> run the body directly (0x5CCBE5 -> 0x5C9CD0). The dialog text is a
-    // runtime pointer ([0xB39450]) so it is a placeholder here.
+    // set -> run the body directly (0x5CCBE5 -> 0x5C9CD0). The dialog text is the
+    // GameSetting sRandomizeFace's default "Randomize face?" ([0xB39450] is the
+    // GameSetting object, built by the init thunk 0x9f7b70 / ctor 0x419a70; v664).
     if (random_armed_) {
         doRandom();
         return;
@@ -835,7 +836,7 @@ void RaceSexPanel::handleRandom() {
     if (on_confirm_) {
         // cb 0x5C9FC0: Yes (0x578D70()==2) runs the body; any other answer
         // clears the flag and returns (no body).
-        on_confirm_("Randomize your character's appearance?", [this](bool yes) {
+        on_confirm_("Randomize face?", [this](bool yes) {
             if (yes) {
                 doRandom();
             } else {
@@ -847,8 +848,9 @@ void RaceSexPanel::handleRandom() {
 
 void RaceSexPanel::handleReset() {
     // The original's flag [0xB3B4C9]: 0 -> show the dialog and set it; set -> run
-    // the body directly (0x5CCCC8 -> 0x5C9C70). The dialog text is a runtime
-    // pointer ([0xB39448]) so it is a placeholder here.
+    // the body directly (0x5CCCC8 -> 0x5C9C70). The dialog text is the
+    // GameSetting sResetFace's default "Reset face?" ([0xB39448], init thunk
+    // 0x9f7b50 / ctor 0x419a70; v664).
     if (reset_armed_) {
         doReset();
         return;
@@ -856,7 +858,7 @@ void RaceSexPanel::handleReset() {
     reset_armed_ = true;
     if (on_confirm_) {
         // cb 0x5C9F70: Yes runs the body; any other answer clears the flag.
-        on_confirm_("Reset your character's appearance?", [this](bool yes) {
+        on_confirm_("Reset face?", [this](bool yes) {
             if (yes) {
                 doReset();
             } else {
