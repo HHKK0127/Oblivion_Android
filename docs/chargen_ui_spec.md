@@ -231,7 +231,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | ID | 内容 | 状態 |
 |---|---|---|
 | V-649-1 | family の定数 `[esp+0x3c]`/`[esp+0x48]` は **HandleClick 内に読者 0**、かつ **HandleClick が呼ぶ finalize の 3 関数（`0x7b4280`/`0x7c5e70`/`0x7c7eb0`）も戻りアドレスより上（`[esp+0x2c]`〜`[esp+0x50]`）を読まない** → **デッド（未使用）** | `[確定(命令)(negative)]` |
-| V-642-1 | id 98（定数なし。`0xB333C4` vtable[0x170]→`0x526F00`→`0x5C91E0` の Player 系リスト操作） | `[部分確定]` |
+| V-642-1 | id 98 の**経路は判明・意味は未確定**。`FUN_005CC200` の `0x5CCBF4 cmp ebx,0x62(98)` → `[0xB333C4] vtable[0x170]()` → `0x526F00` → `0x5C91E0`。`0x5C91E0` は player/animation 系で **tile trait を読まない**（`0x588BD0`/`0x588C10` 0 件）。98 が何を起動するかは未確定 | `[部分確定]` |
 | V-646-3 | fld 反復の増分定数の用途 | `[未確定]` |
 | V-629-1 | `player[0xE8]==-1` の実行時裏取り（pane id には不要） | `[未確定]` |
 | V-631-1b | `RaceSexPanel` の配線は **row651 で完了**（`ChargenUi::Panel`、console `chargenpanel`、Done=`setOnDone`→close）。device 実機での表示・タップ確認は**未実施**（`ChargenUi::Panel` は dev トグル既定 OFF） | `[確定(データ)]` |
@@ -412,6 +412,27 @@ RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005C
 - **player 反映は `0x5C9CD0`**（呼び元 `FUN_005CC200` の Done/commit 経路 `0x5CCBE5`）: `FindMenu(0x40C)` → base tile → `0x9832E6` → player actor（vtable `+0x170`）→ `0x5273A0` → `0x5C91E0`（V-642-1 の Player リスト操作）→ struct ctor（`0x984BCF`, `0x43ACE0`/`0x43EB30`）→ `0x5221C0` / `0x553B30`（player に適用）。これが確定経路。**各 callee の役割は V-653-2**。
 - trait `user1`(0xFAF) は、**slider/toggle では「開始値/最小値」**（XML 578/636 行）であり、race editor id ではない。race の同一性は **要素 id**（spec §0）で運ばれる。→ 「user1 に race editor id が入る」前提の実装は不可。
 
+**確定フロー（`0x5C28F0` / 比較の向き）** `[部分確定]`:
+
+```
+Done(arg1=0x5A) → 0x5CC280（user0 比較）→ 0x5CCA77（名前検証）
+  → 成功: 0x579C10(callback=0x5C2BA0) で確認ダイアログ
+     → 0x5C2BA0: FindMenu(0x40C)→base→0x578D70()==2(Yes) のときだけ jmp 0x5C28F0
+        → 0x5C28F0: SetFloat(menu,0x1772,2.0); [0xB3B5D8]=1; [edi+0x864]→0x5FAEA0
+           ; ecx=[0xB37D00]; eax=0x5E3320()  ; cmp ecx,[eax+0xC]; je 0x5C2ABC
+```
+
+- `0x5E3320()` = `[player_actor + 0x104]`（`0x4D7F80` ゲート後、`actor->vtable[0x170]()` の戻り `[+0x104]`）。
+- **比較は「選択 race == 現 race」**: `je 0x5C2ABC`（**同じ**）→ race 変更処理を**スキップ**して finalize（`0x5222D0(actor,1)`, `0x57A7D0`, `0x522760`, `0x6626E0`, `0x5F2530`, `0x5F25F0`, `0x60D0A0`, `0x664700`, `0x6670C0`, `0x66C580`）。**違う** → `0x5C298C` で race を適用（`player->vtable[0x268]()`, `[edi+0x3C]` リストを `player->vtable[0x2E0]` で走査, `0x6A2280`）してから同じ finalize へ合流。
+- → **「同じなら race 変更をしない／違えば適用」の両方を 1 つの `je` が担う**（合流点は共通の finalize）。
+
+**`[0xB37D00]` の正体** `[部分確定]`:
+- 静的サイトは **5 件すべて「読み」**（`cmp [0xB37D00], [obj+0xC]` 形: `0x51C095` / `0x52231F` / `0x5C297D` / `0x66275B` / `0x663Cxx`）。**絶対アドレスでの書き込みは 0 件**（`mov [0xB37D00], reg` / `mov …, imm32` ともに無し）→ 計算ベース（グローバル構造体のフィールド）経由で書かれる。
+- 比較相手は actor/フォーム側の `+0xC`（`0x662750`/`0x663C50` はフォーム型ディスパッチを行う）→ **`[0xB37D00]` は race の FormID**（選択 race）。
+- `0x51C090`: `if ([ecx+0xC] == [0xB37D00]) ret 4`（＝既にその race なら no-op にする SetRace 風ガード）。
+- `0x5222D0`: actor メソッド（`(actor,1)` で呼ばれる）。外見/race の再評価で、内部でも `[0xB37D00]` と `[eax+0xC]` を比較。
+- **port への含意**: `[0xB37D00]` の格納先を真似る必要はなく、**「選択 race（Race トグル）と player の現 race を比べ、違えば適用」**という意味だけ実装すればよい。
+
 ### 10.3 名前検証 `0x5CCA77`（`FUN_005CC200` 内）`[部分確定]`
 
 - 入力名 `GetString(tile, 0xFDE)`（`0x588C10`）→ 長さと空白（0x20）スキャン。
@@ -419,3 +440,19 @@ RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005C
 - `0x5CCBB7`: `0x579C10` を 5 引数で呼び、そのまま `ret 8`（**commit しない**）。
 - 成功側（`0x5CCB0E`〜）: `sprintf("%s %s?" /*0xA6B4D8*/, 冠詞 /*[0xB38660]/[0xB38668]*/, 名前)`（`0x402E30`）を作り、`0x579C10` を callback `0x5C2BA0` 付きで呼ぶ。
 - `0x579C10` は menu メッセージ送出系（内部で `0x582160`=FindMenu を反復）。→ **失敗時は通知/ダイアログで戻る（無視ではない）**。成功側も `"%s %s?"` から**確認ダイアログ**。厳密な文言・`0x5C2BA0` callback は **V-653-3**。
+- **確定チェーン（実測）**: Done(`0x5A`) → 名前検証 → `0x579C10`（callback **`0x5C2BA0`**）→ Yes で `0x5C2BA0` → `0x5C28F0` → commit `0x5C9CD0`。`0x5C2BA0` は `0x578D70()` が 2 のときだけ `0x5C28F0` へ。
+
+### 10.4 Race ページの中身（race 選択の実体）`[確定(命令)]`
+
+Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 と一致）。builder の生成サイトは `0x5CA5C9` / `0x5CA5EB` / `0x5CA60B`:
+
+| id | 種別 | label | builder サイト | 備考 |
+|---|---|---|---|---|
+| 210 | toggle | **Gender** | `0x5CA5C9`（label global `[0xB38FA8]`） | FAMILY `{Race, Gender, target=-1}` の 1 組 |
+| 211 | toggle | **Race** | `0x5CA5EB`（label global `[0xB38F78]`） | **FAMILY に無い** |
+| 212 | text | **Race Description** | `0x5CA60B`（string global `[0xB38FB0]`） | 説明文 |
+
+- **race を選ぶのは Race トグル（id 211）**: `race_template_toggle` は `user4`=min index / `user5`=max index / `user0`=current index / `user6`=現在の文字列（コードが index から設定）。左右の子（`race_template_toggle_left`/`_right`）が index を増減する＝**リストではなく 1 個のトグルで race を巡回選択**する。`user1`=開始値（ビルド時の値）。
+- **クリック処理**: FAMILY は `(Race, Gender)` の 1 組だけ（Gender トグル、target `-1`＝ページ切替なし＝finalize 直行）。**Race トグルは FAMILY に無い** → 本体クリックはページ遷移ではなく、左右の子ボタンによる **値変更（race index）** として扱われる。選択結果は commit 時に読む。
+- **text の文字列源**: `Race Description`（`race_template_text` の `<string>` をコードが設定）。race **名**はトグルの `user6`（index から引く）で、text は説明文。
+
