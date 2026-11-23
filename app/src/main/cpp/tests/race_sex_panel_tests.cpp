@@ -418,5 +418,87 @@ bool RaceSexPanelTests::runAllTests() {
                panel2.currentPage() == Page::PAGE_MAIN);
     }
 
+    // --- geometry + hitTest (spec §9; pure logic) ---
+    {
+        RaceSexPanel g;
+        g.init();
+        g.setVisible(true);
+
+        // §9.2: the gutter is a constant 40px, only when >6 items.
+        const int mainW = g.paneWidth(Page::PAGE_MAIN);    // 6 items
+        const int shapeW = g.paneWidth(Page::PAGE_SHAPE);  // 9 items
+        const int noseW = g.paneWidth(Page::PAGE_NOSE);    // 14 items
+        record("paneWidth: 500 without gutter, 460 with (Main/Shape/Nose)",
+               mainW == 500 && shapeW == 460 && noseW == 460,
+               "main=" + std::to_string(mainW) + " shape=" + std::to_string(shapeW) +
+                   " nose=" + std::to_string(noseW));
+
+        // §9.4: listindex -> id, in build order.
+        record("elementIdAt: Main row 0/5",
+               g.elementIdAt(Page::PAGE_MAIN, 0) == 201 &&
+                   g.elementIdAt(Page::PAGE_MAIN, 5) == 207 &&
+                   g.elementIdAt(Page::PAGE_MAIN, 6) == -1);
+
+        // §9.1 row 0 -> first item id.
+        g.setCurrentPage(Page::PAGE_MAIN);
+        record("hitTest: row 0 -> first item id", g.hitTest(10, 0) == 201,
+               "got " + std::to_string(g.hitTest(10, 0)));
+
+        // row == count -> -1 (6 items * 93).
+        record("hitTest: row == count -> -1", g.hitTest(10, 6 * 93) == -1);
+
+        // §9.4 scroll rows 2: the same y lands two rows lower.
+        g.setScrollRows(2.0f);
+        record("hitTest: scroll_rows 2 -> row 2", g.hitTest(10, 0) == 203,
+               "got " + std::to_string(g.hitTest(10, 0)));
+        // Above the scrolled viewport -> -1.
+        record("hitTest: y above scrolled viewport -> -1", g.hitTest(10, -200) == -1);
+        g.setScrollRows(0.0f);
+
+        // §9.2 right gutter (scroll bar side) -> -1; the same x is live on a
+        // 6-item page (no gutter) so the difference is the gutter itself.
+        const bool gutterMain = (g.hitTest(499, 0) == 201);
+        g.setCurrentPage(Page::PAGE_SHAPE);
+        const bool gutterShape = (g.hitTest(470, 0) == -1) && (g.hitTest(455, 0) == 230);
+        record("hitTest: x >= pane_w -> -1 (gutter only with >6 items)",
+               gutterMain && gutterShape);
+
+        // §9.3 Done (id 90) rect, checked before the pane.
+        g.setCurrentPage(Page::PAGE_MAIN);
+        record("hitTest: Done rect -> 90",
+               g.hitTest(RaceSexPanel::DONE_X, RaceSexPanel::DONE_Y) == 90 &&
+                   g.hitTest(RaceSexPanel::DONE_X + RaceSexPanel::DONE_WIDTH - 1,
+                             RaceSexPanel::DONE_Y + RaceSexPanel::DONE_HEIGHT - 1) == 90);
+        record("hitTest: outside Done rect -> not 90",
+               g.hitTest(RaceSexPanel::DONE_X - 1, RaceSexPanel::DONE_Y) != 90 &&
+                   g.hitTest(RaceSexPanel::DONE_X,
+                             RaceSexPanel::DONE_Y + RaceSexPanel::DONE_HEIGHT) != 90);
+
+        // Hidden panel ignores everything.
+        g.setVisible(false);
+        record("hitTest: hidden panel -> -1", g.hitTest(10, 0) == -1 &&
+                                                  g.hitTest(RaceSexPanel::DONE_X,
+                                                            RaceSexPanel::DONE_Y) == -1);
+        g.setVisible(true);
+
+        // Canvas -> device conversion: 4:3 1280x960 is scale 1, no offset.
+        RaceSexPanel s;
+        s.setScreenSize(1280, 960);
+        s.init();
+        s.setVisible(true);
+        s.setCurrentPage(Page::PAGE_MAIN);
+        record("hitTestScreen: 1280x960 scale 1, origin (100,195)",
+               s.hitTestScreen(110.0f, 195.0f) == 201 &&
+                   s.hitTestScreen(100.0f, 195.0f) == 201 &&
+                   s.hitTestScreen(99.0f, 195.0f) == -1);
+        // 1920x1080: scale 1.125, letterbox x offset 240 -> origin (352.5, 219.375).
+        s.setScreenSize(1920, 1080);
+        record("hitTestScreen: 1920x1080 letterbox offset",
+               std::fabs(s.layoutScale() - 1.125f) < 1e-6f &&
+                   std::fabs(s.panelOriginX() - 352.5f) < 1e-3f &&
+                   std::fabs(s.panelOriginY() - 219.375f) < 1e-3f &&
+                   s.hitTestScreen(362.5f, 219.375f) == 201);
+    }
+
     return getFailCount() == 0;
 }

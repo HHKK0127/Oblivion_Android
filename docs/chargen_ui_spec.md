@@ -234,7 +234,8 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-642-1 | id 98（定数なし。`0xB333C4` vtable[0x170]→`0x526F00`→`0x5C91E0` の Player 系リスト操作） | `[部分確定]` |
 | V-646-3 | fld 反復の増分定数の用途 | `[未確定]` |
 | V-629-1 | `player[0xE8]==-1` の実行時裏取り（pane id には不要） | `[未確定]` |
-| V-631-1b | `RaceSexPanel` は**どこからも参照されていない（未配線）**。実装 `app/src/main/cpp/ui/race_sex_panel.{h,cpp}` とテスト `app/src/main/cpp/tests/race_sex_panel_tests.cpp` は存在するが、`UICharacterCreation` 等への接続は未着手 | `[確定(データ)]` |
+| V-631-1b | `RaceSexPanel` の配線は **row651 で完了**（`ChargenUi::Panel`、console `chargenpanel`、Done=`setOnDone`→close）。device 実機での表示・タップ確認は**未実施**（`ChargenUi::Panel` は dev トグル既定 OFF） | `[確定(データ)]` |
+| V-652-1 | スクロールバー自身の hit-test（`user7` の更新）は**未実装**。`scrollRows()` は 0 固定で、`setScrollRows()` を呼ぶ経路が無い（TBD） | `[部分確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -248,7 +249,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 
 ---
 
-## 9. geometry（item の座標）`[確定(XML)]`
+## 9. geometry（座標と hit-test）`[確定(XML)]`
 
 **item の座標はコードではなく XML template が与える**。builder は x/width/height を書かない（`push 0xFAD`(x) / `0xFCB`(width) / `0xFCA`(height) は builder 領域 `[0x5C4000,0x5CA000)` に **0 件**。全域の 47/57/73 件は `[0x57..0x59]` の汎用 tile 層）。座標は 5 template（pane `100` / button `101` / toggle `102` / slider `103` / text `104`）が持つ。item は template の実体化（§5）。
 
@@ -261,19 +262,87 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | `height` | `93` |
 | `y` | `me().listindex * me().height`（= `listindex × 93`） |
 | `repeatvertical` | `&true;` |
-| `listindex` | **builder が `0xFAA` に設定**（XML の `<listindex> 0` は初期値） |
+| `listindex` | **builder が `0xFAA` に設定**（XML の `<listindex> 0` は初期値。§9.4） |
 
-→ **1 列・行高 93・行間 0**（`y = listindex*93` で連続。列は無い）。`listindex`（`0xFAA`）は item 生成器が `SetFloat(tile, 0xFAA, GetFloat(parent, 0xFD0) - const)` で設定（button 生成器 `0x5C4480` の `0x5C4536..0x5C455B`。`0xFD0` は親 pane の値）。
+→ **1 列・行高 93・行間 0**（`y = listindex*93` で連続。列は無い）。
 
 ### 9.2 pane（`race_template_pane` / `race_pane`, id `100`）
 
-| 項目 | 式（XML template） |
+XML 実値:
+
+```xml
+<width>
+    <copy src="parent()" trait="width"/>
+    <sub>
+        <copy src="me()" trait="childcount"/>
+        <gt> 6 </gt>
+        <sub> 1 </sub>
+        <mul> 40 </mul>
+    </sub>
+</width>
+<y>
+    <copy> 0 </copy>
+    <sub> <copy src="race_scroll_bar" trait="user7"/> <mul> 93 </mul> </sub>
+    <onlyif src="me()" trait="visible"/>
+</y>
+```
+
+**閉形式**:
+
+| 項目 | 式 |
 |---|---|
-| `x` | `0` |
-| `width` | `parent().width - (me().childcount > 6 ? (me().childcount-1)*40 : 0)`（>6 でスクロールバー分を差し引く） |
-| `y` | `0 - race_scroll_bar.user7 * 93`（`onlyif me().visible`）＝スクロールオフセット |
+| `width` | `parent().width - (childcount > 6 ? 40 : 0)` → 6 item 以下は **500**、7 item 以上は **460** |
+| `y` | `- race_scroll_bar.user7 * 93`（非表示時 0）＝スクロールオフセット |
 
-### 9.3 結論
+**`sub 1` の意味（重要）**: Oblivion の boolean は **`&false;`=1 / `&true;`=2**（正典 XML 229 行 `<user5> &false; </user5> <!-- 1 (false) for Done and 2 (true) for Back -->`）。`gt` は `&true;`/`&false;` を返す（UESP *Oblivion XML Reference/Operators*、逆アセンブル由来）ため、`<sub> 1 </sub>` が 2/1 を 1/0 に落とし、`<mul> 40 </mul>` で **定数 40px**（スクロールバー用右ガター）になる。
 
-- **item の geometry は XML template が与える**（コード生成ではない）。builder は id/label/`listindex`/user trait のみ設定する。
-- 実装の `Element` に x/y/w/h を持たせる必要はなく、**描画・hit-test は template の式（`x=0`, `w=pane幅`, `h=93`, `y=listindex*93`）から算出**する。`listindex` は builder が `0xFAA` に書く値を使う。
+- **[確定(命令)(negative)] 誤読の記録**: `(childcount-1)*40` と読むと Nose（14 item）で `w = 500-520 = -20` となり、ページ全体がタップ不能になる。実機の Nose は操作できるため、この読みは**棄却**。
+- pane の親は `race_window`（500x558）。ガターは pane の外ではなく **pane 幅を 40 削る**形で確保される。
+
+### 9.3 スクロールバーと Done の位置（pane の外）
+
+| 要素 | 親 | 束縛 | 位置（親ローカル） |
+|---|---|---|---|
+| `race_scroll_bar` (id 20) | `race_window` の子（21 pane の**兄弟**） | `+0x34` | `x=parent.w-20`, `w=20`, `y=25`, `h=parent.h-50` |
+| `race_button_done` (id 90) | `race_background` の子（`race_window` の**兄弟**） | `+0x3c` | `x=parent.w-177-30`, `y=parent.h-44-20` |
+
+- `race_background` = **560x740**（`user0`/`user1`、`generic_background.xml` の `_rounded_*` は tile_size 1 なので同値）、canvas 上の位置 `(70, (960-740)/2) = (70,110)`。
+- `race_window` は background の **(30,85)**、500x558。
+- Done は background ローカル **(353,676)** → **window ローカル (323,591)**。`323+177 = 500` で右端が window 幅に一致。
+- **座標系の約束**: hit-test の入力は **window ローカル（pane 原点）**。Done も同じ系の矩形 `[323,500) × [591,635)` で判定する。
+
+### 9.4 listindex（build 順の兄弟 index）
+
+`0x5C4536..0x5C455B`（button 生成器 `0x5C4480`）:
+
+```
+push 0xfd0; call 0x588bd0        ; GetFloat(parent, 0xFD0)
+fsub qword ptr [0xa2f928]        ; - 1.0 (double @0xA2F928 = 1.0)
+push 0xfaa; call 0x58ceb0        ; SetFloat(tile, 0xFAA, parent[0xFD0]-1)
+```
+
+→ `listindex = parent[0xFD0] - 1` = **挿入時点の子 index**（0 起点、build 順）。`0xFD0` は親 pane の子数。
+
+### 9.5 hit-test（実装仕様）
+
+```
+if (!visible)                    return -1
+if (x,y) in Done rect            return 90    // §9.3, pane より先
+w = 500 - (itemCount>6 ? 40 : 0)               // §9.2
+if (x < 0 || x >= w)             return -1    // 右ガター = scrollbar
+ey = floor(y + scroll_rows*93)                 // §9.1 の逆算
+if (ey < 0)                      return -1
+row = ey / 93
+if (row >= itemCount)            return -1
+return elementIdAt(row)                        // §9.4
+```
+
+- `scroll_rows` = `race_scroll_bar.user7`。実装は `scrollRows()` / `setScrollRows()` で、**入力への接続は未実装**（V-652-1）。
+- 画面→ローカル: `scale = min(screenW/1280, screenH/960)`、`origin = レターボックス + race_window の canvas 位置 (100,195)`。`hitTestScreen()` が変換して `hitTest()` を呼ぶ。canvas 1280x960 はアプリ既存の XML 再構築（`ui_inventory_panel`）と同じ規約 `[部分確定]`。
+- 実装: `RaceSexPanel::hitTest` / `hitTestScreen` / `paneWidth` / `elementIdAt` / `itemCount`。host テストで 12 項目を固定。
+
+### 9.6 結論
+
+- **`Element` に x/y/w/h を持たせない**。幾何は式（`x=0`, `w=pane幅`, `h=93`, `y=listindex*93`）から算出する。
+- `renderer.cpp` の Panel 分岐は `hitTestScreen(x,y)` → `handleClick(id)`（`id>=0` のときのみ）。
+- 描画（widget の実位置設定）は未実装。`instantiate()` は widget を作るだけで座標を設定していない（次段）。

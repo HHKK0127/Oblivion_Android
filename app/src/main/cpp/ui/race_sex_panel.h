@@ -194,6 +194,53 @@ public:
     void setOnDone(std::function<void()> cb) { on_done_ = std::move(cb); }
     bool handleClick(int arg1);
 
+    // --- Geometry (spec §9) ---
+    // Units are the menu's own pixels on the 1280x960 UI canvas; the panel
+    // origin is race_window's top-left, i.e. pane (0,0) before scrolling.
+    static constexpr int ROW_HEIGHT = 93;       // §9.1 item height / row pitch
+    static constexpr int WINDOW_WIDTH = 500;    // §9.2 race_window width
+    static constexpr int WINDOW_HEIGHT = 558;   // §9.2 race_window height
+    static constexpr int SCROLL_VISIBLE = 6;    // §9.2 >6 items -> scroll bar
+    static constexpr int SCROLL_GUTTER = 40;    // §9.2 constant right gutter
+    // §9.3 race_button_done (id 90) is a sibling of race_window inside
+    // race_background (560x740 at x=70): bg (353,676) -> window-local (323,591).
+    // button_long.xml gives 177x44; 323+177 = 500 (right edges align).
+    static constexpr int DONE_ID = 90;
+    static constexpr int DONE_WIDTH = 177;
+    static constexpr int DONE_HEIGHT = 44;
+    static constexpr int DONE_X = 323;
+    static constexpr int DONE_Y = 591;
+    // race_window's top-left on the canvas: race_background x=70 plus
+    // race_window x=30; y = (960-740)/2 (background centred) + race_window y=85.
+    static constexpr float CANVAS_WIDTH = 1280.0f;
+    static constexpr float CANVAS_HEIGHT = 960.0f;
+    static constexpr float PANEL_CANVAS_X = 100.0f;
+    static constexpr float PANEL_CANVAS_Y = 195.0f;
+
+    // Item children of a page == the template's me().childcount.
+    int itemCount(int slot) const;
+    // §9.2: race_window width minus the scroll-bar gutter when >6 items.
+    int paneWidth(int slot) const;
+    // listindex -> runtime id (build order), or -1 when out of range.
+    int elementIdAt(int slot, int row) const;
+
+    // §9.4: race_scroll_bar.user7 (rows scrolled). Not wired to input yet
+    // (TBD: the scroll bar's own hit-test), so it stays 0 in the app.
+    float scrollRows() const { return scroll_rows_; }
+    void setScrollRows(float rows) { scroll_rows_ = rows; }
+
+    // Pane-local (race_window) hit test -> runtime id; DONE_ID for the Done
+    // button; -1 for the scroll gutter, empty rows, or a hidden panel.
+    int hitTest(int x, int y) const;
+
+    // Screen pixel -> pane-local -> hitTest(): the conversion the renderer
+    // uses. Canvas -> device is a uniform `layoutScale()` plus a letterbox
+    // offset; pure logic, so the host suite pins it.
+    int hitTestScreen(float screen_x, float screen_y) const;
+    float layoutScale() const;
+    float panelOriginX() const;
+    float panelOriginY() const;
+
     // TILE_* registry index -> element label (used by the family walk).
     static const char* tileLabel(int tile);
 
@@ -231,6 +278,8 @@ private:
     // row (arg1 == 90), i.e. the chargen exit.
     int current_page_ = PAGE_MAIN;
     std::function<void()> on_done_;
+    // §9.4 scroll offset in rows (race_scroll_bar.user7). 0 = top.
+    float scroll_rows_ = 0.0f;
 
     // Find the element on a page by its label (family walk helper).
     const Element* find_on_page(int slot, const char* label) const;

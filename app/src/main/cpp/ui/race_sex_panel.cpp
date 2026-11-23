@@ -1,5 +1,7 @@
 #include "race_sex_panel.h"
 
+#include <algorithm>
+#include <cmath>
 #include <stdexcept>
 
 // Skeleton for the RaceSexMenu (chargen) 21-page wizard.
@@ -392,4 +394,89 @@ bool RaceSexPanel::handleClick(int arg1) {
         }
     }
     return false;
+}
+
+// ---------------------------------------------------------------------------
+// Geometry (spec §9). Pure logic, host-testable.
+// ---------------------------------------------------------------------------
+
+int RaceSexPanel::itemCount(int slot) const {
+    int n = 0;
+    for (const auto& e : elements_) {
+        if (e.page_slot == slot) ++n;
+    }
+    return n;
+}
+
+int RaceSexPanel::paneWidth(int slot) const {
+    // spec §9.2. The shipped template reads:
+    //   parent().width - ( childcount > 6 ? ... )
+    // where the `>` result is the engine boolean (&true;=2, &false;=1 — the
+    // canonical XML spells this out: "<user5> &false; </user5> <!-- 1 (false)
+    // ... 2 (true) -->"), so `<sub> 1 </sub>` maps 2/1 to 1/0 and `<mul> 40
+    // </mul>` makes the shrink a CONSTANT 40px scroll-bar gutter, not 40 per
+    // item. Reading it as (childcount-1)*40 drives Nose (14 items) to -20 and
+    // makes the page untappable, which the shipped menu does not do.
+    return WINDOW_WIDTH - (itemCount(slot) > SCROLL_VISIBLE ? SCROLL_GUTTER : 0);
+}
+
+int RaceSexPanel::elementIdAt(int slot, int row) const {
+    if (row < 0) return -1;
+    int i = 0;
+    for (const auto& e : elements_) {
+        if (e.page_slot != slot) continue;
+        if (i == row) return e.id;
+        ++i;
+    }
+    return -1;
+}
+
+int RaceSexPanel::hitTest(int x, int y) const {
+    if (!isVisible()) return -1;
+
+    // §9.3 Done first: race_button_done is a sibling of race_window (outside
+    // the pane/scroll gutter) and its XML id is 90, i.e. the chain argument.
+    if (x >= DONE_X && x < DONE_X + DONE_WIDTH && y >= DONE_Y &&
+        y < DONE_Y + DONE_HEIGHT) {
+        return DONE_ID;
+    }
+
+    // §9.2 the right gutter holds the scroll bar, so it is not part of the pane.
+    const int pane_w = paneWidth(current_page_);
+    if (x < 0 || x >= pane_w) return -1;
+
+    // §9.1 inverse of y = listindex*93 - scroll_rows*93 (floor, so a negative
+    // value never truncates up to row 0).
+    const int ey = static_cast<int>(
+        std::floor(static_cast<float>(y) + scroll_rows_ * static_cast<float>(ROW_HEIGHT)));
+    if (ey < 0) return -1;
+    const int row = ey / ROW_HEIGHT;
+    if (row >= itemCount(current_page_)) return -1;
+    return elementIdAt(current_page_, row);
+}
+
+float RaceSexPanel::layoutScale() const {
+    const float sw = static_cast<float>(screenWidth);
+    const float sh = static_cast<float>(screenHeight);
+    if (sw <= 0.0f || sh <= 0.0f) return 1.0f;
+    const float s = std::min(sw / CANVAS_WIDTH, sh / CANVAS_HEIGHT);
+    return s > 0.0f ? s : 1.0f;
+}
+
+float RaceSexPanel::panelOriginX() const {
+    // Centred canvas + race_window's canvas x (race_background 70 + window 30).
+    const float s = layoutScale();
+    return (static_cast<float>(screenWidth) - CANVAS_WIDTH * s) * 0.5f + PANEL_CANVAS_X * s;
+}
+
+float RaceSexPanel::panelOriginY() const {
+    const float s = layoutScale();
+    return (static_cast<float>(screenHeight) - CANVAS_HEIGHT * s) * 0.5f + PANEL_CANVAS_Y * s;
+}
+
+int RaceSexPanel::hitTestScreen(float screen_x, float screen_y) const {
+    const float s = layoutScale();
+    const float px = (screen_x - panelOriginX()) / s;
+    const float py = (screen_y - panelOriginY()) / s;
+    return hitTest(static_cast<int>(std::floor(px)), static_cast<int>(std::floor(py)));
 }

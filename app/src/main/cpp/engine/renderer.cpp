@@ -8234,11 +8234,14 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         return;
     }
     if (isPanelChargenActive()) {
-        // Dev-only overlay (default OFF). Widget layout / hit-test-to-id is not
-        // built yet, so a tap drives the chain's Done (arg1 == 90); this is what
-        // connects the Done exit (setOnDone -> close) end to end.
+        // spec §9: screen -> pane-local (hitTestScreen), row/listindex -> id.
+        // Done is the race_button_done rect (id 90), checked inside hitTest()
+        // before the pane, so a tap on it drives the chain's Done path.
         if (action == 0 || action == 5) {
-            raceSexPanel->handleClick(90);
+            const int id = raceSexPanel->hitTestScreen(x, y);
+            if (id >= 0) {
+                raceSexPanel->handleClick(id);
+            }
         }
         return;
     }
@@ -8918,13 +8921,15 @@ void Renderer::setChargenUi(ChargenUi ui) {
     if (ui == ChargenUi::Panel) {
         if (!raceSexPanel) {
             raceSexPanel = std::make_unique<RaceSexPanel>();
-            raceSexPanel->setScreenSize(static_cast<int>(screenWidth),
-                                        static_cast<int>(screenHeight));
             raceSexPanel->init();
             // Done (arg1 == 90 on Main) closes chargen. Renderer outlives the
             // panel (both are members), so capturing `this` is safe.
             raceSexPanel->setOnDone([this]() { setChargenUi(ChargenUi::None); });
         }
+        // hitTestScreen() maps device pixels through this size (spec §9.5), so
+        // refresh it on every switch in case the surface resized.
+        raceSexPanel->setScreenSize(static_cast<int>(screenWidth),
+                                    static_cast<int>(screenHeight));
         if (textRenderer) {
             raceSexPanel->instantiate(textRenderer.get());
         }
