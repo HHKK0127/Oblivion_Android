@@ -8241,12 +8241,13 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
             if (!raceSexPanel->beginScrollDrag(x, y)) {
                 const int id = raceSexPanel->hitTestScreen(x, y);
                 if (id == RaceSexPanel::RACE_TOGGLE_ID) {
-                    // spec §10.4: the race toggle cycles on the tapped half.
+                    // spec §10.4: the panel owns the left/right decision from the
+                    // tapped half of the row.
                     const float s = raceSexPanel->layoutScale();
                     const float pane_x = (x - raceSexPanel->panelOriginX()) / s;
-                    const bool right =
-                        pane_x >= raceSexPanel->paneWidth(raceSexPanel->currentPage()) * 0.5f;
-                    raceSexPanel->cycleRace(right ? +1 : -1);
+                    raceSexPanel->cycleRaceFromTap(
+                        pane_x, static_cast<float>(
+                                    raceSexPanel->paneWidth(raceSexPanel->currentPage())));
                     raceSexPanel->applyLayout();
                 } else if (id >= 0) {
                     // handleClick resets the scroll and fires the layout hook on
@@ -8955,11 +8956,16 @@ void Renderer::setChargenUi(ChargenUi ui) {
                     Player* player = playerController->getPlayer().get();
                     // §10.2/§10.4: apply the race only when it changed (the
                     // original's 0x51C090 no-op guard), then the name.
+                    //
+                    // NpcManager::initializePlayerFromESM takes an NPC&, and
+                    // Player is a separate struct (not an NPC), so it cannot be
+                    // used here. The port carries the race as Player::raceFormID
+                    // and looks the record up via ESMManager::findRace when a
+                    // name/bonus is needed (player.h), the same reference-hold
+                    // the Legacy path sets (renderer.cpp:924). The full race
+                    // application for Player is not wired (V-654-4).
                     if (raceSexPanel->raceChanged()) {
                         player->raceFormID = raceSexPanel->selectedRaceFormID();
-                        if (npcManager) {
-                            npcManager->initializePlayerFromESM(*player, player->raceFormID, 0, 0);
-                        }
                     }
                     if (!raceSexPanel->playerName().empty()) {
                         player->name = raceSexPanel->playerName();

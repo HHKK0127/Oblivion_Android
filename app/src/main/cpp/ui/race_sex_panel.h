@@ -211,6 +211,10 @@ public:
     void setSelectedRaceIndex(int index);  // clamped to [0, count-1]
     // Left/right of the race toggle: +1/-1, clamped at the ends (V-654-3).
     void cycleRace(int delta);
+    // spec §10.4: the race toggle cycles on the tapped half of its row.
+    // pane_local_x is the panel's own (canvas) x; row_width is the row width.
+    // Left half = -1, right half = +1 (clamped).
+    void cycleRaceFromTap(float pane_local_x, float row_width);
     uint32_t selectedRaceFormID() const;
     const std::string& selectedRaceName() const;
     const std::string& selectedRaceDescription() const;

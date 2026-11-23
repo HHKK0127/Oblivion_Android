@@ -8,8 +8,9 @@
 # same device-only TUs locally with the APK's DEFINES/INCLUDES so the error is
 # caught before pushing. Exit 1 on any error.
 #
-# renderer.cpp is intentionally NOT listed: it uses GL entry points the host
-# stub does not carry, so it stays CI-only.
+# renderer.cpp is included: -fsyntax-only does not link, so the GL entry points
+# the host stub lacks are not needed, and it catches type errors like the
+# Player/NPC& mismatch that only the APK job would otherwise see.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -45,6 +46,7 @@ SOURCES=(
   app/src/main/cpp/ui/ui_slider.cpp
   app/src/main/cpp/ui/ui_toggle.cpp
   app/src/main/cpp/ui/game_console.cpp
+  app/src/main/cpp/engine/renderer.cpp
 )
 
 for src in "${SOURCES[@]}"; do

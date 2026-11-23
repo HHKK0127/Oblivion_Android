@@ -549,6 +549,44 @@ bool RaceSexPanelTests::runAllTests() {
                    sameNoop && changed && p.selectedRaceFormID() == 0x101 &&
                        p.selectedRaceName() == "Orc");
         }
+
+        // (h) tap halves: left -> -1, right -> +1, clamped at the ends.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            const float w = 500.0f;  // 2 races -> index [0,1]
+            p.setSelectedRaceIndex(1);
+            p.cycleRaceFromTap(10.0f, w);       // left half -> -1
+            const bool leftDown = (p.selectedRaceIndex() == 0);
+            p.cycleRaceFromTap(10.0f, w);       // left end clamps
+            const bool leftClamp = (p.selectedRaceIndex() == 0);
+            p.cycleRaceFromTap(w - 1.0f, w);    // right half -> +1
+            const bool rightUp = (p.selectedRaceIndex() == 1);
+            p.cycleRaceFromTap(w - 1.0f, w);    // right end clamps
+            const bool rightClamp = (p.selectedRaceIndex() == 1);
+            p.setSelectedRaceIndex(0);
+            p.cycleRaceFromTap(w * 0.5f, w);    // midpoint = right half
+            const bool midRight = (p.selectedRaceIndex() == 1);
+            record("race tap: left -1 / right +1, clamped",
+                   leftDown && leftClamp && rightUp && rightClamp && midRight,
+                   "L=" + std::to_string(leftDown) + " R=" + std::to_string(rightUp));
+        }
+
+        // (i) handleClick(211) is consumed and does nothing (spec §10.4).
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setSelectedRaceIndex(0);
+            p.setCurrentPage(Page::PAGE_RACE);
+            const bool consumed = p.handleClick(RaceSexPanel::RACE_TOGGLE_ID);
+            record("handleClick(211): consumed, no page change, no cycle",
+                   consumed && p.currentPage() == Page::PAGE_RACE &&
+                       p.selectedRaceIndex() == 0);
+        }
     }
 
     // --- geometry + hitTest (spec §9; pure logic) ---

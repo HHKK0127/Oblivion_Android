@@ -244,6 +244,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-654-1 | **close**。port に race 受け皿あり（一覧 `ESMManager::getAllRaces()` ＋ playable フィルタ `(flags & 1u)`、適用 `NpcManager::initializePlayerFromESM()` ＋ `Player::raceFormID`）。§10.5 | `[確定(データ)]` |
 | V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
 | V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
+| V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -444,7 +445,7 @@ Done(arg1=0x5A) → 0x5CC280（user0 比較）→ 0x5CCA77（名前検証）
 - 成功側（`0x5CCB0E`〜）: `sprintf("%s %s?" /*0xA6B4D8*/, 冠詞 /*[0xB38660]/[0xB38668]*/, 名前)`（`0x402E30`）を作り、`0x579C10` を callback `0x5C2BA0` 付きで呼ぶ。
 - `0x579C10` は menu メッセージ送出系（内部で `0x582160`=FindMenu を反復）。→ **失敗時は通知/ダイアログで戻る（無視ではない）**。成功側も `"%s %s?"` から**確認ダイアログ**。厳密な文言・`0x5C2BA0` callback は **V-653-3**。
 - **確定チェーン（実測）**: Done(`0x5A`) → 名前検証 → `0x579C10`（callback **`0x5C2BA0`**）→ Yes で `0x5C2BA0` → `0x5C28F0` → commit `0x5C9CD0`。`0x5C2BA0` は `0x578D70()` が 2 のときだけ `0x5C28F0` へ。
-- **実装（row656）**: `RaceSexPanel::handleDone()` が検証（`NameCheck` = Empty/HasSpace/Unchanged）→ `on_notify_`（通知のみ・commit しない）or `on_confirm_`（`"%s %s?"` = 冠詞＋名前）。Yes で `commit()`（`confirmed_=true` → `on_commit_`）。renderer は `showMessage(body, {"OK"})` / `showMessage(body, {"Yes","No"})`（`UIMessageBox`）に委譲し、`on_commit_` で **race（変化時のみ `player->raceFormID`＋`initializePlayerFromESM`）＋名前反映 → `setChargenUi(None)`**。冠詞は `articleFor()`（先頭母音で "an"、他は "a"／`V-654-2`）。
+- **実装（row656）**: `RaceSexPanel::handleDone()` が検証（`NameCheck` = Empty/HasSpace/Unchanged）→ `on_notify_`（通知のみ・commit しない）or `on_confirm_`（`"%s %s?"` = 冠詞＋名前）。Yes で `commit()`（`confirmed_=true` → `on_commit_`）。renderer は `showMessage(body, {"OK"})` / `showMessage(body, {"Yes","No"})`（`UIMessageBox`）に委譲し、`on_commit_` で **race（変化時のみ `player->raceFormID`＋`initializePlayerFromESM`）＋名前反映 → `setChargenUi(None)`**。冠詞は `articleFor()`（先頭母音で "an"、他は "a"／`V-654-2`）。race 適用は **`Player::raceFormID` のみ**（`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct で呼べない／`V-654-4`）。
 
 ### 10.4 Race ページの中身（race 選択の実体）`[確定(命令)]`
 

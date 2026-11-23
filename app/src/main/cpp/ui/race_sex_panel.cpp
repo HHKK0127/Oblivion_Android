@@ -363,6 +363,12 @@ const char* RaceSexPanel::tileLabel(int tile) {
 }
 
 bool RaceSexPanel::handleClick(int arg1) {
+    // The race toggle (id 211) is not a page transition: its value change is
+    // driven by the tapped half (cycleRaceFromTap), so handleClick consumes it
+    // and does nothing (spec §10.4). The renderer routes id 211 to
+    // cycleRaceFromTap before calling handleClick.
+    if (arg1 == RACE_TOGGLE_ID) return true;
+
     // Layer 1: chain (spec §6.2). arg1 == 90 is Done/Return; the row whose pane
     // is the current page decides. Main's row (next == -1) is the chargen exit;
     // no match falls through to Main.
@@ -644,6 +650,11 @@ void RaceSexPanel::cycleRace(int delta) {
     // The original's end behaviour (wrap vs clamp) is not measured; clamp
     // (V-654-3).
     setSelectedRaceIndex(selected_race_index_ + delta);
+}
+
+void RaceSexPanel::cycleRaceFromTap(float pane_local_x, float row_width) {
+    // spec §10.4: the left half steps back, the right half steps forward.
+    cycleRace(pane_local_x >= row_width * 0.5f ? +1 : -1);
 }
 
 uint32_t RaceSexPanel::selectedRaceFormID() const {

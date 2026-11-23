@@ -68,6 +68,7 @@ typedef void GLvoid;
 #define GL_TEXTURE1 0x84C1
 #define GL_TEXTURE2 0x84C2
 #define GL_TEXTURE3 0x84C3
+#define GL_TEXTURE4 0x84C4
 #define GL_VIEWPORT 0x0BA2
 #define GL_LESS 0x0201
 #define GL_LEQUAL 0x0203
@@ -75,6 +76,15 @@ typedef void GLvoid;
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_SCISSOR_TEST 0x0C11
 #define GL_CULL_FACE 0x0B44
+// Error codes + glGetError/glDepthMask exist so engine/renderer.cpp can be
+// syntax-checked locally (scripts/syntax_check_ui.sh); no host test asserts on
+// them.
+#define GL_NO_ERROR 0
+#define GL_INVALID_ENUM 0x0500
+#define GL_INVALID_VALUE 0x0501
+#define GL_INVALID_OPERATION 0x0502
+#define GL_OUT_OF_MEMORY 0x0505
+#define GL_INVALID_FRAMEBUFFER_OPERATION 0x0506
 
 // Function entry points are provided as no-ops by tools/host_tests/host_gl_stubs.cpp.
 // They exist so that non-rendering suites can link sources that upload GPU buffers
@@ -96,6 +106,8 @@ void glGenTextures(GLsizei n, GLuint* textures);
 void glGenVertexArrays(GLsizei n, GLuint* arrays);
 void glGenerateMipmap(GLenum target);
 void glGetIntegerv(GLenum pname, GLint* data);
+GLenum glGetError(void);
+void glDepthMask(GLboolean flag);
 void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
                   GLsizei height, GLint border, GLenum format, GLenum type, const void* pixels);
 void glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width,
