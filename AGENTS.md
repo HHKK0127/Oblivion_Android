@@ -51,3 +51,10 @@ When a repository's documentation and its existing code disagree, follow the con
 
 - probe ハーネス（`v307_common.py`）・抽出 XML・裁定書は **`%TEMP%` に置かない**（掃除で消える。2026-11-22 に `%TEMP%\opencode` の `v307_common.py` と `bsa_chargen\*.xml` が消失）。`D:\re\` を使い、`D:\re\MANIFEST.sha256` で sha256 検証する。消えたら BSA（`Oblivion - Misc.bsa`）から再抽出し sha256 照合する。
 - `race_sex_menu.xml` の正典: raw md5 `d367341334fa89101ba4fc077edb52fe` / 22156B / CRLF / 705 行（`D:\re\XML_CANONICAL.txt`）。
+
+## precheck（コミット前検査）
+
+- コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可）。**終了コード 1 で失敗**。
+- 検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（ドット `.`/`．`/`。` の直後に `AV` が続く mojibake パターン）。
+- 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動 3 検査は行わない。
+- `scripts/precheck.py` 自身は CN リスト（簡体字）を含むため、スクリプトは自分自身を検査対象から除外する。
