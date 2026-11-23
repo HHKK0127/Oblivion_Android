@@ -25,8 +25,8 @@ LEDGER = os.path.join(BASE, "TODO_re49.md")
 CURRENT_MIN = 540          # 旧書式（セル内パイプ混入）の境界。2026-11-21 時点。row 604 で正規化追跡
 EXPECT_PIPES = 7
 LEGACY_BASELINE = 33       # 旧書式行の baseline（2026-11-21）。増加は ERROR
-TOTAL_BASELINE = 514       # V-row 総数 baseline（2026-11-23, row628 追加）。増減は --allow-row-delta でのみ許可
-OPEN_BASELINE = 6          # open row 数 baseline。増減は --allow-row-delta でのみ許可
+TOTAL_BASELINE = 515       # V-row 総数 baseline（2026-11-23, row629 追加）。増減は --allow-row-delta でのみ許可
+OPEN_BASELINE = 7          # open row 数 baseline。増減は --allow-row-delta でのみ許可
 ALLOW_ROW_DELTA = "--allow-row-delta" in sys.argv
 
 rows = {}
