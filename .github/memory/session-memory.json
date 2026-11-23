@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-23T23:59:00Z",
+  "lastUpdated": "2026-11-24T01:10:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -16009,14 +16009,59 @@
         "racesexmenu"
       ],
       "content": "2026-11-23 v650（ai-todo #96）＝chargen lane 完了: docs/chargen_ui_spec.md 完成（tmp/re から docs/ へ移動。docs/ 追跡下）。完了条件「XML を開かずに構造を説明できる」達成。内容で示す: (a) 21 ページ（pane 名/+0x40 slot/id/種別件数）、(b) 118 item（button 22/toggle 5/text 1/slider 90）、(c) 束縛 6 スロット（race_window/race_player_grab/race_name/race_scroll_bar/vertical_scroll_marker/race_button_done）、(d) 2 層遷移（chain=Done/Return の階層上昇、family=28 タブ遷移）。§3 pane 構造（+0x40 21 slot/+0x94 500 枠 id→tile/Init 21 slot NULL 初期化/&generic;=-1 非束縛）、§0 設計方針（名前は表示専用・引当は id、原作との差=名前引き→id 引きの意図的逸脱）、§1 builder guard（+0x28/+0x2c/+0x30/+0x3c 非 NULL 必須/+0x38 対象外）、§4 0x5C3440 定義（str1=pane 名/str2=tile 名で tile を返す）、§6.1 arg1==98 内容を記載。V-649-1 [確定(命令)(negative)]: family 定数 [esp+0x3c]/[esp+0x48] は HandleClick 内および finalize の呼び出し先 3 関数（0x7B4280/0x7C5E70/0x7C7EB0）に読者なし。将来 caller 側で読まれる可能性は残るが、スタックローカルなので実質デッド。lane を閉じる理由: 遷移表は arg1 経路で完成し、id 98（V-642-1）は付加経路。残点 4 件（V-642-1/V-646-3/V-629-1/V-631-1）は非ブロッカー。docs/MENU_XML_INTERPRETER_DESIGN.md から束縛層の受け皿として参照 1 行追加。台帳 row627。以降は ESS lane（実 .ess 待ち）と実装側（race_sex_panel skeleton と実装単位列の充填）へ。"
+    },
+    {
+      "id": "opencode-race-sex-panel-impl-20261123",
+      "timestamp": "2026-11-24T00:20:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "racesexmenu",
+        "impl",
+        "race_sex_panel",
+        "v652"
+      ],
+      "content": "2026-11-23（ai-todo #96・実装 lane 開始）＝(1) 台帳 row629 起票: build_main（Main 6 item id 201-208）。round_verify baseline 514/6→515/7。(2) 台帳 row630-649 起票: 残り 20 ページの build_<page> 実装単位（Race..NoseTex。item id 範囲と label を desc に列挙、出典 spec §2/§6.2/§6.3・v640）。baseline 515/7→535/27。両 baseline 更新は row 追加と別コミット。(3) worktree feat-race-sex-panel に RaceSexPanel 要素レジストリ＋build_main を実装（commit 6d675c63、skeleton e70222f2 の後）。設計判断: 要素は {id,user0_id,type,label,page_slot} の Element（UIComponent 派生 widget ではない）。根拠=リポジトリに button 以外の widget（slider/toggle/text）が無く、RaceSexPanel はどこからも参照されない独立クラス。+0x40 相当 pane_ids_[21](-1=空)、+0x94 相当 id_to_index_[500]（0=空, else 要素 index+1）、elements_、counter_=200。id 採番: pane=++counter（Main は 0 で非消費）、item=++counter、slider は 2 id 消費（user0）。init() で 21 slot と id 表をクリア（spec §3 安全側）。build_main = button Race(201)/Face(202)/Hair(203)＋toggle Eyes(204)＋slider Age(205+206)＋Complexion(207+208)。Eyes/Complexion は action TBD のまま（遷移は FAMILY の target=-1 行に委ねる）。検証: g++ -std=c++17 -fsyntax-only EXIT=0（MinGW 用スタブ D:\\re\\stubinc の GLES3/gl3.h・android/log.h。NDK sysroot は MinGW libstdc++ と混在不可で asm/types.h で失敗）。残: 20 ページ実装と遷移表全走査テスト。"
+    },
+    {
+      "id": "opencode-race-sex-panel-20pages-20261123",
+      "timestamp": "2026-11-24T00:50:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "racesexmenu",
+        "impl",
+        "race_sex_panel",
+        "test"
+      ],
+      "content": "2026-11-23（ai-todo #96・実装 lane）＝RaceSexPanel の残り 20 ページ（build_race..build_nose_tex、112 item、id 209-428）を worktree feat-race-sex-panel に実装（commit 9f2d5b35。build_main 6d675c63 の後、skeleton e70222f2）。各 builder は pane_ids_[PAGE_X]=alloc_id()（Main のみ 0）→ add_button/add_toggle/add_text/add_slider を v640 の build 順で並べる。合計 118 item（Main 6 + 20 ページ 112）。検証: (a) g++ -std=c++17 -fsyntax-only EXIT=0（MinGW スタブ D:\\re\\stubinc）、(b) ソース・パリティ検査 D:\\re\\verify_race_sex_impl.py = race_sex_panel.cpp の add_* 呼び出しを parse し v640_item_labels.md と label/type/順序を照合 → PARITY OK（canonical 118 / parsed 118、counter 則一致）。【テスト配線の障壁（次作業単位）】ホスト runner tools/host_tests/run_host_tests.sh は UIPanel 派生クラスを 1 つもコンパイルしていない。race_sex_panel.cpp を SOURCES に足すと ui_panel.cpp→UIDrawHelper::drawColoredQuad/drawTexturedQuad・TextureLoader::getTextureSize、ui_component.cpp→同、さらに glEnable/glDisable/glBlendFunc/glGetBooleanv が未定義（host_gl_stubs.cpp に無い）。選択肢: (A) 描画層（ui_draw_helper.cpp/texture_loader.cpp）＋ GL シンボルを host スタブへ追加し real で組む（共有 infra 変更・他 suite への影響注意）、(B) 要素レジストリを UIPanel 非依存の plain 型に分離してテスト（builders を plain クラスへ移す小リファクタ）、(C) UIPanel/UIComponent の最小スタブ TU を追加（プロジェクト規則「mid-layer は real で組む」に反する）。台帳 row629/630-649 は push 済（master 5f24116b）。実装 3 コミットは worktree 未マージ。"
+    },
+    {
+      "id": "opencode-race-sex-panel-tests-20261123",
+      "timestamp": "2026-11-24T01:10:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "racesexmenu",
+        "test",
+        "race_sex_panel",
+        "host_tests"
+      ],
+      "content": "2026-11-23（ai-todo #96・実装 lane）＝RaceSexPanel の host テストを追加し完了条件を達成（commit e6c5b22a、worktree feat-race-sex-panel）。新規 app/src/main/cpp/tests/race_sex_panel_tests.{h,cpp}（class RaceSexPanelTests、既存 suite 書式）。10 チェック: init / 118 item / 21 pane id（spec §2 の 0,209,213,224,229,239,246,257,264,275,290,299,306,315,336,365,376,389,402,417,424）/ ページ別 count・type 内訳 / 全 item が id>0・label 非空・slider は user0=id+1・id 単調増加 / +0x94 lookup（id と user0 が同一要素に解決、未使用 slot は null）/ Main 6 item（id 201-208）/ 特徴的 label 存在 / chain 全走査（19 行、-1=1、Face=2、Shape=10〔Brow が 2 回〕、Tone=6）/ family 全走査（28 行、-1=8、Random/Reset は sentinel pane -2/-3）。ローカル実行 D:\\re\\race_sex_suite.exe = Total 10 / Pass 10 / Fail 0。配線: host_runner_main.cpp に RaceSexPanelTests 追加。run_host_tests.sh SOURCES に race_sex_panel.cpp/ui_panel.cpp/ui_component.cpp/ui_draw_helper.cpp/texture_loader.cpp と test cpp を追加（MSVC 版 ps1 は sh から SOURCES を parse する単一正典なので変更不要）。host スタブ拡張: stubs/GLES3/gl3.h に GL_DEPTH_TEST/GL_BLEND/GL_SRC_ALPHA/GL_ONE_MINUS_SRC_ALPHA/GL_TRIANGLE_STRIP/GL_TEXTURE0-3/GL_VIEWPORT/GL_LESS/GL_LEQUAL/GL_DEPTH_BUFFER_BIT/GL_COLOR_BUFFER_BIT/GL_SCISSOR_TEST/GL_CULL_FACE と glGetBooleanv/glDisable/glEnable/glBlendFunc/glUniform4f/glDrawArrays/glActiveTexture/glUniform2f/glUniform3f/glDisableVertexAttribArray/glViewport/glDepthFunc/glClear/glClearColor/glScissor/glUniformMatrix3fv の宣言、host_gl_stubs.cpp に対応する no-op 定義。検証: (a) 対象サブセットの実リンク＋実行で 10/10 PASS、(b) runner と同一 DEFINES/INCLUDES で g++ -fsyntax-only EXIT=0（追加 7 ファイル）、(c) precheck OK。注意: フル host runner（run_host_tests.sh）は Rust FFI ホストアーカイブ（rust/target/gnu/*/release/lib{assets,bsa,plugin,esm}_ffi.a）未生成のためローカルでは実行不可＝CI で検証される。実装 4 コミット（e70222f2 skeleton / 6d675c63 registry+build_main / 9f2d5b35 20 ページ / e6c5b22a test）は worktree 未マージ。"
     }
   ],
   "metadata": {
-    "totalEntries": 1075,
+    "totalEntries": 1078,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-23T23:59:00Z",
-    "entry_count": 1075,
-    "last_updated": "2026-11-23T08:00:00Z"
+    "lastUpdated": "2026-11-24T01:10:00Z",
+    "entry_count": 1078,
+    "last_updated": "2026-11-24T01:10:00Z"
   }
 }
