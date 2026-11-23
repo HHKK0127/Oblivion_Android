@@ -370,7 +370,9 @@ bool RaceSexPanel::handleClick(int arg1) {
         for (const auto& row : CHAIN) {
             if (row.pane == current_page_) {
                 if (row.next == -1) {
-                    if (on_done_) on_done_();
+                    // Main: the commit path (spec §10.3) — validate the name,
+                    // notify-only on failure, otherwise ask for confirmation.
+                    handleDone();
                 } else {
                     // §9.7: user7 is shared by every page, so a page switch starts
                     // at the top rather than inheriting the previous offset.
@@ -616,4 +618,110 @@ void RaceSexPanel::updateScrollDrag(float screen_y) {
 }
 
 void RaceSexPanel::endScrollDrag() { scroll_dragging_ = false; }
+
+// ---------------------------------------------------------------------------
+// Race selection (spec §10.4). Pure logic: the index, the clamp and the name
+// are host-testable; the widgets are refreshed by applyLayout().
+// ---------------------------------------------------------------------------
+
+void RaceSexPanel::setAvailableRaces(std::vector<RaceEntry> races) {
+    races_ = std::move(races);
+    selected_race_index_ = 0;
+}
+
+void RaceSexPanel::setSelectedRaceIndex(int index) {
+    const int count = raceCount();
+    if (count <= 0) {
+        selected_race_index_ = 0;
+        return;
+    }
+    if (index < 0) index = 0;
+    if (index >= count) index = count - 1;
+    selected_race_index_ = index;
+}
+
+void RaceSexPanel::cycleRace(int delta) {
+    // The original's end behaviour (wrap vs clamp) is not measured; clamp
+    // (V-654-3).
+    setSelectedRaceIndex(selected_race_index_ + delta);
+}
+
+uint32_t RaceSexPanel::selectedRaceFormID() const {
+    if (selected_race_index_ < 0 || selected_race_index_ >= raceCount()) return 0;
+    return races_[selected_race_index_].form_id;
+}
+
+const std::string& RaceSexPanel::selectedRaceName() const {
+    static const std::string kEmpty;
+    if (selected_race_index_ < 0 || selected_race_index_ >= raceCount()) return kEmpty;
+    return races_[selected_race_index_].name;
+}
+
+const std::string& RaceSexPanel::selectedRaceDescription() const {
+    static const std::string kEmpty;
+    if (selected_race_index_ < 0 || selected_race_index_ >= raceCount()) return kEmpty;
+    return races_[selected_race_index_].description;
+}
+
+bool RaceSexPanel::raceChanged() const {
+    const uint32_t id = selectedRaceFormID();
+    return id != 0 && id != current_race_form_id_;
+}
+
+// ---------------------------------------------------------------------------
+// Name + confirm + commit (spec §10.3).
+// ---------------------------------------------------------------------------
+
+RaceSexPanel::NameCheck RaceSexPanel::validateName(const std::string& name) const {
+    if (name.empty()) return NameCheck::Empty;
+    for (char c : name) {
+        if (c == ' ' || c == '\t') return NameCheck::HasSpace;
+    }
+    if (name == current_name_) return NameCheck::Unchanged;
+    return NameCheck::Ok;
+}
+
+const char* RaceSexPanel::articleFor(const std::string& name) {
+    // V-654-2: the original's rule ([0xB38660]/[0xB38668]) is not measured; use
+    // the vowel heuristic.
+    if (name.empty()) return "a";
+    switch (name[0]) {
+        case 'a': case 'e': case 'i': case 'o': case 'u':
+        case 'A': case 'E': case 'I': case 'O': case 'U':
+            return "an";
+        default:
+            return "a";
+    }
+}
+
+RaceSexPanel::DoneAction RaceSexPanel::handleDone() {
+    const NameCheck check = validateName(player_name_);
+    if (check != NameCheck::Ok) {
+        // Notify only; no commit (spec §10.3).
+        std::string body;
+        switch (check) {
+            case NameCheck::Empty: body = "You must enter a name."; break;
+            case NameCheck::HasSpace: body = "Names cannot contain spaces."; break;
+            case NameCheck::Unchanged: body = "That is already your name."; break;
+            default: break;
+        }
+        if (on_notify_) on_notify_(body);
+        return DoneAction::Notify;
+    }
+    if (on_confirm_) {
+        const std::string body =
+            std::string(articleFor(player_name_)) + " " + player_name_ + "?";
+        on_confirm_(body, [this](bool yes) {
+            if (yes) commit();
+        });
+        return DoneAction::Confirm;
+    }
+    return DoneAction::None;
+}
+
+void RaceSexPanel::commit() {
+    confirmed_ = true;
+    // The owner applies the race (only when changed) and the name, then closes.
+    if (on_commit_) on_commit_();
+}
 

@@ -390,8 +390,6 @@ bool RaceSexPanelTests::runAllTests() {
     {
         RaceSexPanel panel2;
         panel2.init();
-        int done = 0;
-        panel2.setOnDone([&done]() { ++done; });
 
         // leaf (Nose) Done -> up one level to Shape.
         panel2.setCurrentPage(Page::PAGE_NOSE);
@@ -399,11 +397,19 @@ bool RaceSexPanelTests::runAllTests() {
         record("handleClick: leaf Done -> Shape",
                consumed && panel2.currentPage() == Page::PAGE_SHAPE);
 
-        // Main Done -> onDone fired, page stays Main.
+        // Main Done -> the commit flow (spec §10.3), not a bare close.
         panel2.setCurrentPage(Page::PAGE_MAIN);
+        int confirms = 0;
+        panel2.setCurrentName("Bendu Olo");
+        panel2.setPlayerName("Martin");
+        panel2.setOnConfirm([&confirms](const std::string&, std::function<void(bool)> done) {
+            ++confirms;
+            done(true);
+        });
         panel2.handleClick(90);
-        record("handleClick: Main Done fires onDone",
-               done == 1 && panel2.currentPage() == Page::PAGE_MAIN);
+        record("handleClick: Main Done runs the commit flow",
+               confirms == 1 && panel2.isConfirmed() && panel2.currentPage() == Page::PAGE_MAIN,
+               "confirms=" + std::to_string(confirms));
 
         // family row with target == -1 (Age, id 205) -> consumed, page unchanged.
         panel2.setCurrentPage(Page::PAGE_MAIN);
@@ -416,6 +422,133 @@ bool RaceSexPanelTests::runAllTests() {
         panel2.handleClick(90);
         record("handleClick: unmatched Done -> Main",
                panel2.currentPage() == Page::PAGE_MAIN);
+    }
+
+    // --- name / confirm / commit + race toggle (spec §10.2/§10.3/§10.4) ---
+    {
+        // Helper: a panel with two races and callbacks that record what happened.
+        auto makePanel = [](RaceSexPanel& p, int& notifies, int& confirms, bool& lastYes,
+                            int& commits) {
+            p.init();
+            p.setAvailableRaces({{0x100, "Imperial", "The Imperial race."},
+                                 {0x101, "Orc", "The Orc race."}});
+            p.setCurrentRaceFormID(0x100);
+            p.setCurrentName("Bendu Olo");
+            p.setPlayerName("Bendu Olo");
+            p.setOnNotify([&notifies](const std::string&) { ++notifies; });
+            p.setOnConfirm([&confirms, &lastYes](const std::string& body,
+                                                 std::function<void(bool)> done) {
+                ++confirms;
+                lastYes = body.find("?") != std::string::npos;  // a confirm prompt
+                done(true);
+            });
+            p.setOnCommit([&commits]() { ++commits; });
+        };
+
+        // (a) unchanged name -> notify only, no commit.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setCurrentPage(Page::PAGE_MAIN);
+            const auto action = p.handleDone();
+            record("done: unchanged name -> notify, no commit",
+                   action == RaceSexPanel::DoneAction::Notify && notifies == 1 &&
+                       confirms == 0 && commits == 0 && !p.isConfirmed(),
+                   "notify=" + std::to_string(notifies) + " commit=" + std::to_string(commits));
+        }
+
+        // (b) name with a space -> notify only.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setPlayerName("Bendu Olo Jr");
+            const auto action = p.handleDone();
+            record("done: name with a space -> notify, no commit",
+                   action == RaceSexPanel::DoneAction::Notify && notifies == 1 && commits == 0,
+                   "notify=" + std::to_string(notifies) + " commit=" + std::to_string(commits));
+        }
+
+        // (c) empty name -> notify only.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setPlayerName("");
+            const auto action = p.handleDone();
+            record("done: empty name -> notify, no commit",
+                   action == RaceSexPanel::DoneAction::Notify && notifies == 1 && commits == 0);
+        }
+
+        // (d) valid new name -> confirm; Yes -> commit.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setPlayerName("Martin");
+            const auto action = p.handleDone();
+            record("done: valid name -> confirm -> Yes commits",
+                   action == RaceSexPanel::DoneAction::Confirm && lastYes && confirms == 1 &&
+                       commits == 1 && p.isConfirmed(),
+                   "confirm=" + std::to_string(confirms) + " commit=" + std::to_string(commits));
+        }
+
+        // (e) valid new name -> confirm; No -> no commit.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            p.init();
+            p.setAvailableRaces({{0x100, "Imperial", "d"}, {0x101, "Orc", "d"}});
+            p.setCurrentRaceFormID(0x100);
+            p.setCurrentName("Bendu Olo");
+            p.setPlayerName("Martin");
+            p.setOnConfirm([&confirms](const std::string&, std::function<void(bool)> done) {
+                ++confirms;
+                done(false);  // No
+            });
+            p.setOnCommit([&commits]() { ++commits; });
+            const auto action = p.handleDone();
+            record("done: confirm No -> no commit",
+                   action == RaceSexPanel::DoneAction::Confirm && confirms == 1 && commits == 0 &&
+                       !p.isConfirmed(),
+                   "confirm=" + std::to_string(confirms) + " commit=" + std::to_string(commits));
+        }
+
+        // (f) article heuristic (V-654-2).
+        record("articleFor: vowel -> an, consonant -> a",
+               std::string(RaceSexPanel::articleFor("Orc")) == "an" &&
+                   std::string(RaceSexPanel::articleFor("Martin")) == "a" &&
+                   std::string(RaceSexPanel::articleFor("")) == "a");
+
+        // (g) race toggle: clamp at both ends, no-op when unchanged.
+        {
+            RaceSexPanel p;
+            int notifies = 0, confirms = 0, commits = 0;
+            bool lastYes = false;
+            makePanel(p, notifies, confirms, lastYes, commits);
+            p.setSelectedRaceIndex(0);
+            p.cycleRace(-1);  // left end clamps
+            const bool clampLo = (p.selectedRaceIndex() == 0);
+            p.setSelectedRaceIndex(p.raceCount() - 1);
+            p.cycleRace(+1);  // right end clamps
+            const bool clampHi = (p.selectedRaceIndex() == p.raceCount() - 1);
+            record("race toggle: -1/+1 clamp at the ends", clampLo && clampHi,
+                   "lo=" + std::to_string(clampLo) + " hi=" + std::to_string(clampHi));
+
+            p.setSelectedRaceIndex(0);
+            const bool sameNoop = !p.raceChanged();  // 0x100 == current 0x100
+            p.setSelectedRaceIndex(1);
+            const bool changed = p.raceChanged();     // 0x101 != current
+            record("race: same as current -> no-op, different -> changed",
+                   sameNoop && changed && p.selectedRaceFormID() == 0x101 &&
+                       p.selectedRaceName() == "Orc");
+        }
     }
 
     // --- geometry + hitTest (spec §9; pure logic) ---

@@ -135,6 +135,17 @@ void RaceSexPanel::applyLayout() {
         e.widget->setSize(r.w, r.h);
         e.widget->setVisible(isElementVisible(e.page_slot, row));
         setWidgetScale(e.widget.get(), s);
+        // §10.4: the race toggle shows the selected race name; the description
+        // text shows the selected race's description.
+        if (e.id == RACE_TOGGLE_ID) {
+            if (auto* toggle = dynamic_cast<UIToggle*>(e.widget.get())) {
+                toggle->setLabel(selectedRaceName());
+            }
+        } else if (e.id == RACE_DESC_ID) {
+            if (auto* text = dynamic_cast<oblivion::ui::MenuTextComponent*>(e.widget.get())) {
+                text->setText(selectedRaceDescription());
+            }
+        }
     }
 
     if (done_widget_) {

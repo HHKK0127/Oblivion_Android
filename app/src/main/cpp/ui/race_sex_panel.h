@@ -3,6 +3,7 @@
 #include "ui_panel.h"
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
@@ -194,6 +195,67 @@ public:
     void setOnDone(std::function<void()> cb) { on_done_ = std::move(cb); }
     bool handleClick(int arg1);
 
+    // --- Race selection (spec §10.4) ---
+    // One selectable race. The port fills this from
+    // ESMManager::getAllRaces() filtered by (flags & 1) (playable); only the
+    // formID/name/description are needed here.
+    struct RaceEntry {
+        uint32_t form_id = 0;
+        std::string name;
+        std::string description;
+    };
+
+    void setAvailableRaces(std::vector<RaceEntry> races);
+    int raceCount() const { return static_cast<int>(races_.size()); }
+    int selectedRaceIndex() const { return selected_race_index_; }
+    void setSelectedRaceIndex(int index);  // clamped to [0, count-1]
+    // Left/right of the race toggle: +1/-1, clamped at the ends (V-654-3).
+    void cycleRace(int delta);
+    uint32_t selectedRaceFormID() const;
+    const std::string& selectedRaceName() const;
+    const std::string& selectedRaceDescription() const;
+    // The race the player currently has (the original's 0x5E3320()[+0xC]).
+    uint32_t currentRaceFormID() const { return current_race_form_id_; }
+    void setCurrentRaceFormID(uint32_t id) { current_race_form_id_ = id; }
+    // True when the selection differs from the current race; commit() only
+    // applies the race then (the original's 0x51C090 no-op guard).
+    bool raceChanged() const;
+
+    // --- Name + confirm + commit (spec §10.1/§10.3) ---
+    // The original rejects a name that is empty, contains a space, or is
+    // unchanged from the current one (0x5CCA77). `player_name_` is the entered /
+    // shown name; `current_name_` is the player's current name (the baseline).
+    enum class NameCheck { Ok, Empty, HasSpace, Unchanged };
+    NameCheck validateName(const std::string& name) const;
+    void setCurrentName(const std::string& name) { current_name_ = name; }
+    const std::string& currentName() const { return current_name_; }
+
+    // Done(Main) flow: validate the name; notify-only on failure, otherwise ask
+    // for confirmation. Returns what it did (host-testable).
+    enum class DoneAction { None, Notify, Confirm };
+    DoneAction handleDone();
+
+    // Apply the confirmed state: race (only when changed) + name + flag. The
+    // actual application is delegated to on_commit_ (the renderer owns the
+    // Player / NpcManager).
+    void commit();
+    bool isConfirmed() const { return confirmed_; }
+
+    // "%s %s?" article (V-654-2: vowel heuristic, the original's rule is not
+    // measured).
+    static const char* articleFor(const std::string& name);
+
+    // Owner hooks. The renderer wires these to UIMessageBox (notify / Yes-No)
+    // and to the player application.
+    void setOnNotify(std::function<void(const std::string& body)> cb) {
+        on_notify_ = std::move(cb);
+    }
+    void setOnConfirm(
+        std::function<void(const std::string& body, std::function<void(bool)> done)> cb) {
+        on_confirm_ = std::move(cb);
+    }
+    void setOnCommit(std::function<void()> cb) { on_commit_ = std::move(cb); }
+
     // --- Geometry (spec §9) ---
     // Units are the menu's own pixels on the 1280x960 UI canvas; the panel
     // origin is race_window's top-left, i.e. pane (0,0) before scrolling.
@@ -210,6 +272,9 @@ public:
     static constexpr int DONE_HEIGHT = 44;
     static constexpr int DONE_X = 323;
     static constexpr int DONE_Y = 591;
+    // Race page elements (spec §10.4): the race toggle and its description text.
+    static constexpr int RACE_TOGGLE_ID = 211;
+    static constexpr int RACE_DESC_ID = 212;
     // race_window's top-left on the canvas: race_background x=70 plus
     // race_window x=30; y = (960-740)/2 (background centred) + race_window y=85.
     static constexpr float CANVAS_WIDTH = 1280.0f;
@@ -360,6 +425,17 @@ private:
     int visible_rows_ = 6;
     // §10.1 the name shown on race_name (player's current name).
     std::string player_name_;
+    // The player's current name, the baseline for the "unchanged" check.
+    std::string current_name_;
+
+    // Race selection + confirm state (spec §10.2/§10.4).
+    std::vector<RaceEntry> races_;
+    int selected_race_index_ = 0;
+    uint32_t current_race_form_id_ = 0;
+    bool confirmed_ = false;
+    std::function<void(const std::string&)> on_notify_;
+    std::function<void(const std::string&, std::function<void(bool)>)> on_confirm_;
+    std::function<void()> on_commit_;
 
     // Find the element on a page by its label (family walk helper).
     const Element* find_on_page(int slot, const char* label) const;

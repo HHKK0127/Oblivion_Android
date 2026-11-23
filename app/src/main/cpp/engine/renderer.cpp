@@ -8240,7 +8240,15 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         if (action == 0 || action == 5) {
             if (!raceSexPanel->beginScrollDrag(x, y)) {
                 const int id = raceSexPanel->hitTestScreen(x, y);
-                if (id >= 0) {
+                if (id == RaceSexPanel::RACE_TOGGLE_ID) {
+                    // spec §10.4: the race toggle cycles on the tapped half.
+                    const float s = raceSexPanel->layoutScale();
+                    const float pane_x = (x - raceSexPanel->panelOriginX()) / s;
+                    const bool right =
+                        pane_x >= raceSexPanel->paneWidth(raceSexPanel->currentPage()) * 0.5f;
+                    raceSexPanel->cycleRace(right ? +1 : -1);
+                    raceSexPanel->applyLayout();
+                } else if (id >= 0) {
                     // handleClick resets the scroll and fires the layout hook on
                     // a page change (spec §9.7).
                     raceSexPanel->handleClick(id);
@@ -8930,18 +8938,63 @@ void Renderer::setChargenUi(ChargenUi ui) {
         if (!raceSexPanel) {
             raceSexPanel = std::make_unique<RaceSexPanel>();
             raceSexPanel->init();
-            // Done (arg1 == 90 on Main) closes chargen. Renderer outlives the
-            // panel (both are members), so capturing `this` is safe.
-            raceSexPanel->setOnDone([this]() { setChargenUi(ChargenUi::None); });
+            // spec §10.3: Done(Main) validates the name, then either notifies
+            // (bad name) or asks for confirmation. Yes applies the state and
+            // closes chargen. Renderer outlives the panel (both are members), so
+            // capturing `this` is safe.
+            raceSexPanel->setOnNotify([this](const std::string& body) {
+                showMessage(body, {"OK"}, [](int) {});
+            });
+            raceSexPanel->setOnConfirm([this](const std::string& body,
+                                              std::function<void(bool)> done) {
+                showMessage(body, {"Yes", "No"},
+                            [done](int value) { done(value == 0); });
+            });
+            raceSexPanel->setOnCommit([this]() {
+                if (playerController && playerController->getPlayer()) {
+                    Player* player = playerController->getPlayer().get();
+                    // §10.2/§10.4: apply the race only when it changed (the
+                    // original's 0x51C090 no-op guard), then the name.
+                    if (raceSexPanel->raceChanged()) {
+                        player->raceFormID = raceSexPanel->selectedRaceFormID();
+                        if (npcManager) {
+                            npcManager->initializePlayerFromESM(*player, player->raceFormID, 0, 0);
+                        }
+                    }
+                    if (!raceSexPanel->playerName().empty()) {
+                        player->name = raceSexPanel->playerName();
+                    }
+                }
+                setChargenUi(ChargenUi::None);
+            });
         }
         // hitTestScreen() maps device pixels through this size (spec §9.5), so
         // refresh it on every switch in case the surface resized.
         raceSexPanel->setScreenSize(static_cast<int>(screenWidth),
                                     static_cast<int>(screenHeight));
-        // spec §10.1: the original sets race_name (id 10) to the player's current
-        // name on every build, so the field is never blank.
+        // spec §10.4: the race selector lists the playable races; seed it and the
+        // player's current race/name.
+        if (assetManager) {
+            const auto& all = assetManager->getEsmManager().getAllRaces();
+            std::vector<RaceSexPanel::RaceEntry> playable;
+            playable.reserve(all.size());
+            for (const auto& race : all) {
+                // Playable bit, the same test the original's race list walk uses
+                // (DATA byte32 bit0, RE v369).
+                if ((race.flags & 1u) == 0) continue;
+                if (race.fullName.empty() && race.editorID.empty()) continue;
+                playable.push_back({race.formID,
+                                    race.fullName.empty() ? race.editorID : race.fullName,
+                                    race.description});
+            }
+            raceSexPanel->setAvailableRaces(std::move(playable));
+        }
         if (playerController && playerController->getPlayer()) {
-            raceSexPanel->setPlayerName(playerController->getPlayer()->name);
+            Player* player = playerController->getPlayer().get();
+            // spec §10.1: race_name shows the player's current name.
+            raceSexPanel->setPlayerName(player->name);
+            raceSexPanel->setCurrentName(player->name);
+            raceSexPanel->setCurrentRaceFormID(player->raceFormID);
         }
         if (textRenderer) {
             raceSexPanel->instantiate(textRenderer.get());

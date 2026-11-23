@@ -444,6 +444,7 @@ Done(arg1=0x5A) → 0x5CC280（user0 比較）→ 0x5CCA77（名前検証）
 - 成功側（`0x5CCB0E`〜）: `sprintf("%s %s?" /*0xA6B4D8*/, 冠詞 /*[0xB38660]/[0xB38668]*/, 名前)`（`0x402E30`）を作り、`0x579C10` を callback `0x5C2BA0` 付きで呼ぶ。
 - `0x579C10` は menu メッセージ送出系（内部で `0x582160`=FindMenu を反復）。→ **失敗時は通知/ダイアログで戻る（無視ではない）**。成功側も `"%s %s?"` から**確認ダイアログ**。厳密な文言・`0x5C2BA0` callback は **V-653-3**。
 - **確定チェーン（実測）**: Done(`0x5A`) → 名前検証 → `0x579C10`（callback **`0x5C2BA0`**）→ Yes で `0x5C2BA0` → `0x5C28F0` → commit `0x5C9CD0`。`0x5C2BA0` は `0x578D70()` が 2 のときだけ `0x5C28F0` へ。
+- **実装（row656）**: `RaceSexPanel::handleDone()` が検証（`NameCheck` = Empty/HasSpace/Unchanged）→ `on_notify_`（通知のみ・commit しない）or `on_confirm_`（`"%s %s?"` = 冠詞＋名前）。Yes で `commit()`（`confirmed_=true` → `on_commit_`）。renderer は `showMessage(body, {"OK"})` / `showMessage(body, {"Yes","No"})`（`UIMessageBox`）に委譲し、`on_commit_` で **race（変化時のみ `player->raceFormID`＋`initializePlayerFromESM`）＋名前反映 → `setChargenUi(None)`**。冠詞は `articleFor()`（先頭母音で "an"、他は "a"／`V-654-2`）。
 
 ### 10.4 Race ページの中身（race 選択の実体）`[確定(命令)]`
 
@@ -457,6 +458,7 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 
 - **race を選ぶのは Race トグル（id 211）**: `race_template_toggle` は `user4`=min index / `user5`=max index / `user0`=current index / `user6`=現在の文字列（コードが index から設定）。左右の子（`race_template_toggle_left`/`_right`）が index を増減する＝**リストではなく 1 個のトグルで race を巡回選択**する。`user1`=開始値（ビルド時の値）。
 - **クリック処理**: FAMILY は `(Race, Gender)` の 1 組だけ（Gender トグル、target `-1`＝ページ切替なし＝finalize 直行）。**Race トグルは FAMILY に無い** → 本体クリックはページ遷移ではなく、左右の子ボタンによる **値変更（race index）** として扱われる。選択結果は commit 時に読む。
+  - **実装（row656）**: クリック x がトグル幅の**左半分なら index-1、右半分なら +1**。端は **clamp**（wrap か未計測／`V-654-3`）。変化時に `applyLayout()` が race トグル label（`user6` 相当）と説明 text を更新。
 - **text の文字列源**: `Race Description`（`race_template_text` の `<string>` をコードが設定）。race **名**はトグルの `user6`（index から引く）で、text は説明文。
 
 **race 一覧の実体（item 2 の核心）** `[確定(命令)]`:
