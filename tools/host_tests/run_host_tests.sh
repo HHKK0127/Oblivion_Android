@@ -170,6 +170,12 @@ SOURCES=(
   app/src/main/cpp/tests/menu_fade_tests.cpp
   app/src/main/cpp/tests/fader_slot_array_tests.cpp
   app/src/main/cpp/tests/input_router_tests.cpp
+  app/src/main/cpp/tests/race_sex_panel_tests.cpp
+  app/src/main/cpp/ui/race_sex_panel.cpp
+  app/src/main/cpp/ui/ui_panel.cpp
+  app/src/main/cpp/ui/ui_component.cpp
+  app/src/main/cpp/ui/ui_draw_helper.cpp
+  app/src/main/cpp/engine/texture_loader.cpp
   app/src/main/cpp/tests/fatigue_system_tests.cpp
   app/src/main/cpp/tests/combat_formulas_tests.cpp
   app/src/main/cpp/util/msvc_lcg.cpp

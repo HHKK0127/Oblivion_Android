@@ -59,6 +59,22 @@ typedef void GLvoid;
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
 #define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#define GL_DEPTH_TEST 0x0B71
+#define GL_BLEND 0x0BE2
+#define GL_SRC_ALPHA 0x0302
+#define GL_ONE_MINUS_SRC_ALPHA 0x0303
+#define GL_TRIANGLE_STRIP 0x0005
+#define GL_TEXTURE0 0x84C0
+#define GL_TEXTURE1 0x84C1
+#define GL_TEXTURE2 0x84C2
+#define GL_TEXTURE3 0x84C3
+#define GL_VIEWPORT 0x0BA2
+#define GL_LESS 0x0201
+#define GL_LEQUAL 0x0203
+#define GL_DEPTH_BUFFER_BIT 0x00000100
+#define GL_COLOR_BUFFER_BIT 0x00004000
+#define GL_SCISSOR_TEST 0x0C11
+#define GL_CULL_FACE 0x0B44
 
 // Function entry points are provided as no-ops by tools/host_tests/host_gl_stubs.cpp.
 // They exist so that non-rendering suites can link sources that upload GPU buffers
@@ -114,4 +130,23 @@ void glUniform4fv(GLint location, GLsizei count, const GLfloat* value);
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
                         const GLfloat* value);
 void glUseProgram(GLuint program);
+
+// UI-panel draw path (ui/ui_panel.cpp, ui/ui_component.cpp): state queries and
+// blend setup only. No host suite asserts on rendering behaviour.
+void glGetBooleanv(GLenum pname, GLboolean* data);
+void glDisable(GLenum cap);
+void glEnable(GLenum cap);
+void glBlendFunc(GLenum sfactor, GLenum dfactor);
+void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+void glDrawArrays(GLenum mode, GLint first, GLsizei count);
+void glActiveTexture(GLenum texture);
+void glUniform2f(GLint location, GLfloat v0, GLfloat v1);
+void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+void glDisableVertexAttribArray(GLuint index);
+void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
+void glDepthFunc(GLenum func);
+void glClear(GLbitfield mask);
+void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
+void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat* value);
 }
