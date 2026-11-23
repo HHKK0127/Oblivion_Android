@@ -239,7 +239,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-652-2 | **close**。`screen()` の canvas 1280x960 はアプリ既存規約（`ui_inventory_panel`）に追従して `[確定]` に上げ、描画側も同じ変換（`layoutScale`＋`panelOrigin`）を通した（§9.5） | `[確定(データ)]` |
 | V-652-3 | マウスホイール/キーボードによるスクロールは**対象外**（原典未計測）。ドラッグ入力のみ実装 | `[未確定]` |
 | V-653-1 | `[0xB39440]`（`race_name` の値の片方）の設定元。`.data` 実行時初期化で `.text` に絶対書き込み 0 件（§10.1） | `[未確定]` |
-| V-653-2 | commit `0x5C9CD0` の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割と race id の受け渡し（§10.2） | `[部分確定]` |
+| V-653-2 | **選択 race の出所は判明**（Race トグル id 211、レンジ/文字列は `FUN_005C7BA0` が `[player+0xE8]+0xA8` のリンクリストから設定＝§10.4）。残るは `[0xB37D00]`（選択 race FormID）の**書き手**と、commit `0x5C9CD0` の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割 | `[部分確定]` |
 | V-653-3 | 名前検証の成功/失敗時のダイアログ文言と `0x5C2BA0` callback の動作（§10.3） | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
@@ -455,4 +455,14 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **race を選ぶのは Race トグル（id 211）**: `race_template_toggle` は `user4`=min index / `user5`=max index / `user0`=current index / `user6`=現在の文字列（コードが index から設定）。左右の子（`race_template_toggle_left`/`_right`）が index を増減する＝**リストではなく 1 個のトグルで race を巡回選択**する。`user1`=開始値（ビルド時の値）。
 - **クリック処理**: FAMILY は `(Race, Gender)` の 1 組だけ（Gender トグル、target `-1`＝ページ切替なし＝finalize 直行）。**Race トグルは FAMILY に無い** → 本体クリックはページ遷移ではなく、左右の子ボタンによる **値変更（race index）** として扱われる。選択結果は commit 時に読む。
 - **text の文字列源**: `Race Description`（`race_template_text` の `<string>` をコードが設定）。race **名**はトグルの `user6`（index から引く）で、text は説明文。
+
+**race 一覧の実体（item 2 の核心）** `[確定(命令)]`:
+
+- **別メニューではない**。race 一覧はゲーム状態の**リンクリスト `[player+0xE8]+0xA8`** にある（各ノードの `+0x1C` が race 名）。
+- builder 末尾の `0x5CBC8F call 0x5C7BA0`（`FUN_005C7BA0`）が Race トグルを埋める:
+  - `0x5C7C20`〜: `player->vtable[0x170]()` → `[player+0xE8]+0xA8` のリンクリストを走査して**件数を数える**。
+  - `0x5C7FBC`〜`0x5C7FD7`: `push 0xFB3` → **`SetFloat(tile, user5, 件数-1)`**（＝レンジ `0..件数-1`）。
+  - `0x5C80EE`〜`0x5C8100`: `[node+0x1C]`（race 名。0 なら空文字 `0xA2F7EC`）→ `push 0xFB4` → **`SetString(tile, user6, race名)`**。
+- したがって **race 選択は Race トグル（id 211）の左右巡回**で、レンジは「プレイヤーの選択可能 race 数」、表示は race 名。選択結果は commit 時に読む。
+- `FUN_005C7BA0` はこのほか `0xFB3`/`0xFB4` を複数サイトで書く（`0x5C7BA0` の head 内 4+ sites）＝トグル群の範囲と文字列をまとめて設定する関数。
 
