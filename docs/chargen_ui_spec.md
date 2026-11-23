@@ -248,7 +248,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
 | V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
 | V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
-| V-660-B1 | Main "Eyes" トグル（id 204）の制御対象。`FUN_005CC200` の arg1 即値比較は 90/10/98 のみ＝専用分岐なし。汎用経路 `0x5CC8BA`〜 の解析が必要 | `[未確定]` |
+| V-660-B1 | Main "Eyes" トグル（id 204）の制御対象。`FUN_005CC200` は arg1 即値比較が 90/10/98 のみで、以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」。`0x5CC8BA` は **Random ボタン**と判明（v661）。残: ブロック列の pane 名列挙で "Eyes" を同定 | `[部分確定]` |
 | V-660-C1 | Race 説明文本体の供給元。**DESC サブレコード（`0x43534544`）を `0x5C7BA0` が読み `0xFB4`(user6) へ SetString**（フォールバック `0xA36430`=" "）まで判明（v661）。残は受ける tile の実名と見出し/本体の割当 | `[部分確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
@@ -501,6 +501,6 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **Reset 本体は trait を書かない**: `0x521E40(actor)` → `0x5C91E0(base)` → `0x5C7BA0(base,0)`。既定値は actor 外見側（`V-660-A1`）。
 - **定数**: `15.0`/`50.0`（`(v-15)/50`）と `-2.0`/`0.25`/`0.0`（`(v+2)*0.25*x`）。乱数源は未同定（`V-660-A2`）。
 - **ダイアログ**: `FUN_00579C10`（message_menu.xml）。ボタンは `button_1..button_10` = **id 4..13**。「Yes」は `0x578D70()==2`（コールバック側の規約）。
-- **Main "Eyes" トグル**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**＝専用分岐なし（`V-660-B1`）。
+- **Main "Eyes" トグル**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**。以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」で、**`0x5CC8BA` = Random ボタン**（`0x579C10` でダイアログ表示＋`[0xB3B4C8]=1`／フラグ済みなら `0x5CCBE5`→`0x5C9CD0`＝Random 本体）。"Eyes" のブロック同定は `V-660-B1` `[部分確定]`。
 - **Race 説明文**: `0x5C7BA0` が RACE の **`DESC` サブレコード**（`0x5C81E5 push 0x43534544`）を読み、**`0xFB4`(user6)** へ `SetString`（`0x5C8205`/`0x5C8236`、フォールバック `0xA36430`=`" "`）。見出し（`sRaceDescription` GMST）は別。残は受ける tile の実名と割当（`V-660-C1` `[部分確定]`）。
 
