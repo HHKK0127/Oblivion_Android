@@ -5,11 +5,13 @@
 - **row650/651 完了**（master にマージ・push 済み）: `RaceSexPanel` を 21 ページ/118 item の descriptor として実装し、widget 化を device-only の `RaceSexPanel::instantiate(TextRenderer*)`（`race_sex_panel_instantiator.cpp`）に分離（Button→`UIButton`, Text→`MenuTextComponent`, Toggle→`UIToggle`, Slider→`UISlider`）。`add_*` シグネチャ不変＝パリティスクリプト `verify_race_sex_impl.py` 無変更。
 - `handleClick(arg1)`（arg1==90=chain §6.2／他=family §6.3、`current_page_` は Main 初期化、Done=arg1==90&&Main で `onDone_`）。renderer は `showCharacterCreation` を `enum class ChargenUi{None,Legacy,Panel}` に置換し全ゲートを `isChargenUiActive()`/`isLegacyChargenActive()`/`isPanelChargenActive()` に統一（二重 active を構造で防止）。console `chargenpanel` で Legacy<->Panel 切替（既定 Legacy）。Done 出口は `setOnDone`→`setChargenUi(None)`。
 - 検証: host `RaceSexPanelTests` **18/18**、CI 緑（run 45138087600、`Build debug APK`＋`Native C++ host tests` success）。台帳 row650/651 done（open 8→6）。コミット: `e340581c`(spec)/`5ba68ff4`(merge)/`8396bacd`・`6f30d87c`・`71178196`(row650)/`4ab88931`・`9e28f676`(row651)/`3c3577fb`・`7caced42`(台帳)。
-- **残点（lane 完了条件外）**: `V-642-1`/`V-646-3`/`V-629-1`、`V-631-1b`（`ChargenUi::Panel` は dev トグル既定 OFF）、widget layout／hit-test-to-id は未実装（touch は `handleClick(90)` 暫定）。
+- **残点（lane 完了条件外）**: `V-642-1`/`V-646-3`/`V-629-1`、`V-631-1b`（`ChargenUi::Panel` は dev トグル既定 OFF）、widget layout（描画）と scroll 入力（`V-652-1`）は未実装。hit-test-to-id は実装済み（spec §9.5）。
 - **構文検査の穴を塞いだ**: `scripts/syntax_check_ui.sh` 新設（device-only TU＝instantiator/ui_slider/ui_toggle/game_console を APK と同じ DEFINES/INCLUDES で `g++ -fsyntax-only`）。`clearChildren` を CI まで見逃した再発防止。`renderer.cpp` は GL スタブ都合で CI のみ。
 - **geometry は XML template（spec §9 追加）**: item の `x/width/height` はコードでなく `race_template_*`（pane100/button101/toggle102/slider103/text104）が与える。共通: `x=0`, `w=pane幅`, `h=93`, `y=listindex*93`（1 列・行間 0）。`listindex`(0xFAA) は builder が設定。
 - **hit-test 実装（spec §9.2–§9.5 改訂）**: `paneWidth = 500 - (count>6 ? 40 : 0)`。XML の `gt`→`sub 1` は boolean 符号化（`&false;`=1/`&true;`=2、正典 XML 229 行）を 1/0 に落とすためのもので、ガターは**定数 40px**。`(childcount-1)*40` は Nose(14) で `w=-20` になり棄却。Done は `race_background` の子（`race_window` の兄弟）で window ローカル `[323,500)×[591,635)`、id 90。`hitTest`/`hitTestScreen`/`paneWidth`/`elementIdAt` を追加し、renderer の Panel 分岐は `hitTestScreen`→`handleClick(id)`。host **30/30**。
 - **flake 観測**: `Phase45UnitTests` の async 1 件が CI で 1 回 fail（再実行で緑）。row は立てない。
+- **row652（interpreter 欠陥修正・描画前の必須項目）**: `menu_xml_interpreter.cpp` の Bool 数値符号化を engine の **1/2**（`&false;`=1 / `&true;`=2）へ修正し、`childcount`（Tile 0xFD0）を実装。`gt`→`sub 1`→`mul 40` が 40/0 を返すようになり、race pane 幅が実式どおり（6 item=500 / 7 以上=460）。host `MenuXmlTests` **232/232**（新規 14 件）。
+- **V-631-1b 訂正（2026-11-23）**: 「`RaceSexPanel` はどこからも参照されていない」は**解消済み**＝renderer の `ChargenUi::Panel` と console `chargenpanel` から到達する（配線済み）。残るのは **device 実機での表示・タップ未確認**のみ（既定は Legacy のまま）。
 
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 

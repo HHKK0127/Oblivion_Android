@@ -353,8 +353,12 @@ bool MenuXmlTests::runAllTests() {
     //     <copy> 128 </copy> <onlyifnot src="parent()" trait="user1"/>, so a
     //     failing gate has to collapse the accumulator to 0, not to 1.0.
     //   * <visible> &false; </visible> (58 occurrences) and
-    //     <eq> &false; </eq> (65 occurrences) require the &false; token to be
-    //     the falsy value, otherwise hidden widgets would be drawn.
+    //     <eq> &false; </eq> (65 occurrences) must keep hidden widgets hidden.
+    //     Truthiness lives on the Bool type (toBool()), not on the numeric
+    //     value, so the engine's 1/2 encoding below leaves gating untouched: the
+    //     <eq> corpus compares bool traits against bool tokens (visible 32,
+    //     target 17, _is_topmost 5, ...), while <eq>0</eq>/<eq>1</eq> are used on
+    //     numeric traits (user0 page index, user3, alpha, mouseover as a float).
     {
         MenuEvalContext ctx;
         ctx.screen_width = 1280.0f;
@@ -370,15 +374,26 @@ bool MenuXmlTests::runAllTests() {
             return evalValue(body).toNumber();
         };
 
-        // Token encoding: the false token is the falsy number, the true token is
-        // truthy, so gates and renderer consumers agree on one encoding.
-        record("false token is the falsy number", near(eval("&false;"), 0.0f));
+        // Token encoding: the engine's numeric booleans are false=1 / true=2
+        // (UESP: "&true;" equals 2 under the hood). Truthiness stays on the
+        // Bool flag so gates keep working.
+        record("false token is numerically 1", near(eval("&false;"), 1.0f));
+        record("true token is numerically 2", near(eval("&true;"), 2.0f));
         record("false token is falsy", evalValue("&false;").toBool() == false);
         record("true token is truthy", evalValue("&true;").toBool() == true);
         record("false token equals a false trait",
-               evalValue("<copy>0</copy><eq>&false;</eq>").toBool() == true);
+               evalValue("<copy>&false;</copy><eq>&false;</eq>").toBool() == true);
         record("false token does not equal a true trait",
-               evalValue("<copy>1</copy><eq>&false;</eq>").toBool() == false);
+               evalValue("<copy>&true;</copy><eq>&false;</eq>").toBool() == false);
+        record("numeric zero is not the false token",
+               evalValue("<copy>0</copy><eq>&false;</eq>").toBool() == false);
+        // <gt> returns those tokens, so <sub>1</sub> maps them to 1/0. This is
+        // the race pane width's gutter term.
+        record("gt returns the true token", near(eval("7<gt>6</gt>"), 2.0f));
+        record("gt returns the false token", near(eval("6<gt>6</gt>"), 1.0f));
+        record("sub 1 maps the bool tokens to 1/0",
+               near(eval("7<gt>6</gt><sub>1</sub>"), 1.0f) &&
+                   near(eval("6<gt>6</gt><sub>1</sub>"), 0.0f));
 
         // button_long.xml: the disabled crop offset survives only while the gate
         // passes, and collapses to zero when the button is enabled.
@@ -391,6 +406,58 @@ bool MenuXmlTests::runAllTests() {
         record("div by zero keeps the accumulator", near(eval("10<div>0</div>"), 10.0f));
         record("mod by zero keeps the accumulator", near(eval("10<mod>0</mod>"), 10.0f));
         record("div by a non-zero operand divides", near(eval("10<div>4</div>"), 2.5f));
+    }
+
+    // --- 7c. childcount and the shipped race pane width formula ---------------
+    // race_template_pane.width (race_sex_menu.xml) is
+    //   parent().width - (childcount > 6 ? 40 : 0)
+    // spelled <copy src="parent()" trait="width"/><sub><copy childcount/>
+    // <gt>6</gt><sub>1</sub><mul>40</mul></sub>. This is the one expression
+    // that pins both the 1/2 boolean encoding and childcount = real child count;
+    // reading it as (childcount-1)*40 drives the 14-item Nose page to -20.
+    {
+        auto paneWidth = [](int child_count) -> float {
+            std::string items;
+            for (int i = 0; i < child_count; ++i) {
+                items += "<rect name=\"item" + std::to_string(i) + "\"/>";
+            }
+            const std::string xml =
+                "<menu name=\"m\">"
+                "  <rect name=\"window\"><width>500</width>"
+                "    <rect name=\"pane\">"
+                "      <width><copy src=\"parent()\" trait=\"width\"/>"
+                "        <sub><copy src=\"me()\" trait=\"childcount\"/>"
+                "        <gt>6</gt><sub>1</sub><mul>40</mul></sub>"
+                "      </width>" + items +
+                "    </rect>"
+                "  </rect>"
+                "</menu>";
+            MenuDef def;
+            std::string err;
+            if (!MenuXmlInterpreter::buildMenuDef(xml, def, err)) return -1.0f;
+            if (def.widgets.size() != 1 || def.widgets[0].children.size() != 1) {
+                return -1.0f;
+            }
+            const WidgetDef& window = def.widgets[0];
+            const WidgetDef& pane = window.children[0];
+            const auto it = pane.traits.find("width");
+            if (it == pane.traits.end() || !it->second.has_expr) return -1.0f;
+            MenuEvalContext ctx;
+            ctx.widget_def = &pane;
+            ctx.parent_widget = &window;
+            return MenuExpressionEvaluator::evaluate(it->second.expr, ctx).toNumber();
+        };
+
+        record("childcount 6 items -> pane width 500", near(paneWidth(6), 500.0f),
+               std::to_string(paneWidth(6)));
+        record("childcount 7 items -> pane width 460", near(paneWidth(7), 460.0f),
+               std::to_string(paneWidth(7)));
+        record("childcount 14 items -> pane width 460 (Nose stays tappable)",
+               near(paneWidth(14), 460.0f), std::to_string(paneWidth(14)));
+        // The trait itself is the declared child count, not a sentinel.
+        record("childcount trait reports the real count",
+               near(paneWidth(9), 460.0f) && near(paneWidth(1), 500.0f),
+               std::to_string(paneWidth(9)) + "/" + std::to_string(paneWidth(1)));
     }
 
     // --- 8. resolve(): concrete widget values ----------------------------------

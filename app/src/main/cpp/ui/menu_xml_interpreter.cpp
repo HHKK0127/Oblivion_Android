@@ -405,6 +405,14 @@ public:
             sub.self_is_menu = false;
             return evaluateNode(it->second.expr, sub, depth + 1);
         }
+        // <copy src="me()" trait="childcount"/> = the tile's direct child count
+        // (the engine keeps it in Tile field 0xFD0, incremented as children are
+        // attached: the item builders read it as "insert index + 1"). Only the
+        // tiles declared in the XML are known here, so templates that the engine
+        // fills with runtime items count as empty.
+        if (trait == "childcount") {
+            return EvalValue::makeNumber(static_cast<float>(w.children.size()));
+        }
         // Native texture size, when the caller supplied texture metadata.
         if (trait == "filewidth" || trait == "fileheight") {
             if (!ctx.texture_size) return EvalValue::makeNumber(0.0f);
@@ -654,7 +662,15 @@ void fillResolved(const WidgetDef& w, const MenuEvalContext& ctx, const WidgetDe
 
 float EvalValue::toNumber() const {
     if (type == Type::Number) return number;
-    if (type == Type::Bool) return boolean ? 1.0f : 0.0f;
+    // The engine encodes booleans as 1/2, not 0/1: UESP "Oblivion XML
+    // Reference/Operators" states that "&true;" equals 2 under the hood, and
+    // the shipped race_sex_menu.xml spells the pair out ("1 (false) for Done
+    // and 2 (true) for Back"). This is load-bearing for arithmetic on gates:
+    // the race pane width is <copy childcount/><gt>6</gt><sub>1</sub><mul>40</mul>,
+    // which only produces a 40px gutter if <gt> yields 2/1 (so <sub> 1 maps
+    // it to 1/0). Truthiness is a separate concern and stays on the Bool flag
+    // (toBool()), so <visible>&false;</visible> is still hidden.
+    if (type == Type::Bool) return boolean ? 2.0f : 1.0f;
     if (type == Type::String) {
         const char* b = string.c_str();
         char* end = nullptr;

@@ -297,6 +297,7 @@ XML 実値:
 **`sub 1` の意味（重要）**: Oblivion の boolean は **`&false;`=1 / `&true;`=2**（正典 XML 229 行 `<user5> &false; </user5> <!-- 1 (false) for Done and 2 (true) for Back -->`）。`gt` は `&true;`/`&false;` を返す（UESP *Oblivion XML Reference/Operators*、逆アセンブル由来）ため、`<sub> 1 </sub>` が 2/1 を 1/0 に落とし、`<mul> 40 </mul>` で **定数 40px**（スクロールバー用右ガター）になる。
 
 - **[確定(命令)(negative)] 誤読の記録**: `(childcount-1)*40` と読むと Nose（14 item）で `w = 500-520 = -20` となり、ページ全体がタップ不能になる。実機の Nose は操作できるため、この読みは**棄却**。
+- **実装の追随 (row652)**: `menu_xml_interpreter.cpp` の `EvalValue::toNumber()` は Bool を **1/2** で返し、`childcount` は XML 宣言済みの直接子数を返す。これで同ファイルの式評価が本節の閉形式と一致する（従来は `&true;`=1 のため 500/540 を返していた）。
 - pane の親は `race_window`（500x558）。ガターは pane の外ではなく **pane 幅を 40 削る**形で確保される。
 
 ### 9.3 スクロールバーと Done の位置（pane の外）
