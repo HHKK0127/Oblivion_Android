@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-23T06:00:00Z",
+  "lastUpdated": "2026-11-23T23:59:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -15728,14 +15728,295 @@
         "todo-96"
       ],
       "content": "2026-11-21 v633 裁定＝pane slot 配列と item 帰属・Init の +0x94 クリア（U36・ai-todo #96）。成果物 tmp/re/v633_pane_slots_attribution_init_clear_ruling.md・台帳 row610。probe u99_1/u100_1 EXIT=0。①[確定(命令)] pane slot 配列 = menu+0x40+i*4: Main=0x40/Race=0x44/Hair=0x48/Face=0x4c/Shape=0x50/Tone=0x54/GeneralFace=0x58/Brow=0x5c/Cheeks=0x60/Chin=0x64/Eyes=0x68/Forehead=0x6c/Jaw=0x70/Mouth=0x74/Nose=0x78/GeneralSkin=0x7c/Beard=0x80/EyesTex=0x84/Eyebrows=0x88/MouthLips=0x8c/NoseTex=0x90。+0x40/+0x44/+0x90 は同一スロット配列の別要素。②[確定(命令)] item の arg1=現在の pane スロット: 各スロットは自 region 内でのみ読まれる → v632 §2 の帰属表は正しい（「text は +0x44」は最初の text 呼出 0x5CA60B が Race region にあるためで誤読）。③[確定(命令)] 入れ子なし: 21 pane 呼出すべて arg1=[esi+0x28]（window）→ 深さ0のみ。21=21 ページ。④[確定(命令)] 0x5CBB2F: 最終 pane(NoseTex) を +0x90 に格納、+0x90 を 2 回読んで末尾 2 slider を生成（表の NoseTex=2 と一致）。⑤[確定(命令)] Init 0x5C4E40 の +0x94 クリア: lea edi,[esi+0x94]; mov ecx,0x1F4; rep stosd → +0x94..+0x864 の 500 dwords を 0 クリア。counter を 200 に戻す。id 最大 429 < 500。hair color 配列 0x8F0 との余裕 140 bytes。V-632-1 の第一仮説「Init が破棄」確定。callers_of(0x5C4E40)=1(0x58847A)。⑥[確定(命令)] 名前→id: 21 pane の名前はすべて mov edx,[0xB38XXX]（lea なし）→ グローバルで固定。残点 V-631-1/V-632-1/V-630-1/V-629-1/V-626-2/V-626-3。"
+    },
+    {
+      "id": "opencode-race-sexmenu-pane-names-20261122",
+      "timestamp": "2026-11-23T08:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v634",
+        "racesexmenu",
+        "pane",
+        "name",
+        "todo-96"
+      ],
+      "content": "2026-11-22 v634 §1 裁定＝21 pane 名は XML でなく EXE に焼かれている（U37・ai-todo #96）。成果物 tmp/re/v634_pane_names_global_ruling.md・台帳 row611。probe u101〜u125 EXIT=0。①[確定(命令)] 21 pane 名 = mov edx,[0xB38XXX] が読む 8B 名前オブジェクト {+0=display,+4=editorid} の +0(display)。Main/Race/Hair/Face/Shape/Tone/General(Face)/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose/General(Skin)/Beard/Eye shades/Eyebrows/Mouth(Lips)/Nose shades。②[確定(命令)] 間隔は 4 でなく 8（登録簿 base=0xB38F38 stride8 全136個 0xB38F38..0xB39370・UI 共通名プール）。.data は BSS（静的初期化なし）。実行時 thunk 0x9F6710 帯が ctor 0x419A70 で構築（editorid を 0xB35574 map のキーに登録）。③[確定(XML)(negative)] race_sex_menu.xml は pane 名を参照しない（<parent> 0件・21 display 名 0件・name は属性）。<id> = {1,2,10,20,90,100,101,102,103,104}+&generic;×4 で pane id と一致 0件。item↔XML は <id> でなく template(100〜104) の実体化。MENU_XML_INTERPRETER_DESIGN.md に「XML が pane 名を与える」前提は無い。④[確定(命令)] Main の id=0（旧表 201 は誤り）＝0x5C4340 の cmp eax,-1;jne 0x5c4397 で counter ブロックは arg4==-1 の fall-through。Main のみ arg4=0 即値（6A 00 6A 00）→ id=0・counter 非消費。他20は edi=-1。item 増分 button/toggle/text=+1, slider=+2。sim 新表 Main=0/Race=209/Hair=213/Face=224/Shape=229/Tone=239/GeneralFace=246/Brow=257/Cheeks=264/Chin=275/Eyes=290/Forehead=299/Jaw=306/Mouth=315/Nose=336/GeneralSkin=365/Beard=376/EyesTex=389/Eyebrows=402/MouthLips=417/NoseTex=424、最終428（旧表は Main 以外 -1 ずれ）。+0x94[0]=Main（FUN_5C0440 が [esi+0x94] 直読み）。⑤[確定(命令)] Init 0x5C4E40 は +0x40..+0x93 をクリアしない（rep stosd は +0x94 起点 500dwords の1発のみ）。spec では開くたび 21 スロットを明示 NULL 初期化（安全側）。⑥[確定(命令)] 0x5C3110=名前→pane slot 照合（__mbscmp(name,名前グローバル)→[this+0x40+i*4]、+8 は読まない）。callers=31、HandleClick FUN_005cc200 が 24 サイトで直接呼ぶ（Main×3/Brow×2/Shape×2/Tone×2・他15名×1）。不一致時 eax=0(NULL)。→ページ切替は名前経由。正典 XML 同一性: raw md5 d367341334fa89101ba4fc077edb52fe / 22156B / CRLF / 705行（D:\\re\\XML_CANONICAL.txt）。"
+    },
+    {
+      "id": "opencode-oblivion-tile-trait-ids-20261122",
+      "timestamp": "2026-11-23T08:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v634",
+        "tile",
+        "trait",
+        "xobse",
+        "slider"
+      ],
+      "content": "2026-11-22 v634 追補＝Oblivion Tile trait id 表（XOBSE obse/obse/GameTiles.h eTileValue 実読）と slider/SetName の確定。①[確定(データ)] trait id: 0xFA1=visible / 0xFA5=stackingtype / 0xFA6=locus / 0xFA7=alpha / 0xFA8=id / 0xFA9=disablefade / 0xFAA=listindex / 0xFAB=depth / 0xFAE=user0 / 0xFAF=user1 / 0xFB0=user2 / 0xFB5=user7 / 0xFB6=user8 / 0xFB7=user9 / 0xFDE=string / 0xFE1=clicked / 0xFE6=filename / 0xBBA=name。Tile の BSStringT name は +08、parent +10。Tile::Value::str(BSStringT) も +08。②[確定(データ)] 0x58A020 = this+8 に書く SetName（XML interpreter は trait 0xbba=name で呼ぶ）。→ 残点「+8 は name か label か」は name で解決。§1 の 21 名は tile の名前そのもの。③[確定(データ)] FUN_005c0440 のゲート = GetFloat(Main,0xFA7=alpha) == _DAT_00a3ddd8(=255.0 double, raw 00 00 00 00 00 E0 6F 40)。command 8/9/0x1a → DAT_005c04d4 → 4ハンドラ(0x5BEA10/0x5BEA40 は [esi+0xbc]/[esi+0xc0] の user1 ゲート、0x5BFB90/0x5BF470 は座標・描画)。Main の活性条件。④[確定(命令)] slider 0x5C93F0: 5 generator の template グローバル pane 0xA6D2DC/button 0xA6D2F4/toggle 0xA6D318/text 0xA6D330/slider 0xA6D3D0。全90 slider が単一 template race_template_slider を共有。push imm 0..0x36 は SetFloat(slider,0xFB5=user7, arg2+1)（表索引でない）。個体差=arg2(user7)+label(user2)+user8(0xFB6)。⑤[確定(データ)] race_template_slider(103): user1=0/user2=Label/user3=0/user6=-1/user7=-1(editor id of what I'm sliding)/user8=-1(geometry/texture flag)/user10=0/user13=true。子 bar の user1=0(min)/user2=1(max)/user3=0.04(xbox0.05,step)/user4=0.1(jump)。→ slider 範囲は template 既定 0..1。"
+    },
+    {
+      "id": "opencode-race-sexmenu-field-slots-20261122",
+      "timestamp": "2026-11-23T09:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v635",
+        "racesexmenu",
+        "setfield",
+        "rtti",
+        "chargen"
+      ],
+      "content": "2026-11-22 v635（ai-todo #96 フォロー）＝RaceSexMenu +0x28 フィールドスロットの正体。①[確定(命令)] builder FUN_005ca010 は +0x28/+0x2c/+0x30/+0x3c を guard で非NULL前提として読むだけで store しない（0x5CA010..0x5CBC20 に +0x28 store 0 件）。全21 pane の arg1=[esi+0x28]。「builder が window を先に格納」仮説は否定。②[確定(命令)] guard 0x5CA133 は 4 フィールドいずれか0で警告→jmp 0x5CC1DB（関数末尾）＝build 中止。window 生成 skip ではない。③[確定(命令)] RaceSexMenu::SetField=0x5C26D0（vtable 0xA6D38C slot1 @0xA6D390, callers 0）。idx→offset: 1→+0x28 / 2→+0x2c / 0xA(10)→+0x30 / 0x14(20)→+0x34 / 0x15(21)→+0x38 / 0x5A(90)→+0x3c。即値分岐・上限なし・ret 8。QuantityMenu::SetField=0x5C0530 は idx {1,2,3,4,6,7}。ctor FUN_005c4e40 は +0x28/+0x2c/+0x30/+0x3c のみ 0 クリア、サイズ 0x9B0。④[部分確定] idx=タイルの XML <id>。race_sex_menu.xml と一致: 1=race_window(PAGES LAYOUT コンテナ)/2=race_player_grab/10=race_name/20=race_scroll_bar/90=race_button_done → +0x28=race_window(Tile*)。呼出規約 menu->SetField(tile->id, tile)。⑤[確定(データ)] FUN_005c0440 の this は PersuasionMenu（0x5C0440 は 0xA6D0D8 のみ。vtable 0xA6D0CC の [-1]=RTTI locator 0xAC292C→type descriptor 0xB13384→.?AVPersuasionMenu@@）。[this+0x28]==2 は PersuasionMenu の別フィールドで chargen とは無関係（v634 までの帰属を訂正）。⑥[確定(データ)] trait 0xFA8=id(文字列 0xA6A49C) / 0xBBA=name(0xA6A5D0) / 0xFAA=listindex / 0xFD0=childcount。&RaceSexMenu;=0x40C。判定: +0x28 は 0/1/2 状態機械ではなく Tile*(race_window)。成果物 tmp/re/v635_menu_field_slots_ruling.md、台帳 row612。残点 V-635-1(SetField 呼出サイト未特定)/V-635-2(idx21 の対象)/V-635-3。"
+    },
+    {
+      "id": "opencode-race-sexmenu-94-binding-20261122",
+      "timestamp": "2026-11-23T10:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v636",
+        "racesexmenu",
+        "idbinding",
+        "setfield",
+        "rtti"
+      ],
+      "content": "2026-11-22 v636（ai-todo #96 フォロー）＝+0x94 の所属・Main 特別扱い否定・<id>→menu 束縛層の確定。①[確定(命令)] +0x94 は RaceSexMenu の id→tile 表。RaceSexMenu 系（vtable slot2 0x5C2790 / slot8 0x5C3BE0 / 非仮想 0x5C6390/0x5C6860/0x5C6AF0 / builder 5 generator / Init 0x5C4E40）はすべて変数索引 [this+idx*4+0x94]。リテラル索引0の [reg+0x94] 読みは PersuasionMenu(0x5C0440) と 0x5BF170(帯外) のみ。RTTI 基底鎖 RaceSexMenu→Menu(numBaseClasses=2)。Persuasion の [+0x94] 直読みは別フィールドとして切り離し。②[確定(命令)(negative)] Main 特別扱いなし。RaceSexMenu 系で [+0x94] をリテラル0で読む箇所 0 件。Main は id0 の pane にすぎず panes[0]。v634 §9 の Main ゲート根拠は撤回。③[確定(命令)] <id>→menu 束縛層。trait setter FUN_0058b2f0 の 0x58B4E1 (cmp esi,0xfa8) が Tile::GetContainingMenu(0x5898f0) で menu を取り、0x58B508 で menu->SetField(int(id),tile) を呼ぶ（mov eax,[vtable+4]; call eax 形＝call [reg+4] でない）。→ <id>1</id> が race_window を +0x28 に束縛。V-635-1 解決。④[部分確定] idx21→+0x38。race_sex_menu.xml に <id>21</id> なし。&generic;×4 は <template> 本体（非実体化）。slot2/slot8 が +0x34 と +0x38 を同時に読み user8/user9 を書く→スクロール系。race_scroll_bar の <include src=vertical_scroll.xml> 由来が有力。guard 対象外。⑤[確定(命令)] 6 スロット使途: +0x28=race_window(全21 pane の親) / +0x2c=race_player_grab(guardのみ) / +0x30=race_name(builder末尾 0x5CBC67/7A が SetString(0xFDE=string)+SetFloat(0xFF0)、HandleClick 5箇所) / +0x34=race_scroll_bar(slot2/slot8 SetFloat(user9=0xFB7)) / +0x38=idx21(slot8 SetFloat(user8=0xFB6,user9=0xFB7)) / +0x3c=race_button_done(HandleClick 0x5CC816 SetFloat(user5=0xFB3,1.0)=Done押下、builder は guardのみ)。⑥[確定(命令)] ctor の 0 クリアは +0x28/+0x2c/+0x30/+0x3c の4つのみ(guard と一致)。サイズ 0x9B0 は +0x930 の 8×0x10 配列末尾と一致。pane 表 +0x94..+0x8C4。成果物 tmp/re/v636_94_owner_main_setfield_ruling.md、台帳 row613。残点 V-636-1(&generic;実値)/2(idx21 実タイル)/3(+0x94 宣言位置)/4(+0x2c 実使用経路)。"
+    },
+    {
+      "id": "opencode-race-sexmenu-generic-idx21-20261122",
+      "timestamp": "2026-11-23T11:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v637",
+        "racesexmenu",
+        "xml",
+        "entity",
+        "scroll"
+      ],
+      "content": "2026-11-22 v637（ai-todo #96 フォロー, v636 V-636-1/2 を潰す）＝&generic; の値と idx21→+0x38 の確定。①[確定(命令)] &generic;=-1。EXE 0x58A1C0 が FUN_0058a0a0 で \"&generic;\"→-1 / \"&false;\"→1 / \"&true;\"→2 / \"&left;\"→1 を登録（文字列 VA 0xA6AAE0/0xA6AAD8/0xA6AAD0/0xA6AAC8）。&false;=1/&true;=2 は race_sex_menu.xml L229 コメント「1 (false) ... 2 (true)」と一致（enum 0=未設定/1=false/2=true）。&generic; は EXE 内蔵 entity で strings.xml には無い。→ <id> &generic; </id> = id -1 → SetField(-1,tile) は no-op。②[確定(命令)]+[確定(XML)] idx21→+0x38 = vertical_scroll_marker。race_scroll_bar(<id>20</id>) に <user6> 21 </user6>（\"A unique ID so that the scroll marker can be dragged around\"）。Prefabs\\vertical_scroll.xml の <image name=\"vertical_scroll_marker\"> が <id> <copy src=\"parent()\" trait=\"user6\"/> </id> → 実行時 id=21 → SetField(21, vertical_scroll_marker) → menu+0x38 = vertical_scroll_marker。slot8 0x5C3BE0 が +0x34/+0x38 を同時に読み SetFloat(user8=0xFB6/user9=0xFB7) を書く v636 §5 と整合。③[確定(XML)] <id> は式を取り得る（動的 id）。束縛層は静的/式 id を同様に処理。④6 スロット最終表: +0x28=race_window(idx1) / +0x2c=race_player_grab(2) / +0x30=race_name(10) / +0x34=race_scroll_bar(20) / +0x38=vertical_scroll_marker(21,動的) / +0x3c=race_button_done(90)。⑤抽出済み menus 正典ローカルコピー = tools/BSAFileExtractor/extracted/menus/（CharGen\\race_sex_menu.xml, Prefabs\\{vertical_scroll,generic_background,button_long}.xml, strings.xml, master_menu_file.txt）。成果物 tmp/re/v637_generic_entity_idx21_ruling.md、台帳 row614。残点 V-637-1(+0x94 宣言位置)/V-637-2(+0x2c 実使用経路)。"
+    },
+    {
+      "id": "opencode-race-sexmenu-slot-usage-order-20261122",
+      "timestamp": "2026-11-23T12:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v638",
+        "racesexmenu",
+        "setfield",
+        "entity",
+        "initorder"
+      ],
+      "content": "2026-11-22 v638（ai-todo #96 フォロー）＝+0x94 所属・Main 特別扱い否定・<id>→SetField dispatch・6 スロット使途・entity 表・初期化順。①[確定(命令)] +0x94 は RaceSexMenu の id→tile 表。0x5C3BE0=RaceSexMenu slot8。0x5C6390/0x5C6860/0x5C6AF0/0x5C4340 は非仮想で caller が RaceSexMenu 帯のみ（0x5C93F0 slider gen / 0x5CA010 builder×21）。0x5BF170 の caller は Persuasion ハンドラ 0x5BF470/0x5BFB90。RTTI: Menu(td 0xB0A018) 基底なし、RaceSexMenu→{RaceSexMenu,Menu}、PersuasionMenu→{PersuasionMenu,Menu}。基底メソッドは +0x94 を触らない。宣言位置は [部分確定]。②[確定(命令)(negative)] Main 特別扱いなし＝RaceSexMenu 系で literal 0 の [+0x94] は 0 件。panes[0]。main 別フィールド不要。③[確定(命令)] trait 0xFA8 dispatch＝trait 適用 FUN_0058b2f0 の 0x58B4E1 (cmp esi,0xfa8) が Tile::GetContainingMenu(0x5898f0)→0x58B508 menu->SetField(int(id),tile)。caller は interpreter の FUN_0058bEE0(0x58C936)/0x591600/0x591DC0/0x592A70。mov eax,[reg+4]; call eax 形。式 id も同一経路（float→int 0x9828c0）。④[確定(命令)] 6 スロット実使用＝+0x2c/+0x3c は builder guard のみ、+0x30 は guard＋末尾 0x5CBC67/7A で SetString(race_name,0xFDE=string)+SetFloat(0xFF0=xdefault,2.0)。⑤[確定(命令)] entity 13 件＝&generic;=-1/&false;=1/&true;=2/&left;=1/&center;=2/&right;=4/&scale;=-1/&click_past;=0x65/&no_click_past;=0x66/&does_not_stack;=0x1778/&mixed_menu;=0x67/&xenon;=1/&xbox;=1。bool 規約(1=false,2=true)の出所。⑥[確定(命令)] id=-1 副作用＝0xFA8 分岐は id trait を書かず SetField のみ。SetField(-1) は no-op → &generic; tile は +0x94 に入らない。spec「id -1 は束縛も索引もされない」。⑦[確定(命令)] 初期化順＝0x57B7E0..0x57B8DF: player 状態チェック→FUN_00589b70(0x40c,&MenuRTTI,&RaceSexMenuRTTI,0)→FUN_005898f0→FUN_009832e6→vtable[0](1)→0x57B8D9 builder(0x5ca010)。builder が冒頭で ReadXML(0x590420)。→ menu生成→ReadXML(parse+tile木+束縛)→builder。⑧[確定(命令)] +0x38 は guard 対象外（marker 未束縛でも build 成立、ドラッグのみ不能）。⑨[確定(データ)] 0xFF0=xdefault、[0xa379b4]=2.0。⑩[確定(命令)] user5 読者＝RaceSexMenu 帯の push 0xfb3 は全て SetFloat(書込)。GetFloat(0xfb3) は RaceSexMenu 外(0x5987F0)のみ。消費者は XML 層(_text_1 Done/_text_2 Return を user5 で選択)。成果物 tmp/re/v638_menu_slot_usage_order_ruling.md、台帳 row615。残点 V-638-1(+0x94 宣言位置)/2(+0x2c 実使用経路)/3(_text_ 解決機構)。次段取り: Main の 6 item ラベル→残り 118 ラベル→24 HandleClick command 対応→chargen_ui_spec.md。"
+    },
+    {
+      "id": "opencode-race-sexmenu-id-semantics-labels-20261122",
+      "timestamp": "2026-11-23T13:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v639",
+        "racesexmenu",
+        "trait",
+        "labels",
+        "setname"
+      ],
+      "content": "2026-11-22 v639（ai-todo #96 フォロー）＝id の実体・_text_・race_button_done・0x5C9650・Main 6 item ラベル。①[確定(命令)] id は保存される trait。SetFloat(0x58CEB0)=GetOrCreateEntry(0x58b220)+store(0x58ca00)。0x58ca00 は [esi+4]=value を格納し FUN_0058bEE0→FUN_0058b2f0→SetField を呼ぶ（store が先）。GetFloat(0x588BD0) は trait リスト走査で [entry+4] を返す。GetFloat(tile,0xfa8) の読み手多数（0x579A2E/0x5894F9/0x5B1B00 等）→ tile.id は消せない。ユーザー前提を訂正。0x58ca00 は値が変化したときのみ格納。②[部分確定] _text_ は EXE に文字列 0 件 → データ駆動の数値サフィックス trait。trait 名表に無し。user5(1=Done/2=Return) が選択子。実パスは V-639-1。③[確定(XML)] race_button_done: <user0> はボタン自身で <copy src=me() trait=user5/> <copy src=me() trait=_text_/>。<user5>=&false;=1。_text_1=strings._done(Done)/_text_2=strings._return(Return)。id(0xFA8) と user0(0xFAE) は別 trait。④[確定(命令)] 0x5C9650 の唯一の caller は 0x5CCFCC(HandleClick 内)。名前→pane(0x5C3110)→SetFloat(race_button_done,user5=0xFB3,2.0=Return)。HandleClick が 0x5C9650(2=Return)/0x5CC816(1=Done) を選ぶ。user5=1.0 を書くのは 0x5CC816 のみ。⑤[確定(命令)] Main pane(0x5CA448) の 6 item: button 0x5CA491([0xB38F78]Race)/button 0x5CA4D5([0xB38F80]Face)/button 0x5CA518([0xB38F88]Hair)/toggle 0x5CA53A([0xB38F90]Eyes)/slider 0x5CA55E([0xB38F98])/slider 0x5CA582([0xB38FA0])。ラベルは 0x419b10(name object→BSStringT)→0x58A020(SetName)→name(0xBBA)。user2(0xFB0) ではない。editorid リテラル表 0xA62964=sMain/sRace/sFace/sHair/sEyes/sAge/sComplexion。globals 0xB38F38+i*8。idx12/13=sAge/sComplexion が有力。Race global は button#0 と Race pane 名で再利用。⑥[確定] +0x94 宣言は RaceSexMenu(ctor 0x5C4E40 が 500dword クリア)で V-638-1 閉。&no_click_past;=102 は depth のヒットテスト制御も表す。&scale; は抽出 89 XML で出現 0 件。成果物 tmp/re/v639_id_semantics_text_labels_ruling.md、台帳 row616。残点 V-639-1(_text_ 実パス)/2(Main idx12/13 表示名)/3(+0x2c 実使用経路)。"
+    },
+    {
+      "id": "opencode-race-sexmenu-118labels-20261122",
+      "timestamp": "2026-11-23T14:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v640",
+        "racesexmenu",
+        "labels",
+        "registry",
+        "dynamic-trait"
+      ],
+      "content": "2026-11-22 v640（ai-todo #96 フォロー）＝registry idx12/13・118 item ラベル表・label=name 副作用・_text_ 動的マップ。①[確定(データ)] name object は 0xB38F38+i*8 {+0=display,+4=editorid}。初期化は thunk 帯 0x9F6710+i*0x20 が 0x419a70(obj,editorid,display) を呼ぶ。idx7=Main/8=Race/9=Face/10=Hair/11=Eyes/12=Age(sAge)/13=Complexion(sComplexion)/14=Gender/15=Race Description。Main 6 item=Race/Face/Hair/Eyes/Age/Complexion 確定。②[確定(命令)] 全 118 item ラベル表を tmp/re/v640_item_labels.md に出力（列 pane/pane名/item#/種別/registry idx/display/site）。builder 0x5CA010..0x5CBC20 走査。21 pane/118 item（button42/toggle11/text1/slider64）。pane0 Main=6 item。重複 idx: 8(Race)×2（pane0 item0 button, pane1 item7 toggle）、11(Eyes)×2（pane0 item3 toggle, pane4 item23 button）。③[確定(命令)] item 生成器は 0x419b10→0x58A020(SetName)→name(0xBBA)。user2 ではない。0x5C3110 は 21 pane 名グローバル（0xB38F70 Main→0xB38F78 Race→0xB38F88 Hair→0xB38F80 Face→0xB38FE0 Shape…）を unrolled strcmp(0x98539f) で比較し [esi+0x40+i*4] を返す→tile 名は関与せず誤爆なし。④[部分確定] FUN_0058a0a0 は先頭 '_' を別パス 0x58A12D へ→動的 trait マップ 0xB13BC4 に挿入(0x42d800)。動的 id は parser 0x58B0B4 で counter(0xB13BCE)+0x2710。→ _text_N は 0xFDE+n でなく id≥10000 の動的 trait。数字なし _text_ の選択規則は V-639-1。⑤[確定(命令)] 同値 skip: 0x58CA00 は新旧等値なら格納せず→Main の id=0 は未格納(既定0)、&generic; の -1 は格納。成果物 tmp/re/v640_registry_labels_text_ruling.md＋tmp/re/v640_item_labels.md、台帳 row617。残点 V-639-1/V-639-3/V-640-1。"
+    },
+    {
+      "id": "opencode-race-sexmenu-handleclick-sites-20261122",
+      "timestamp": "2026-11-23T15:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v641",
+        "racesexmenu",
+        "handleclick",
+        "pageswitch"
+      ],
+      "content": "2026-11-22 v641（ai-todo #96 フォロー）＝HandleClick 0x5C3110 24 サイトの pane 対応と command dispatch 構造。①[確定(命令)] FUN_005cc200 内 call 0x5c3110 は 24 サイト。各 site の pane: 0x5CC2A8=Main/0x5CC2FC=Shape(推定)/0x5CC350=Tone/0x5CC399=General(Face)/0x5CC3E3=Brow/0x5CC42C=Cheeks/0x5CC476=Chin/0x5CC4BF=Eyes/0x5CC509=Forehead/0x5CC552=Jaw/0x5CC59C=Brow/0x5CC5E5=Mouth/0x5CC62F=Nose/0x5CC678=General(Skin)/0x5CC6C2=Beard/0x5CC70B=Eye shades/0x5CC755=Eyebrows/0x5CC79E=Mouth(Lips)/0x5CC7E8=Nose shades/0x5CC844=Main/0x5CC87F=Main/0x5CC99A=Shape(推定)/0x5CC9DF=Shape/0x5CCA2F=Face。19 名（Main×3/Shape×3/Brow×2/他16×1）で v634 §16 と一致。②[確定(命令)] command 源 = ebx=[ebp+8]=HandleClick 第2引数。即値 cmp ebx は 3 つのみ（0x5CC277 cmp ebx,0x5a=90 / 0x5CC8A3 cmp ebx,0xa=10 / 0x5CCBF4 cmp ebx,0x62=98）。24 サイトの大半は cmp ebx ではなく GetFloat(tile,trait) と [esp+0x1c] の値比較（fcomp + jnp）で守られる。③head 0x5CC22E は race_name の xdefault を SetFloat(0xff0,1.0)。ポートは pane 名→0x5C3110（21 pane 名 strcmp）→pane slot 経路で実装可。成果物 tmp/re/v641_handleclick_sites_ruling.md、台帳 row618。残点 V-641-1([esp+0x1c] 源と command 完全対応)/V-641-2(0x5CC2FC/0x5CC99A の pane 名 Shape 推定)/V-639-1(_text_ 選択規則)。"
+    },
+    {
+      "id": "opencode-race-sexmenu-handleclick-arg1-20261123",
+      "timestamp": "2026-11-23T16:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v642",
+        "racesexmenu",
+        "handleclick",
+        "user0",
+        "arg1"
+      ],
+      "content": "2026-11-23 v642（ai-todo #96 フォロー）＝HandleClick arg1 の意味・[esp+0x1c]・比較 trait の確定。①[確定(命令)] prologue 実バイト 55 8B EC 83 E4 F8 6A FF。0x5CC25A mov ebx,[ebp+8] = 第1スタック引数 = クリックされた要素の id（command ではない）。即値 cmp ebx は 3 つのみ: 0x5CC277 cmp ebx,0x5a(90) / 0x5CC8A3 cmp ebx,0xa(10) / 0x5CCBF4 cmp ebx,0x62(98)。②[確定(命令)] 3 分岐: 90→Main(0xB38F70)解決+GetFloat(user0)比較+jnp 0x5cca77。10→call 0x5c2730/call 0x5c30c0→0xB38FF0(idx23)解決。98→0xB333C4 vtable[0x170]()/call 0x526f00/call 0x5c91e0/jmp 0x5cd9c5。id 90=race_button_done(race_sex L213)/10=race_name(L49)。id 98 は抽出 89 XML に不在(<id>98</id> 0件)→コード由来 or 別メニュー(V-642-1)。③[確定(命令)] [esp+0x1c] の唯一の mov 書込は 0x5CCB0E mov dword [esp+0x1c],ebx(=arg1=クリックid)。他は fld qword の読。④[確定(命令)] 24 サイトのガードは GetFloat(<tile>,0xFAE=user0) を fcomp qword [esp+0x1c] と比較→test ah,0x44; jnp <共通skip>。jnp=不一致で skip=一致時のみ pane 切替。→ ページ選択モデル = 「user0 == クリックid の pane を選ぶ」。FUN_005c4340 が SetFloat(pane,0xFAE,id) で整合。⑤v640 回収分(idx12=Age/sAge、idx13=Complexion/sComplexion、118 item 表 tmp/re/v640_item_labels.md、衝突 idx8 Race/idx11 Eyes)は既了。成果物 tmp/re/v642_handleclick_arg1_trait_ruling.md、台帳 row619。残点 V-642-1/V-641-1/V-639-1/V-641-2。次: chargen_ui_spec.md 起草。"
+    },
+    {
+      "id": "opencode-race-sexmenu-esp1c-id98-20261123",
+      "timestamp": "2026-11-23T17:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v643",
+        "racesexmenu",
+        "handleclick",
+        "id98"
+      ],
+      "content": "2026-11-23 v643（ai-todo #96）＝[esp+0x1c] の実体と id 98。①[確定(命令)] HandleClick FUN_005cc200 全域で fstp qword [esp+0x1c] は存在しない（x87 ストア取りこぼし仮説は否定）。[esp+0x1c] を書くのは 4B のみ: 0x5CCB0E mov dword [esp+0x1c],ebx（24 サイトより後、直後に mov word [esp+0x20/0x22] が続く=BSStringT temp {data/len/cap}）と 0x5CDFEA/0x5CE098/0x5CE0A0/0x5CE3FE（0x5CDFxx/0x5CE0xx=Update 側）。生バイト DC 5C 24 1C = fcomp qword [esp+0x1c]。→ 24 サイト手前の 8B 初期化は無い → V-643-1 [未確定]。②[確定(命令)] ガード: 0x5CC2A8 call 0x5c3110 → GetFloat([esi+4],0xFAE=user0) → GetFloat(edi) → fcomp qword [esp+0x1c] → jnp 0x5cca77。jnp 先は GetString(race_name,0xFDE) の空白(0x20)チェック（名前検証）。③[部分確定] id 98: 抽出 89 XML に <id>98</id> 0 件、メニュー帯に push 0x62 0 件 → コマンド/入力コードの可能性。分岐は 0xB333C4 vtable[0x170]→0x526F00(リスト操作)→0x5C91E0(Player 系)。成果物 tmp/re/v643_esp1c_id98_ruling.md、台帳 row620。残点 V-643-1/V-642-1/V-641-1。"
+    },
+    {
+      "id": "opencode-rizin-migration-v643-20261123",
+      "timestamp": "2026-11-23T18:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v644",
+        "racesexmenu",
+        "rizin",
+        "tooling"
+      ],
+      "content": "2026-11-23 v644（ai-todo #96）＝radare2(rizin) 移行と V-643-1/id98 の byte レベル再走。①ツール移行: radare2 は sudo 不可のため rizin 0.9.1 静的ビルドを sudo 無しで ~/.local/rizin-root/ に導入（--strip-components=1 は bin/rizin と share/rizin/ が衝突するので使わない）。ラッパー D:\\re\\r2q.sh。作業コピー /mnt/d/re/Oblivion.exe(md5 cdd2f0c5eff198d4f26b7b5b54ce4930)。規則: mnemonic 依存検索禁止(/x)、窓固定禁止([start,end))、引用時は px 生バイト+capstone 一致。②[未確定] V-643-1: 5C は modrm reg=ebx 固定のため SIB+disp の 24 1c で再走(範囲 [0x5CC200,0x5CDEF0))。rizin /x 241c=48件。capstone 分類: fcomp qword [esp+0x1c] 19 / fld qword [esp+0x1c] 28 / mov dword [esp+0x1c],ebx 1(0x5CCB0E)。2418=33/2420=74/2424=5。→ [esp+0x1c] を書くのは 0x5CCB0E の1件のみで 19 fcomp サイトより後。reg 非依存でも 8B 書込は増えない。→ 19 fcomp は先行書込なし。head にも書込なし(0x5cc23c mov byte [esp+0x1b],0)。esi=this(0x5cc22c)、[esi+4]=Menu::tile(0x5cc2ad)。③[部分確定] V-642-1: push 0x62(id 98) は全 .text で 0 件 → 98 は静的定数でない(実行時 id か入力コード)。call [reg+0xC](vtable slot3) は 0x89957A〜0x8Exxx 帯のみ。/r 0x5cc200=0 hits(直接 caller なし, vtable 0xA6D398 経由のみ)。jnp 先 0x5CCA77 は GetString(race_name,0xFDE) の空白チェック=名前検証。④[確定(命令)] push 0xfa8 は全 .text で 126 site。成果物 tmp/re/v644_rizin_migration_ruling.md、台帳 row621。残点 V-643-1/V-642-1/V-641-1。"
+    },
+    {
+      "id": "opencode-v645-esp1c-alias-20261123",
+      "timestamp": "2026-11-23T19:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v645",
+        "racesexmenu",
+        "handleclick",
+        "getfloat"
+      ],
+      "content": "2026-11-23 v645（ai-todo #96）＝V-643-1 解決: [esp+0x1c] は [esp+0x20] と同一スロット（esp +4 シフト）。①[確定(命令)] 48 件の前後分割（範囲 [0x5CC200,0x5CDEF0)）: 0x5CCB0E より前=20（fcomp qword [esp+0x1c] 19=0x5CC2C7..0x5CC807 + fld qword [esp+0x1c] 1=0x5CC92B）、書=1（0x5CCB0E mov dword [esp+0x1c],ebx）、後=28（fld 27=0x5CCC83..0x5CD986 + mov 1）。読47/書1。fstp qword [esp+0x1c]=0。②[確定(命令)] prologue 0x5CC200..0x5CC2C8: push 15・sub esp 2（0x18/8）・SEH 3push+cookie。esi=this。ebx=[ebp+8]=arg1。0x5CC285 push 0xfa8 は残存し 2 回目 GetFloat の引数。0x5CC2AD mov ecx,[esi+4]=Menu::tile(根tile)。[esp+0x1c] 用 8B 初期化なし。③[確定(命令)] GetFloat(0x588BD0)=float GetFloat(Tile* ecx, int trait[esp+4])・stdcall ret4・戻り値 fld dword [edx+4]。ret: 0x58CEB0=8/0x57D2F0=0/0x57DD90=4/0x5C30C0=0/0x4028D0=8/0x5C3110=8。スタック厳密シミュ: 0x5CC2BC の esp=-60 → fstp qword [esp+0x20] 実効=-28、0x5CC2C7 の esp=-56 → fcomp qword [esp+0x1c] 実効=-28、両者一致。差+4 は 2 回目 GetFloat(ret4)が push 無し引数を pop するため。引数: 1 回目=0xfae(ecx=根tile)/2 回目=0xfa8(ecx=edi=paneN)。→ ガード=GetFloat(根tile,0xFAE=user0)==GetFloat(paneN,0xFA8=id)、不一致で jnp skip。V-643-1 は未初期化でなく同一スロット（解決）。④[確定(命令)] 後方ジャンプ: 同範囲 target の後方 jmp/jcc は 30。うち [0x5CC2C8,0x5CC820) を target にするものは 0（fcomp 帯はループ無し）。fld 帯(0x5CCC83..0x5CD988)は 19 個の jmp 0x5CCFB7(+2 個 jmp 0x5CCFB2)でループ本体。0x5CC92B は fild dword [ebp+8](arg1=クリックid)を double 化→GetFloat(ecx)と fucompp 比較の別ガード。⑤[確定(命令)] id98: 0x89957A=call dword [eax+0xc]（汎用 vtable slot3・ebp フレーム・別クラス）。push 0xfa8 in [0x899000,0x89A000)=0。push 0x62 全 .text=0。残点 V-642-1/V-641-1/V-645-1(fld ループの走査対象)/V-645-2(0x5CC92B の trait 実体)。成果物 tmp/re/v645_esp1c_alias_resolution_ruling.md、台帳 row622。"
+    },
+    {
+      "id": "opencode-v646-page-switch-commit-20261123",
+      "timestamp": "2026-11-23T20:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v646",
+        "racesexmenu",
+        "handleclick",
+        "pageswitch"
+      ],
+      "content": "2026-11-23 v646（ai-todo #96）＝ページ切替の実体: 19 サイトの commit ブロックと 0x5CC92B ガード。①[確定(命令)] jnp の向き訂正: test ah,0x44 後の jnp は一致でジャンプ（v645 の「不一致で skip」は誤り）。等しい=C3=1C2=0→0x40(1bit)→PF=0→jnp 飛ぶ。不等=0x00→PF=1→落ちる。順序外=0x44→PF=1→落ちる。→ 19 サイトは「paneN が現在ページなら commit へ」。②[確定(命令)(negative)] this->tile(+4) writer: band [0x5C2000,0x5CE600) の mov dword [reg+4],reg は 221 件。base=esi は 2 件のみ: 0x5C2C57(mov [esi],eax;[esi+4],ecx;[esi+8],edx の 3dword コピー=ベクトル/構造体)と 0x5C2D2B(同系)。他は BSStringT temp(ecx=esp)。→ 切替時に this->tile を新 pane へ代入する store は存在しない。this->tile は menu 生成時確定。ページ切替は this->tile の user0(0xFAE) を書換。→ this->tile.user0=現在ページ id。③[確定(命令)] 0x5CC92B ガード: 到達は 0x5CC25D je 0x5cc8a3→0x5CC8A3 cmp ebx,0xa;jne 0x5cc277(ebx==10 で 0x5CC8AC call 0x5c2730/call 0x5c30c0)→0x5CC8BA(デフォルト経路も合流)。fild dword [ebp+8](arg1=クリックid)→double 化し [esp+0x20] 保存。call 0x5c3440(ret 0x10,4引数)→eax=tile。GetFloat(eax,0xFA8)。fld qword [esp+0x1c](+4 シフトで保存先と同一)→fucompp→test ah,0x44;jp 0x5ccbf4(不等/順序外)。一致→0x5CC93C(ダイアログ 0x579c10)。→ ガード=GetFloat(tile_0x5c3440,0xFA8)==double(クリックid)。trait 定数=0xFA8。④[確定(命令)] 19 サイトの jnp 先と guard 直後: jnp 先は 4 群 site1→0x5cca77 / site2-3→0x5cca09 / site4-13→0x5cc9c4 / site14-19→0x5cc97f。guard 直後は次サイトのセットアップ(直列チェーン)。commit ブロックは SetFloat(this->tile,0xFAE,GetFloat(paneX,0xFA8))=this->tile.user0:=paneX.id。0x5CCA77 は名前検証(GetString(race_name,0xFDE) 空白チェック)+Done。site19 の guard 直後 0x5CC816=SetFloat(race_button_done,0xFB3,1.0)→SetFloat(this->tile,0xFAE,GetFloat(Main,0xFA8))=Main 復帰。→ 19 サイトは非表示処理でなく commit(this->tile.user0 設定)+未一致時 Main 復帰。⑤[部分確定] fld ループ: jmp 0x5CCFB7 の行き先は Main 名+0x419b10+0x5c9650(Return 系)→jmp 0x5cd9c5。反復ブロック(0x5CD05C 他 19)は GetFloat(0x5c3440 戻り,0xFA8) 比較、反復ごとに増分定数(0xb,0xc,0xd,0xe)を [esp+0x3c/0x48] に設定、一致で jmp 0x5ccfb7。finalize 0x5CD9C5=[0xb3b4c9]=0(条件付 [0xb3b4c8]=0)→[0xb333c4].vtable[0x154]()。走査対象=0x5c3440 戻り tile(+0x40/+0x94 の直接読でない)。残点 V-646-1(0x5c3440 の引数と戻り)/V-646-2(commit の paneX が paneN と異なる理由)/V-646-3(増分定数の用途)/V-645-1(部分確定)。成果物 tmp/re/v646_page_switch_commit_ruling.md、台帳 row623。"
+    },
+    {
+      "id": "opencode-v647-commit-panex-group-20261123",
+      "timestamp": "2026-11-23T21:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v647",
+        "racesexmenu",
+        "handleclick",
+        "pageswitch",
+        "nameregistry"
+      ],
+      "content": "2026-11-23 v647（ai-todo #96）＝commit の paneX は group ごとに固定（遷移は hub/leaf 構造）。①[確定(命令)] 名前レジストリの所在訂正: rizin iS: .data vaddr 0xB02000(RVA 0x702000) vsize 0xAA000 / paddr 0x700C00 size 0x30C00。名前レジストリ 0xB38F38+i*8 は .data 内だが raw 範囲外=BSS（実行時充填）→ 静的ファイルから読めない（v646 の garbage の原因）。名前は thunk 0x9F6710+i*0x20（push display; push editorid; call 0x419A70）の即値から回収。idx7=Main/8=Race/9=Face/10=Hair/11=Eyes/12=Age/21=Shape/22=Tone/23=Random/24=Reset/25=General(Face)/26=Brow/27=Cheeks/28=Chin/29=Forehead/30=Jaw/31=Mouth/32=Nose/33=General(Skin)/34=Skin/35=Beard/36=Eyebrows/37=Mouth(Lips)/38=Lips/125=Eye shades。②[確定(命令)] commit 4 ブロック: 同型 paneX=0x5c3110(name)→SetFloat(this->tile,0xFAE,GetFloat(paneX,0xFA8))→共有 tail へ jmp。0x5CC97F name=[0xb38fe8]=Tone(22)→jmp 0x5cc869。0x5CC9C4 name=[0xb38fe0]=Shape(21)→jmp 0x5cc869。0x5CCA09 name=[0xb38f80]=Face(9)→jmp 0x5cc87d。0x5CCA77=名前検証(GetString(race_name,0xFDE) 空白)→Done。paneX の出所=各ブロック固有の 0x5c3110 呼び出し（0x5c3440 の戻りではない）。共有 tail 0x5CC869=0x5c3110(name)→SetFloat(this->tile,0xFAF=user1,..)。③[確定(命令)] site1 全文: guard 後 0x5CC2D6 は site2 のセットアップへ fall-through（jmp でない）。19 サイトは直列チェーン。site1(Main) だけ commit を持たないのは Main の確定=名前検証(0x5cca77)=Done 処理のため。④[確定(命令)] 0x5C3440: prologue SEH 8push→esi=ecx(this)/edi=[esp+0x2c](arg3)/ebx=[esp+0x24](arg1)。ret 0x10(4引数)。本体=BSFixedString(arg1)→0x5c3110(pane=arg1)→0x589930(pane,arg3)=tile→return。→ 0x5C3440(this,str1,str2)=str1 で pane を引き 0x589930 で pane 内 tile を str2 検索。戻りは「名前で引いた pane 内 tile」。呼び出し 0x5CC910 は 2 つの BSFixedString([0xb38ff0]=idx23=Random/[0xb38f80]=idx9=Face)を積む。→ 0x5CC92B ガード=GetFloat(0x5C3440(this,\"Random\",\"Face\") 戻り,0xFA8)==double(クリックid)。⑤[確定(命令)] paneX は group ごとに固定=C: site の paneN→commit の paneX: site1 Main→(Done)/site2 Shape(21)→Face(9)/site3 Tone(22)→Face(9)/site4-13 General(Face)(25),Brow,Cheeks(27),Chin,Eyes(11),Forehead,Jaw(30),Brow,Mouth(31),Nose→Shape(21)/site14-19 General(Skin)(33),Beard,Eye shades(125),Eyebrows,Mouth(Lips)(37),Nose shades→Tone(22)。paneX はクリック tile の user0 でない(B 否定)。paneX は paneN の親(General(Face)→Shape/General(Skin)→Tone)=親方向(A の子ページ否定)。→ C が正しい。構造=現在ページ==paneN のとき this->tile.user0:=paneX.id。Shape/Tone が hub、配下(Face系/Skin系)が leaf。残点 V-647-1(0x5C3440 の str1/str2 役割)/V-646-3/V-645-1。成果物 tmp/re/v647_commit_panex_group_ruling.md、台帳 row624。"
+    },
+    {
+      "id": "opencode-v648-individual-handlers-family-20261123",
+      "timestamp": "2026-11-23T22:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v648",
+        "racesexmenu",
+        "handleclick",
+        "pageswitch",
+        "handlers"
+      ],
+      "content": "2026-11-23 v648（ai-todo #96）＝個別ハンドラ family（28 サイト）: GetFloat(named_tile,0xFA8)==double(arg1)。①[確定(命令)] push 0xfa8=51 / push 0xfae=24（範囲 [0x5CC200,0x5CDEF0)）。0xfae は 19=GetFloat(this->tile,0xFAE)/4=SetFloat(this->tile,0xFAE,..)(0x5CC857+3commit)/1(0x5CDA69)。→ GetFloat(クリックtile,0xFAE) の読者=0。arg1 比較ガード=fucompp 28 サイト。fild dword [ebp+8] は 0x5CC915 の1件のみ（float(arg1) を [esp+0x18] に保存し全 28 が再利用）。cmp ebx imm=3(0x5a/0xa/0x62)。28 対 (pane,tile): Main→Age/Face/Hair/Race、Race→Gender、Hair→Red/Green/Blue/Length、Shape→General(Face)/Brow/Cheeks/Chin/Eyes/Forehead/Jaw/Mouth/Nose、Tone→General(Skin)/Beard/Eye shades/Eyebrows/Mouth(Lips)/Nose shades、Face→Shape/Tone、Random→Face。一致→[esp+0x3c/0x48] に定数(0xa/0x10/0x12 等)→jmp 0x5ccfb7。追加 idx 名 13=Complexion/14=Gender/15=Race Description/16=Style/17=Red/18=Green/19=Blue/20=Length/39-45=Face ratio 系/126=Nose shades/127=Hair Color。②[確定(命令)] head arg1 分岐: 0x5CC25A mov ebx,[ebp+8]。0x5CC25D je 0x5cc8a3(flag==0)。0x5CC263 call 0x57dd90/0x5c30c0。0x5CC277 cmp ebx,0x5a;jne 0x5cc8ba(90→chain)。0x5cc8a3 cmp ebx,0xa;jne 0x5cc277(10→0x5CC8AC 2call→0x5cc8ba)。0x5ccbf4 cmp ebx,0x62(98)。→ chain へ入るのは arg1==90 のみ。ジャンプテーブルなし。③[確定(命令)] Face/Race/Hair: chain 19 サイトの paneN 集合に Face(9)/Race(8)/Hair(10) は含まれない→現在ページが Face/Race/Hair のとき chain は 19 全部素通り→0x5CC816(SetFloat(race_button_done,0xFB3,1.0)→SetFloat(this->tile,0xFAE,Main)=Main 復帰)。Face/Race/Hair への移動は個別 family(0x5CD02A/0x5CD0B0、Main ボタン 0x5CCF8B/0x5CD136/0x5CD1B6)が担う。④[確定(命令)(negative)] Main ボタン生成: 0x5CA448 call 0x5c4340(ecx=esi,arg=[esi+0x28]=race_window)→0x5CA45F mov [esi+0x40],eax(=panes[0]=Main pane 生成)。0x5CA491/0x5CA4D5/0x5CA518 call 0x5c4480、名前 Race(8)/Face(9)/Hair(10)、index [esp+0x4c]=0/1/2。生成 site 直後に 0xFAE を書く命令なし。GetFloat(クリックtile,0xFAE) 読者=0(全 .text の push 0xfae 322 件分類)。→ user0=遷移先 id の汎用経路は存在しない(否定)。遷移表は 2 層: chain(arg1==90,現在ページ→hub/leaf)+個別ハンドラ(id==arg1→ページ移動)。残点 V-648-1(定数 0xa..0x12 の用途)/V-648-2/V-646-3。成果物 tmp/re/v648_individual_handlers_family_ruling.md、台帳 row625。"
+    },
+    {
+      "id": "opencode-v649-family-constants-chain-20261123",
+      "timestamp": "2026-11-23T23:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v649",
+        "racesexmenu",
+        "handleclick",
+        "handlers"
+      ],
+      "content": "2026-11-23 v649（ai-todo #96・最小記録）＝family 28 サイト / 定数 / chain。①[確定(命令)] 28 サイトの全アドレスと pane/tile 対。欠けていた 1 組=(Reset, Face)@0x5CCC87(0x5CCC1C mov eax,[0xb38ff8]=Reset / 0x5CCC42 mov eax,[0xb38f80]=Face)。全 28: Main→Age(0x5CCD26)/Face(0x5CCF8B)/Hair(0x5CD136)/Race(0x5CD1B6)、Race→Gender(0x5CCF22)、Hair→Red(0x5CCD96)/Green(0x5CCDF7)/Blue(0x5CCE58)/Length(0x5CCEB9)、Face→Shape(0x5CD02A)/Tone(0x5CD0B0)、Shape→General(Face)(0x5CD236)/Brow(0x5CD2BC)/Cheeks(0x5CD342)/Chin(0x5CD3C8)/Eyes(0x5CD44E)/Forehead(0x5CD4D4)/Jaw(0x5CD55A)/Mouth(0x5CD5E0)/Nose(0x5CD666)、Tone→General(Skin)(0x5CD6EC)/Beard(0x5CD772)/Eye shades(0x5CD7F8)/Eyebrows(0x5CD87E)/Mouth(Lips)(0x5CD904)/Nose shades(0x5CD98A)、Random→Face(0x5CC92F)、Reset→Face(0x5CCC87)。②[確定(命令)] 0x5cd9c5 は定数を読まない=[0xb3b4c9]=0/条件付 [0xb3b4c8]=0→[0xb333c4].vtable[0x154]()→0x7b4280/0x7c5e70/0x7c7eb0→ret 8。切替は 0x5c9650(0x5CCFCC)=SetFloat(race_button_done,0xFB3=user5,2.0)+SetFloat(this->tile,0xFAE=user0,GetFloat(pane(name),0xFA8))。③[確定(命令)] 定数: [esp+0x3c]=偶数 0xa,0xc,…,0x30(20 個)/[esp+0x48]=奇数 3,4,5,6,7,8,9,0xb,…,0x2f(26 個)。合成で 3〜0x30 欠番なし。28 中 8 サイト(Random/Reset/Main-Age/Hair×4/Race-Gender)は定数を設定せず jmp 0x5cd9c5 直行。④[確定(命令)] ループではなく直列チェーン(jp <次ブロック> で連結、一致時のみ 0x5ccfb7/0x5cd9c5 へ脱出)。[esp+0x3c] の更新は各ブロックの一致分岐内で 1 回。⑤[確定(命令)] 0x5c9650 は Main 以外のページでも到達(0x5CCFCC の到達元=family ブロックの一致。Hair/Race/Shape/Tone/Face の各ページ)。⑥[未確定] V-649-1: 定数 [esp+0x3c]/[esp+0x48] は HandleClick 内に読者 0(24 3c/24 48 の全ヒットが c74424xx imm の書込のみ)。関数外(callers 側)か未使用か。成果物 tmp/re/v649_family_sites_constants_chain_ruling.md、台帳 row626。"
+    },
+    {
+      "id": "opencode-v650-chargen-ui-spec-20261123",
+      "timestamp": "2026-11-23T23:59:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "re",
+        "v650",
+        "chargen",
+        "spec",
+        "racesexmenu"
+      ],
+      "content": "2026-11-23 v650（ai-todo #96）＝chargen lane 完了: docs/chargen_ui_spec.md 完成（tmp/re から docs/ へ移動。docs/ 追跡下）。完了条件「XML を開かずに構造を説明できる」達成。内容で示す: (a) 21 ページ（pane 名/+0x40 slot/id/種別件数）、(b) 118 item（button 22/toggle 5/text 1/slider 90）、(c) 束縛 6 スロット（race_window/race_player_grab/race_name/race_scroll_bar/vertical_scroll_marker/race_button_done）、(d) 2 層遷移（chain=Done/Return の階層上昇、family=28 タブ遷移）。§3 pane 構造（+0x40 21 slot/+0x94 500 枠 id→tile/Init 21 slot NULL 初期化/&generic;=-1 非束縛）、§0 設計方針（名前は表示専用・引当は id、原作との差=名前引き→id 引きの意図的逸脱）、§1 builder guard（+0x28/+0x2c/+0x30/+0x3c 非 NULL 必須/+0x38 対象外）、§4 0x5C3440 定義（str1=pane 名/str2=tile 名で tile を返す）、§6.1 arg1==98 内容を記載。V-649-1 [確定(命令)(negative)]: family 定数 [esp+0x3c]/[esp+0x48] は HandleClick 内および finalize の呼び出し先 3 関数（0x7B4280/0x7C5E70/0x7C7EB0）に読者なし。将来 caller 側で読まれる可能性は残るが、スタックローカルなので実質デッド。lane を閉じる理由: 遷移表は arg1 経路で完成し、id 98（V-642-1）は付加経路。残点 4 件（V-642-1/V-646-3/V-629-1/V-631-1）は非ブロッカー。docs/MENU_XML_INTERPRETER_DESIGN.md から束縛層の受け皿として参照 1 行追加。台帳 row627。以降は ESS lane（実 .ess 待ち）と実装側（race_sex_panel skeleton と実装単位列の充填）へ。"
     }
   ],
   "metadata": {
-    "totalEntries": 1057,
+    "totalEntries": 1075,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-23T06:00:00Z",
-    "entry_count": 1057,
-    "last_updated": "2026-11-23T06:00:00Z"
+    "lastUpdated": "2026-11-23T23:59:00Z",
+    "entry_count": 1075,
+    "last_updated": "2026-11-23T08:00:00Z"
   }
 }

@@ -1,5 +1,13 @@
 # Loop State — My Project
 
+## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
+
+- **RE レーン: `RaceSexMenu`(menu id `0x40C`) の構造仕様を確定**。成果物 **`docs/chargen_ui_spec.md`**（v634〜v650 の裁定を集約）。完了条件「**XML を開かずに構造を説明できる**」を達成。
+- 内容: **21 ページ**（pane 名/`+0x40` slot/id/種別件数）、**118 item**（button 22/toggle 5/text 1/slider 90）、**束縛 6 スロット**、**2 層遷移**（chain=Done/Return の階層上昇、family=28 タブ遷移）。加えて `+0x94` 500 枠 id→tile、Init 21 slot NULL 初期化、`&generic;`=-1 非束縛、builder guard、`0x5C3440` 定義。
+- **V-649-1 `[確定(命令)(negative)]`**: family 定数 `[esp+0x3c]`/`[esp+0x48]` は HandleClick 内および finalize 呼び出し先 3 関数に読者なし＝実質デッド。**残点 4 件（V-642-1/V-646-3/V-629-1/V-631-1）は非ブロッカー**。
+- **chargen lane はここで完了**。以降は **(a) ESS lane**（実 `.ess` サンプル待ち＝他 lane と同じ人間ゲート扱い）と **(b) 実装側**（`race_sex_panel` の skeleton と実装単位列の充填）へ移る。
+- 台帳 row627・`round_verify ALL OK`。L1 report-only 継続（push は人間承認済み）。
+
 ## 2026-11-21 — #96 キャラ作成UI を原版 RaceSexMenu 21ページウィザードへ（worktree feat-chargen-21-pages・commit 380999ed・未マージ）
 
 - RE **v610**（依頼 U14 A〜E）を受領。21ページ全139要素の行表・Done 遷移・ラベル実値が `[確定(命令)]`。正典の訂正2点を反映: ①**Race/Hair/Face の Done は no-op ではなく Main へ戻る**（`0x5CC816` フォールスルー。v561 §2.2 / v567 §2 の「no-op」は誤り）②**Face は Button×4**（Shape/Tone/Random/Reset。v571 の×3 は誤り）。
@@ -4611,4 +4619,16 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **baseline 更新**: TOTAL_BASELINE=496 / OPEN_BASELINE=6。
 - **優先度改訂（査読 §3）**: V-632-2【済】→ V-631-1 → V-632-1 → V-630-1 → V-629-1。
 - **残点**: V-631-1 / V-632-1 / V-630-1 / V-629-1 / V-626-2 / V-626-3 / row604。
+
+## 2026-11-22 (mu) — #170 LoadingMenu 正典の port 突合 (A): ローディング画面を `menus/loading_menu.xml` の実測値へ（worktree feat-loading-canon・commit fb7c91e7・未マージ）
+
+- **一次情報**: `tools/BSAFileExtractor/extracted/menus/loading_menu.xml`（187行）を実読。`docs/RE_EXE_REPORT.md:5266-5277` のウィジェット表が同値（独立裏付け）。
+- **実装（視覚層のみ）**: バーを単色矩形 300×20 から実テクスチャ3枚へ。`load_progress` = ribbon_empty **218×43 @y=772 水平中央** / `load_progress_ribbon` = ribbon_full **幅=max(progress×180,1) h=20 @(26,7)** / `load_t_ribbon_slider` = ribbon_slider **12×23 @充填右端 y=−1**。symbol を 64×64 から **330×466 @y=250 中央**へ。テキストを gold から **RGB(117,59,33)**・**y=772+35=807** へ。XML `<font>1</font>` を `FontScope` で KingthingsRegular に適用（`MenuUiBuilder::xmlFontToFontType` case 1→2 と同値）。
+- 座標は port 既存の **1280×960 キャンバス規約**（offset+scale）へ統一（従来の `screenHeight*0.5` 起点式を廃止）。
+- **フォールバック**: ribbon 3枚のいずれかが 0 なら従来の色矩形を維持（既存 `!= 0` ガード方針）。3枚を `.gitignore` の Bethesda アセット節へ追加（再配布しない）。
+- **見送り（#174 として RE 起票）**: エンジン層（`shownStep`/`targetStep`・2500/100/10ms 閾値・`screenTimeLeft`=15s・`fPercentageOfBar0..3`=0.06/0.35/0.44/0.15）。**4比率の読み手が未同定**のため実装は推測になる。
+- **既知の未実装**: ①`load_symbol` は XML 上 `load_title_page`（user0==0）の子で `load_main`（user0>0）とは排他だが、port は単一ハイブリッド状態のまま ②`load_main` の幾何（幅=画面高×16/9・高=画面高）と alpha 0.6 ③テキスト実寸（`fonts.xml` 未抽出。`kingthings_regular.fnt` offset 0 = **float 28.0** を実測したが「fontSize→tile 高」の対応が RE 未確定のため現行 1.2×scale を維持） ④`wrapwidth` 480/850 未実装（レンダラに折返しなし）。
+- **verifier APPROVE**（指摘: 末尾改行 nit → 修正済み／`load_loading`(固定 "Loading...") と `load_text`(user2) の役割差は宣言済み逸脱として記録／STATE.md 未更新 → 本エントリで解消／`TODO.md:657` の記述がコードより先行）。
+- **実測**: `gradlew :app:assembleDebug` BUILD SUCCESSFUL・APK **233.9MB**・`LoadingScreen textures loaded (bg=180, symbol=181, default=182, ribbon=183/184/185)`・`LoadingScreen shown: Loading game data...` 11:53:22→11:53:44。スクリーンショットでリボンバー＋左端スライダー＋茶色 Kingthings ラベルを確認（`%TEMP%\opencode\loadcanon\L02.png` / `bar_zoom.png`）。
+- **docs 不整合**: `TODO.md:657` は「loading_screen.{h,cpp} を title page へ置換済」「setBackgroundImage のコメントを訂正済」と記すが、base コードに `setBackgroundImage` は 0 件（grep）。台帳記述がコードより先行していた。
 

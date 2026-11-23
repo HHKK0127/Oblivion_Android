@@ -32,6 +32,8 @@ Oblivion Steam版のメニューXML（`menus\*.xml`）をパース・評価し�
 
 `docs/ASSET_GUIDE.md` L380-390 に既存の設計意図あり（`engine/xml_menu_parser.h/cpp` 新規作成、対応要素 `<rect>/<image>/<text>/<template>`、`UISystem::registerComponent()` で動的生成）。本設計書はこれを発展させ、実際のXMLフォーマット分析に基づいて具体化する。配置は既存UIとの一貫性から `ui/` 配下を採用する（ASSET_GUIDEの `engine/` 記載は古い計画のため、本設計書を正とする）。
 
+> **束縛層（`<id>` → `SetField`）は本設計の対象外**: XML の `<id>N</id>` を menu の束縛スロットへ結ぶ層（`SetField`）と、`RaceSexMenu`(0x40C) の pane/item 構造・2 層遷移表は `docs/chargen_ui_spec.md` に集約した。chargen 系メニューを扱うときはそちらを正とする。
+
 ## 2. 背景：Oblivion メニューXMLフォーマット
 
 各メニューは1つのルート `<menu>` 要素を持つXMLファイルで定義される。`loading_menu.xml` の実例：

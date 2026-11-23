@@ -46,3 +46,8 @@ When a repository's documentation and its existing code disagree, follow the con
   - （注意）この「知り方」は**判定列には使わない**。5 段階判定の列は不変とし、「知り方」は判定に至る**散文の中だけ**で使う（2 つの語彙を混ぜない）。
 - 長い出力はファイルに落として slice で読む。全文を文脈に貼らない。
 - 訂正時は旧記述を削除せず `[確定(命令)(negative)]` として残す（既存規則の再掲）。
+
+## 作業ディレクトリ（probe/抽出物・再発防止）
+
+- probe ハーネス（`v307_common.py`）・抽出 XML・裁定書は **`%TEMP%` に置かない**（掃除で消える。2026-11-22 に `%TEMP%\opencode` の `v307_common.py` と `bsa_chargen\*.xml` が消失）。`D:\re\` を使い、`D:\re\MANIFEST.sha256` で sha256 検証する。消えたら BSA（`Oblivion - Misc.bsa`）から再抽出し sha256 照合する。
+- `race_sex_menu.xml` の正典: raw md5 `d367341334fa89101ba4fc077edb52fe` / 22156B / CRLF / 705 行（`D:\re\XML_CANONICAL.txt`）。
