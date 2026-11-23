@@ -35,8 +35,9 @@ CN_CHARS = set(
 )
 
 FFFD = "\ufffd"
-# ドット直後の "AV"。ただし .avd/.avi/。AV8 のような英数字サフィックスは除外（誤検出防止）。
-DOTAV = re.compile(r"(?:\.|．|。)\s*[Aa][Vv](?![A-Za-z0-9])")
+# dotAV: MSVC RTTI 名の "?" 落ち検出。`.?AV<Name>@@` は許可し、`?` が落ちた `.AV<Name>`（直後が大文字）を FAIL。
+# （2026-11-23 実測: `.?AV...`=1473 件 / `.AV<大文字>...`=少数。`.AV<name>`・`.AV_STAMINA`・裸の `.AV` は誤検出のため除外）
+DOTAV = re.compile(r"(?<!\?)\.AV[A-Z]")
 
 TEXT_EXT = {
     ".md", ".txt", ".py", ".c", ".h", ".cpp", ".hpp", ".rs", ".json", ".xml",
@@ -45,9 +46,9 @@ TEXT_EXT = {
 }
 
 # --all の既知ヒット数 baseline（回帰防止）。2026-11-23 実測:
-#   CN=228（日本語文書への簡体字混入。実在）/ FFFD=3（文字化け実在）/ dotAV=26（誤検出寄り）
+#   CN=228（日本語文書への簡体字混入。実在）/ FFFD=3（文字化け実在）/ dotAV=0（RTTI の ? 落ちは現状なし）
 # --all はこの数を超えたときのみ FAIL する（既存分は許容・増加を検出）。
-ALL_BASELINE = 257
+ALL_BASELINE = 231
 
 
 def is_text(path):

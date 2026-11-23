@@ -7,7 +7,7 @@
 - **V-649-1 `[確定(命令)(negative)]`**: family 定数 `[esp+0x3c]`/`[esp+0x48]` は HandleClick 内および finalize 呼び出し先 3 関数に読者なし＝実質デッド。**残点 4 件（V-642-1/V-646-3/V-629-1/V-631-1）は非ブロッカー**。
 - **chargen lane はここで完了**。以降は **(a) ESS lane**（実 `.ess` サンプル待ち＝他 lane と同じ人間ゲート扱い）と **(b) 実装側**（`race_sex_panel` の skeleton と実装単位列の充填）へ移る。
 - 台帳 row627・`round_verify ALL OK`。L1 report-only 継続（push は人間承認済み）。
-- **訂正（v651・2026-11-23）**: これまでの「全文書 CN=0」は**検査対象が変更ファイル/主要文書に限定**されていた。追跡下全体（`python scripts/precheck.py --all`）では **CN 228（日本語文書への簡体字混入、U+5B9E=「実」の簡体字 等）＋ U+FFFD 3 ＋ dotAV 26** が残存。`--all` は baseline 257 として焼き**増加のみ ERROR**。228 の一括クリーンアップは台帳 **row628**（非ブロッカー）。precheck は `scripts/precheck.py`（追跡下）。
+- **訂正（v651・2026-11-23）**: これまでの「全文書 CN=0」は**検査対象が変更ファイル/主要文書に限定**されていた。追跡下全体（`python scripts/precheck.py --all`）では **CN 228（日本語文書への簡体字混入、U+5B9E=「実」の簡体字 等）＋ U+FFFD 3 ＋ dotAV 0 ＝ 231** が残存。`--all` は baseline 231 として焼き**増加のみ ERROR**。CN 228 の一括クリーンアップは台帳 **row628**（非ブロッカー）。precheck は `scripts/precheck.py`（追跡下）。
 
 ## 2026-11-21 — #96 キャラ作成UI を原版 RaceSexMenu 21ページウィザードへ（worktree feat-chargen-21-pages・commit 380999ed・未マージ）
 

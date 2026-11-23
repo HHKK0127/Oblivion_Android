@@ -55,6 +55,6 @@ When a repository's documentation and its existing code disagree, follow the con
 ## precheck（コミット前検査）
 
 - コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可）。**終了コード 1 で失敗**。
-- 検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（ドット `.`/`．`/`。` の直後に `AV` が続く mojibake パターン）。
+- 検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（**MSVC RTTI 名の `?` 落ち検出**。`\.\?AV<name>@@` は許可し、`?` が落ちた `\.AV<name>` を FAIL。2026-11-23 実測 `.?AV…`=1473 / `.AV…`=23）。
 - 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動 3 検査は行わない。
 - `scripts/precheck.py` 自身は CN リスト（簡体字）を含むため、スクリプトは自分自身を検査対象から除外する。
