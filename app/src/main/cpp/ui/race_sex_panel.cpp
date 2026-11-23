@@ -91,11 +91,13 @@ void RaceSexPanel::build_main() {
     //   id=201 button  "Race"                  -> FAMILY const 0x12, target Race
     //   id=202 button  "Face"                  -> FAMILY const 0xa,  target Face
     //   id=203 button  "Hair"                  -> FAMILY const 0x10, target Hair
-    //   id=204 toggle  "Eyes"                  -> NOT in FAMILY (action TBD)
+    //   id=204 toggle  "Eyes"                  -> NOT in FAMILY: no menu handler (v662);
+    //                                             the toggle's own value flip is widget-side
     //   id=205 slider  "Age"        range 0..1 step 0.04 jump 0.1
     //                                          -> FAMILY const TBD, no page switch
     //   id=207 slider  "Complexion" range 0..1 step 0.04 jump 0.1
-    //                                          -> NOT in FAMILY (action TBD)
+    //                                          -> NOT in FAMILY: no menu handler (v662);
+    //                                             a slider changes on drag, not on click
     // ids 206/208 are the user0 slots of the two sliders; the next page (Race)
     // starts at id 209.
     pane_ids_[PAGE_MAIN] = 0;  // spec §2: Main id 0 (arg4=0) -> counter not consumed
@@ -409,6 +411,10 @@ bool RaceSexPanel::handleClick(int arg1) {
             return true;
         }
     }
+    // Elements absent from FAMILY (Main "Eyes" toggle id 204, "Complexion"
+    // slider id 207) have no menu handler (v662): this returns false and the
+    // page does not change. A toggle's value flip and a slider's drag are the
+    // widget's own responsibility, independent of this handler.
     return false;
 }
 

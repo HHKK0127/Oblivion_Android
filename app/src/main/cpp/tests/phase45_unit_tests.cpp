@@ -34,6 +34,8 @@
 #include <thread>
 #include <atomic>
 #include <algorithm>
+#include <condition_variable>
+#include <mutex>
 
 #ifdef __ANDROID__
 #include <android/log.h>
@@ -957,11 +959,35 @@ void Phase45UnitTests::testAsyncTaskManager() {
         std::vector<int> executionOrder;
         std::mutex orderMutex;
 
-        // Submit LOW priority first, then CRITICAL
-        // With single thread, CRITICAL should execute before LOW
-        // But since both are submitted nearly simultaneously,
-        // we test that the priority queue orders correctly
+        // A single worker would otherwise pop the LOW task before the CRITICAL
+        // one is even submitted, so the observed order depended on the timing of
+        // submit() vs. the worker loop (the flaky Async_PriorityOrder). Gate the
+        // worker with a blocker that only finishes once both real tasks are
+        // enqueued, so the order is decided by the priority queue alone. All
+        // synchronization here is event-based (condition_variable), not
+        // time-based, so the test is deterministic.
+        std::mutex gateMutex;
+        std::condition_variable gateCv;
+        bool blockerRunning = false;
+        bool gateOpen = false;
 
+        auto blocker = mgr.submit(AsyncTaskManager::Priority::CRITICAL,
+                                   AsyncTaskManager::Category::OTHER,
+                                   "blocker_task",
+                                   [&]() {
+                                       std::unique_lock<std::mutex> lock(gateMutex);
+                                       blockerRunning = true;
+                                       gateCv.notify_all();
+                                       gateCv.wait(lock, [&]() { return gateOpen; });
+                                   });
+
+        // Wait until the blocker occupies the single worker (event-based).
+        {
+            std::unique_lock<std::mutex> lock(gateMutex);
+            gateCv.wait(lock, [&]() { return blockerRunning; });
+        }
+
+        // Both tasks now queue behind the blocker: LOW first, then CRITICAL.
         auto f1 = mgr.submit(AsyncTaskManager::Priority::LOW,
                               AsyncTaskManager::Category::OTHER,
                               "low_task",
@@ -977,6 +1003,14 @@ void Phase45UnitTests::testAsyncTaskManager() {
                                   std::lock_guard<std::mutex> lock(orderMutex);
                                   executionOrder.push_back(2);
                               });
+
+        // Release the blocker; the worker then drains the queue in priority order.
+        {
+            std::lock_guard<std::mutex> lock(gateMutex);
+            gateOpen = true;
+        }
+        gateCv.notify_all();
+        blocker.wait_for(std::chrono::seconds(2));
 
         f1.wait_for(std::chrono::seconds(2));
         f2.wait_for(std::chrono::seconds(2));

@@ -422,6 +422,16 @@ bool RaceSexPanelTests::runAllTests() {
         panel2.handleClick(90);
         record("handleClick: unmatched Done -> Main",
                panel2.currentPage() == Page::PAGE_MAIN);
+
+        // Main "Eyes" toggle (204) and "Complexion" slider (207) are NOT in
+        // FAMILY and have no click handler in the original (v662): the click is
+        // not consumed and the page stays Main (family no-match -> return, not
+        // the chain tail's Main return).
+        panel2.setCurrentPage(Page::PAGE_MAIN);
+        const bool eyesConsumed = panel2.handleClick(204);
+        const bool compConsumed = panel2.handleClick(207);
+        record("handleClick(204/207): not in family -> unconsumed, page stays Main",
+               !eyesConsumed && !compConsumed && panel2.currentPage() == Page::PAGE_MAIN);
     }
 
     // --- name / confirm / commit + race toggle (spec §10.2/§10.3/§10.4) ---

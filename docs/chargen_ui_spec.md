@@ -168,7 +168,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 
 - **Brow は 2 サイト存在するが重複** `[確定(命令)]`: `0x5CC3C7` と `0x5CC580` は**同一の pane 名オブジェクト `[0xB39008]`（registry idx 26 = Brow）を引き、`jnp` 先も同一（`0x5CC9C4` = Shape commit）**。両ブロックは 20 命令が完全一致（相対分岐の変位のみ相違）→ **別物ではなく重複**。Face 系の「10 サイト / 9 名」はこの重複を含む（コードの 19 行はこの 2 行を保持する）。
 
-### 6.3 層 2: family（各タブボタンの遷移）`arg1 = ボタン id`
+### 6.3 層 2: family（各要素の遷移＝タブボタン＋一部 toggle/slider）`arg1 = 要素 id`
 
 - ガード: **`GetFloat(0x5c3440(paneName, tileName), 0xFA8=id) == arg1`**。一致 → **`0x5c9650(this, paneX 名)`** = `SetFloat(race_button_done, 0xFB3=user5, 2.0)`（Return ラベル）＋ **`SetFloat(this->tile, 0xFAE, GetFloat(paneX, 0xFA8))`**（ページ切替）。
 - **28 サイト**（直列チェーン、`jp` で連結）。定数は 2 スロットに分かれる: `[esp+0x48]`（guard 前・主に奇数）と `[esp+0x3c]`（一致分岐内・主に偶数）。合成で `3`〜`0x30` の連番 `[確定(命令)]`。用途は**未使用（デッド, V-649-1 確定負）**。
@@ -207,11 +207,13 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 - `[esp+0x48]` を書かない = **2 サイト**（Random / Reset）。`[esp+0x3c]` を書かない = **8 サイト**（Random / Reset / Main-Age / Hair×4 / Race-Gender）。後者 8 は一致時に `jmp 0x5cd9c5`（finalize）へ直行する。
 - **切替先は `paneX` 名で確定**しているので、定数未確定でも表は完成する（§0-5 の id 引き実装では定数は不要）。
 - **Random / Reset はページ遷移しない**（finalize 直行）: **Random = キャラの乱数生成（ランダム化）／ Reset = 初期化**。表示名と「ページ切替 commit を持たない」構造から `[部分確定]`。
+- **family は「タブボタン」に限らない**（toggles/sliders も含む: (Race,Gender) toggle、(Hair,Red/Green/Blue/Length)・(Main,Age) slider）。**Main の Eyes トグル（id 204）と Complexion スライダー（id 207）は family に無く、`FUN_005CC200` にメニュー側のハンドラも無い**（HandleClick 内の `[0xB38FA0]` 参照は 0 件、`[0xB38F90]` は chain の Eyes ページと family の (Shape,Eyes) のみ）＝ **no menu handler (v662)**。→ HandleClick は何もしない（family 全不一致は `0x5CDA11`=epilogue で return。**Main 復帰ではない**。Main 復帰は chain=`arg1==90` の末尾 `0x5CC816`）。**ただし「無反応」ではない**: **204 は toggle なので値の反転は widget 側の責務**（HandleClick の不在とは独立）、**207 は slider でドラッグによる値変更が正常動作**（クリックハンドラが無いのは当然）`[確定(命令)(negative)]`（v662 / 裁定書 §B.2）。
+- **51 `push 0xFA8` サイトの内訳**（v662）: chain 現在ページ判定 19 + chain commit 先 3（Tone`0x5CC984`/Shape`0x5CC9C9`/Face`0x5CCA0E`）+ chain 末尾（Main 復帰）1（`0x5CC82E`）+ family tab 26 + Random 1 + Reset 1 = 51。spec の family「28」= 26 tab + Random + Reset なので `19+28=47`、残り 4 = chain 末尾 1 + chain commit 3。
 
 ### 6.4 遷移の補足
 
 - **chain は Done/Return の「1 階層上へ」**。`0x5C9650` の `user5=2`（Return ラベル）と整合。`0x5c9650` は Main 以外のページでも到達する。
-- **family は各タブボタンの遷移**。`user5` の Done/Return ラベル切替とは独立。
+- **family は各要素（タブボタン＋一部 toggle/slider）の遷移**。`user5` の Done/Return ラベル切替とは独立。Main の Eyes トグル/Complexion スライダーは family 外＝無反応（§6.3）。
 
 ---
 
@@ -221,7 +223,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 2. id は実行時採番（counter 200 起点、Main のみ 0）。`<id>N</id>` は `SetField` で 6 束縛スロットへ。
 3. メニューを開くたびに **21 pane スロットを NULL 初期化**（exe は消さないが安全側）。
 4. `&generic;`（-1）は非束縛。
-5. 遷移は 2 層: chain（Done/Return・現在ページで分岐）＋ family（28 タブボタン）。
+5. 遷移は 2 層: chain（Done/Return・現在ページで分岐）＋ family（**28 = 26 要素 + Random/Reset**）。family はタブボタンに限らず一部 toggle/slider を含む。**Main の Eyes トグル（204）/ Complexion スライダー（207）は family 外＝no menu handler (v662)**（204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常。§6.3）。
 6. label は `Tile::name`（`0xBBA`）。trait `0xFA8`=id / `0xFAE`=user0（現在ページ）/ `0xFB3`=user5（Done/Return ラベル）。
 7. `Element` は **descriptor**（`{id, user0_id, type, label, page_slot, value/min/max/step/jump, checked, widget}`）。identity は id（§0）。**widget 化は device-only の `RaceSexPanel::instantiate(TextRenderer*)`**（`app/src/main/cpp/ui/race_sex_panel_instantiator.cpp`）が行い `Element::widget` を埋める（Button→`UIButton`、Text→`MenuTextComponent`、Toggle→`UIToggle`、Slider→`UISlider`）。descriptor と widget を分けるのは `UIButton`/`MenuTextComponent` が `UISystem`/`TextRenderer` を引き込むため（コードベースの `menu_ui_builder`（descriptor・host 可） vs `menu_ui_instantiator`（device-only）と同じ分離）。slider/toggle の汎用 widget は既存に無いので新設（基底 `UIComponent`・命名は `UIButton` に準拠）。`add_*` のシグネチャは不変（パリティスクリプト `verify_race_sex_impl.py` は無変更）。
 
@@ -248,7 +250,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
 | V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
 | V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
-| V-660-B1 | Main "Eyes" トグル（id 204）の制御対象。`FUN_005CC200` は arg1 即値比較が 90/10/98 のみで、以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」。`0x5CC8BA` は **Random ボタン**と判明（v661）。残: ブロック列の pane 名列挙で "Eyes" を同定 | `[部分確定]` |
+| V-660-B1 | **close（v662）**。Main "Eyes" トグル（id 204）／Complexion スライダー（id 207）は **family に無く、HandleClick にメニュー側ハンドラも無い＝no menu handler**（`[0xB38FA0]` は HandleClick 内 0 参照）。**204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常**（HandleClick の不在とは独立）。family 全不一致は `0x5CDA11`（epilogue）で return（**Main 復帰ではない**）。family は **28**（26 tab + Random + Reset）で `static_assert(28)` は正しい | `[確定(命令)(negative)]` |
 | V-660-C1 | Race 説明文本体の供給元。**DESC サブレコード（`0x43534544`）を `0x5C7BA0` が読み `0xFB4`(user6) へ SetString**（フォールバック `0xA36430`=" "）まで判明（v661）。残は受ける tile の実名と見出し/本体の割当 | `[部分確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
@@ -501,6 +503,6 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **Reset 本体は trait を書かない**: `0x521E40(actor)` → `0x5C91E0(base)` → `0x5C7BA0(base,0)`。既定値は actor 外見側（`V-660-A1`）。
 - **定数**: `15.0`/`50.0`（`(v-15)/50`）と `-2.0`/`0.25`/`0.0`（`(v+2)*0.25*x`）。乱数源は未同定（`V-660-A2`）。
 - **ダイアログ**: `FUN_00579C10`（message_menu.xml）。ボタンは `button_1..button_10` = **id 4..13**。「Yes」は `0x578D70()==2`（コールバック側の規約）。
-- **Main "Eyes" トグル**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**。以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」で、**`0x5CC8BA` = Random ボタン**（`0x579C10` でダイアログ表示＋`[0xB3B4C8]=1`／フラグ済みなら `0x5CCBE5`→`0x5C9CD0`＝Random 本体）。"Eyes" のブロック同定は `V-660-B1` `[部分確定]`。
+- **Main "Eyes" トグル（id 204）/ Complexion スライダー（id 207）**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**。以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」で、**`0x5CC8BA` = Random ボタン**。**family（28）に (Main, Eyes)/(Main, Complexion) は無く、HandleClick にメニュー側ハンドラも無い＝no menu handler**（**204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常**。HandleClick の不在とは独立）。family 全不一致は `0x5CDA11`（epilogue）で return（Main 復帰ではない）。`V-660-B1` は **close** `[確定(命令)(negative)]`（v662 / probe `D:\re\v662_probe.py` EXIT=0）。
 - **Race 説明文**: `0x5C7BA0` が RACE の **`DESC` サブレコード**（`0x5C81E5 push 0x43534544`）を読み、**`0xFB4`(user6)** へ `SetString`（`0x5C8205`/`0x5C8236`、フォールバック `0xA36430`=`" "`）。見出し（`sRaceDescription` GMST）は別。残は受ける tile の実名と割当（`V-660-C1` `[部分確定]`）。
 

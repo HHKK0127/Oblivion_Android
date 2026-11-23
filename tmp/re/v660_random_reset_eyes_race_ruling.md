@@ -67,10 +67,19 @@
 - `[0xB3B4C8]!=0` なら **`jmp 0x5CCBE5`**＝`call 0x5C9CD0`（**Random 本体**）。
 - → **`0x5CCBE5` は「フラグ済み→本体実行」の経路**。Random の実行は「初回クリック→ダイアログ→cb `0x5C9FC0`→`0x5C9CD0`」または「フラグ済み→`0x5CCBE5`→`0x5C9CD0`」の 2 経路。
 
-### B.2 "Eyes" トグルのブロック `[部分確定]`
+### B.2 "Eyes" トグルは **family に無い**＝クリック無効 `[確定(命令)(negative)]`（v662）
 
-- `FUN_005CC200` 内の「要素 id チェック」は **`push 0xFA8` が 51 サイト**（probe `v661_2`）。各ブロックは pane 名 global（`[0xB38F70]`/`[0xB38FE0]`/`[0xB38FE8]`/`[0xB39000]`/`[0xB39010]`/`[0xB38F90]`/`[0xB39028]`/`[0xB39030]`/`[0xB39040]`/`[0xB39320]`/`[0xB39060]`/`[0xB38FF0]`/`[0xB38F80]`/`[0xB38FF8]` 等）で対象 tile を引き、`0xFA8`(id) と arg1 を比較する。
-- "Eyes" トグル（id 204）のブロックはこの 51 のうちの 1 つ。**builder で Main トグルの名前 global は `[0xB38F90]`**（`0x5CA51D`、Main ボタン 3 つの `[0xB38F78]`/`[0xB38F80]`/`[0xB38F88]` に続く）→ 対応ブロックは **`0x5CC4A4`**（`mov eax,[0xB38F90]; push 0xFA8; 0x5C3110; GetFloat(0xFAE); fcomp; jnp 0x5CC9C4`）。**動作本体（何を書くか）は未分離** → **V-660-B1 [部分確定]**（次段: `0x5CC4A4` から一致時の遷移先を追う）。
+- `FUN_005CC200` 内の `push 0xFA8` は **51 サイト**（probe `D:\re\v662_probe.py`、EXIT=0）。内訳（全分類）:
+  - **chain の現在ページ判定 19**（`0x5C3110` 名前引き）: `0x5CC285`(Main) … `0x5CC7D2`(NoseTex)。
+  - **chain の commit 先 3**（`jnp` 先・paneX の id を読む）: `0x5CC984`(→Tone) / `0x5CC9C9`(→Shape) / `0x5CCA0E`(→Face)。
+  - **chain 末尾（Main 復帰）1**: `0x5CC82E`（`0x5CC816` で `SetFloat(race_button_done,0xFB3,1.0)` → 現在ページ=Main）。
+  - **family の tab 26**: `0x5CCCD8` … `0x5CD93C`。
+  - **Random 1**（`0x5CC8BF`）/ **Reset 1**（`0x5CCC21`）。
+  - → **51 = 19 + 3 + 1 + 26 + 1 + 1**。spec §6.3 の family「28」= **26 tab + Random + Reset** なので、`chain(19)+family(28)=47`、残り **4 = chain 末尾 1 + chain commit 3**。
+- **family（`0x5C3440(paneName, tileName)`、`eax`=pane 名 / `edx`=tile 名）は 28 サイト**。Main pane `[0xB38F70]` と組むのは **Age`[0xB38F98]` / Face`[0xB38F80]` / Hair`[0xB38F88]` / Race`[0xB38F78]` の 4 つのみ**（builder Main 要素 = button Race/Face/Hair + toggle Eyes`[0xB38F90]` + slider Age`[0xB38F98]`/Complexion`[0xB38FA0]`、`0x5CA491`…`0x5CA582`）。→ **(Main, Eyes) も (Main, Complexion) も存在しない** `[確定(命令)(negative)]`。
+- **HandleClick 内の名前参照** `[確定(命令)]`: `[0xB38F90]`(Eyes) は **`0x5CC4A5`（chain の Eyes ページ判定）と `0x5CD3FC`/`0x5CD459`（family の (Shape, Eyes) tile）のみ**。`[0xB38FA0]`(Complexion) は **0 件**。
+- **family 全不一致の挙動** `[確定(命令)]`: 最後の family guard（Tone/NoseTex、`0x5CD991`）は不一致で **`0x5CDA11`（SEH epilogue + `ret 8`）へ = 何もせず return**。**「Main 復帰」ではない**（Main 復帰は chain=`arg1==90` の末尾 `0x5CC816` のみ）。
+- → **Main の Eyes トグル（id 204）と Complexion スライダー（id 207）は family に無く、メニュー側ハンドラも無い＝no menu handler (v662)**。**204 は toggle なので値の反転は widget 側の責務、207 は slider でドラッグによる値変更が正常**（HandleClick の不在とは独立）。**V-660-B1 は close**（「Eyes ブロック」は存在しない）。
 
 ---
 
@@ -90,9 +99,17 @@
 |---|---|---|
 | V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
 | V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
-| V-660-B1 | Main "Eyes" トグルの制御対象。`FUN_005CC200` は arg1 即値比較が 90/10/98 のみで、以後は「各 pane の特定 tile の `0xFA8` と arg1 を比較するブロック列」。`0x5CC8BA` は **Random ボタン**と判明（v661）。残: ブロック列を pane 名で列挙し "Eyes" を同定 | `[部分確定]` |
+| V-660-B1 | **close（v662）**。Main "Eyes" トグル（id 204）／Complexion スライダー（id 207）は **family に無く、HandleClick にハンドラも無い**（`[0xB38FA0]` は HandleClick 内 0 参照）→ クリックしても何も起きない。family 全不一致は `0x5CDA11`（epilogue）で return（Main 復帰ではない） | `[確定(命令)(negative)]` |
 | V-660-C1 | Race 説明文本体の供給元。**DESC サブレコード（`0x43534544`）を `0x5C7BA0` が読み `0xFB4`(user6) へ SetString**（フォールバック `" "`=`0xA36430`）まで判明。残は受ける tile の実名と見出し/本体の割当 | `[部分確定]` |
+
+## D. port への含意（v662）
+
+- `RaceSexPanel::FAMILY`（28）と `docs/chargen_ui_spec.md` §6.3 は **原作 family と集合一致**（26 tab + Random + Reset）。**`static_assert(28)` は正しい**（29 行目は存在しない）。
+- `RaceSexPanel::handleClick(204/207)` は family 不一致で `return false`。renderer（`renderer.cpp:8255`）は戻り値を無視するので **何も起きない**＝原作に忠実。
+- **推測実装は不要**: Main の Eyes トグル／Complexion スライダーは原作でも**メニュー側ハンドラ無し（no menu handler）**。204 の toggle 値反転は widget 側、207 は slider ドラッグが正常（`handleClick` が何もしないのは正しい）。
 
 ## spec 訂正
 
 - `docs/chargen_ui_spec.md` §10.2 の「commit `0x5C9CD0`」を訂正: **`0x5C9CD0` = Random 本体**（commit は `0x5C28F0`）。
+- §6.3 の family は「各タブボタンの遷移」ではなく **toggles/sliders も含む 26 要素 + Random/Reset**。**Main の Eyes トグル（204）と Complexion スライダー（207）は family に無く、クリック無反応**（v662）。
+- §10.6 の V-660-B1 は close（「Eyes ブロック」は存在しない）。

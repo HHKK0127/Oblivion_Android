@@ -36,6 +36,15 @@
 - **spec 訂正**: §10.2 の「commit `0x5C9CD0`」は誤り。**`0x5C9CD0` = Random 本体**、commit は `0x5C28F0`。
 - **残点**: `V-660-A1`（Reset 既定値の実体）／`V-660-A2`（Random の乱数源と分布）／`V-660-B1`（Eyes トグルの制御対象＝汎用経路 `0x5CC8BA`〜）／`V-660-C1`（Race 説明文本体の書手）＝いずれも `[未確定]`。**port 側はこれらが解けるまで Random/Reset/Eyes/Race 説明文を推測実装しない**。
 
+## 2026-11-23 — RE v662: chargen family の (Main, Eyes)/(Main, Complexion) 不在＋51 `push 0xFA8` 分類（#176 レビュー）
+
+- 成果物 **`tmp/re/v660_random_reset_eyes_race_ruling.md` §B.2/§D**、probe **`D:\re\v662_probe.py`（EXIT=0）**、台帳 row659、spec §6.3/§7/§8/§10.6。
+- **[確定(命令)(negative)]**: family（`0x5C3440(paneName, tileName)`、`eax`=pane 名 / `edx`=tile 名）は **28 サイト**。Main pane `[0xB38F70]` と組むのは **Age`[0xB38F98]` / Face`[0xB38F80]` / Hair`[0xB38F88]` / Race`[0xB38F78]` の 4 つのみ** → **(Main, Eyes`[0xB38F90]`) も (Main, Complexion`[0xB38FA0]`) も存在しない**。builder Main 要素 = button Race/Face/Hair + toggle Eyes + slider Age/Complexion（`0x5CA491`..`0x5CA582`）。
+- **[確定(命令)]**: HandleClick 内の `[0xB38F90]` 参照は `0x5CC4A5`（chain の Eyes ページ判定）と `0x5CD3FC`/`0x5CD459`（family の (Shape,Eyes) tile）のみ、`[0xB38FA0]` は **0 件**。**family 全不一致は `0x5CDA11`（SEH epilogue + `ret 8`）で return＝何も起きない**（Main 復帰は chain=`arg1==90` の末尾 `0x5CC816` のみ）。
+- → **Main の Eyes トグル（id 204）/ Complexion スライダー（id 207）は family 外＋メニュー側ハンドラ無し＝no menu handler**（204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常）。`static_assert(28)` と spec §6.3 は正しい。**`V-660-B1` close**。port は `handleClick(204/207)=false` で原作に忠実（**推測実装不要**）。
+- **[確定(命令)] 51 `push 0xFA8` サイト分類**: chain 現在ページ判定 **19** + chain commit 先 **3**（`0x5CC984`→Tone / `0x5CC9C9`→Shape / `0x5CCA0E`→Face）+ chain 末尾（Main 復帰）**1**（`0x5CC82E`）+ family tab **26** + Random **1**（`0x5CC8BF`）+ Reset **1**（`0x5CCC21`）= **51**。spec family「28」= 26 tab + Random + Reset なので `19+28=47`、残り 4 = chain 末尾 1 + chain commit 3。
+- **検証**: host `RaceSexPanelTests`（新規 1 件＝`handleClick(204/207)` 非消費・ページ不変）。
+
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 
 - **RE レーン: `RaceSexMenu`(menu id `0x40C`) の構造仕様を確定**。成果物 **`docs/chargen_ui_spec.md`**（v634〜v650 の裁定を集約）。完了条件「**XML を開かずに構造を説明できる**」を達成。
@@ -4678,4 +4687,11 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **送信**: `opencode api post /api/session/<id>/prompt --data '{"text":...}'`（`text` キー必須・`subprocess.run(shell=False)`）。**returncode 0**・メッセージ id `msg_208322599001Wc64CfPfHcV9Yl`。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。
 - **期待する成果物**: tmp/re に v 採番（v635 以降）で3件の裁定。受領後に #96 の残スライダー／トグル／説明文を実装可能になる。
 - 対象バイナリ: Oblivion.exe v1.2.0416（md5 `cdd2f0c5eff198d4f26b7b5b54ce4930`）。
+
+## 2026-11-23 (mw) — 直近作製の独立評価ハンドオフ文書を作成
+
+- **成果物**: `docs/REVIEW_HANDOFF_RECENT_WORK_20261123.md`（198行・15.4KB・precheck OK）。第三者 AI が品質判定できるよう、主張と証拠を分離し「知り方」を付した。
+- **内容**: §0 評価者への8問／§1 対象（未マージ10ブランチ・21コミット）／§2 リポジトリ現状（master `dc7a2b97` の chargen は旧5タブ `ui_character_creation.cpp:306`・ローディングは矩形 `loading_screen.cpp:196/204`）／§3 実装単位別詳細／§4 構造的問題 P1〜P4（P1 未マージ滞留／P2 `MenuXmlInterpreter` が本番未使用＝手書き／P3 `fonts.xml` 不在・顔モーフ軸未解析／P4 `v368` の下降字クリップと XML 非由来の `1.2×scale`）／§5 未実装・逸脱15件／§6 再現手順／§7 正典参照／§8 作成者の自己評価。
+- **特記**: chargen の実機スクショは前セッションで保存されておらず、§3.1 の視覚主張は `STATE.md` 記録のみが根拠（評価者に明記）。ローディングのスクショは `%TEMP%\opencode\loadcanon\L02.png`・`bar_zoom.png`。
+- **フォント正典の再確認**: `docs/RE_FONT_REPORT.md` の `[Fonts]` は `SFontFile_1=Kingthings_Regular.fnt`（＝XML `<font>1</font>` と一致。port の `xmlFontToFontType` case1→KingthingsRegular は正しい）。`.fnt` ヘッダ size は Kingthings_Regular=28.0 / Shadowed=35.0 / Daedric=55.0 / Handwritten=57.0 / Tahoma_Bold_Small=22.0 `[データ]`。
 
