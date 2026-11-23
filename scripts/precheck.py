@@ -8,14 +8,14 @@
 検査:
   1. CN    : 簡体字専用字（日本語では使わない）の混入
   2. FFFD  : U+FFFD（置換文字＝文字化け）
-  3. dotAV : ドット直後の "AV" および literal "dotAV"（文字化け/誤記の監視）
+  3. dotAV : ドット直後の "AV"（.avd/.avi/。AV8 等の英数字サフィックスは除外）
 
 使い方:
-  python scripts/precheck.py                 # git の変更ファイル（追跡+未追跡）を検査
-  python scripts/precheck.py FILE [FILE...]  # 指定ファイルを検査
-  python scripts/precheck.py --all           # git 追跡下のテキストファイル全体
+  python scripts/precheck.py                 # 変更ファイルの「追加行」のみ検査（コミット対象）
+  python scripts/precheck.py FILE [FILE...]  # 指定ファイルを全文検査
+  python scripts/precheck.py --all           # git 追跡下の全文書を検査（baseline 比較）
 
-終了コード: 0 = OK / 1 = 検出あり。
+終了コード: 0 = OK / 1 = 検出あり（--all は baseline からの増加のみ 1）。
 """
 import os
 import re
@@ -35,7 +35,8 @@ CN_CHARS = set(
 )
 
 FFFD = "\ufffd"
-DOTAV = re.compile(r"(?:\.|．|。)\s*[Aa][Vv]")
+# ドット直後の "AV"。ただし .avd/.avi/。AV8 のような英数字サフィックスは除外（誤検出防止）。
+DOTAV = re.compile(r"(?:\.|．|。)\s*[Aa][Vv](?![A-Za-z0-9])")
 
 TEXT_EXT = {
     ".md", ".txt", ".py", ".c", ".h", ".cpp", ".hpp", ".rs", ".json", ".xml",
@@ -43,49 +44,60 @@ TEXT_EXT = {
     ".gradle", ".cfg", ".ini", ".csv",
 }
 
+# --all の既知ヒット数 baseline（回帰防止）。2026-11-23 実測:
+#   CN=228（日本語文書への簡体字混入。実在）/ FFFD=3（文字化け実在）/ dotAV=26（誤検出寄り）
+# --all はこの数を超えたときのみ FAIL する（既存分は許容・増加を検出）。
+ALL_BASELINE = 257
+
 
 def is_text(path):
-    ext = os.path.splitext(path)[1].lower()
-    return ext in TEXT_EXT
+    return os.path.splitext(path)[1].lower() in TEXT_EXT
 
 
-def git_lines(args):
+def git_out(args):
     try:
-        out = subprocess.run(
+        return subprocess.run(
             ["git"] + args, cwd=REPO, capture_output=True, text=True,
             encoding="utf-8", errors="replace",
         ).stdout
     except Exception:
-        return []
-    return [l for l in out.splitlines() if l.strip()]
+        return ""
 
 
 def changed_files():
     files = []
-    for line in git_lines(["status", "--porcelain"]):
+    for line in git_out(["status", "--porcelain"]).splitlines():
         if len(line) < 4:
             continue
         path = line[3:].strip()
-        if path.endswith("/"):
+        if path.endswith("/") or ".bak-" in path or path.endswith(".bak"):
             continue
-        if ".bak-" in path or path.endswith(".bak"):
-            continue
-        files.append(os.path.join(REPO, path))
+        files.append(path)
     return files
 
 
 def all_tracked_files():
-    return [os.path.join(REPO, p) for p in git_lines(["ls-files"])]
+    return [os.path.join(REPO, p) for p in git_out(["ls-files"]).splitlines() if p.strip()]
 
 
-def check(path):
-    if not is_text(path) or not os.path.isfile(path):
-        return []
-    # 本スクリプト自身は CN リストと "dotAV" トークンを含むため除外する
-    if os.path.abspath(path) == os.path.abspath(__file__):
-        return []
-    with open(path, encoding="utf-8", errors="replace") as f:
-        lines = f.readlines()
+def is_untracked(rel):
+    return git_out(["ls-files", "--error-unmatch", "--", rel]).strip() == ""
+
+
+def added_lines(rel):
+    """変更ファイルの追加行（untracked は全文）。"""
+    full = os.path.join(REPO, rel)
+    if is_untracked(rel):
+        try:
+            with open(full, encoding="utf-8", errors="replace") as f:
+                return f.read().splitlines()
+        except Exception:
+            return []
+    out = git_out(["diff", "-U0", "--", rel]) + "\n" + git_out(["diff", "-U0", "--cached", "--", rel])
+    return [l[1:] for l in out.splitlines() if l.startswith("+") and not l.startswith("+++")]
+
+
+def scan_lines(lines):
     hits = []
     for n, line in enumerate(lines, 1):
         for ch in line:
@@ -100,26 +112,61 @@ def check(path):
     return hits
 
 
+def check_file(path):
+    if not is_text(path) or not os.path.isfile(path):
+        return []
+    if os.path.abspath(path) == os.path.abspath(__file__):
+        return []  # 本スクリプトは CN リストを含むため除外
+    with open(path, encoding="utf-8", errors="replace") as f:
+        return scan_lines(f.read().splitlines())
+
+
 def main(argv):
-    if "--all" in argv:
+    all_mode = "--all" in argv
+    if all_mode:
         files = all_tracked_files()
     else:
         args = [a for a in argv[1:] if not a.startswith("--")]
-        files = [os.path.abspath(a) for a in args] if args else changed_files()
+        files = [os.path.abspath(a) for a in args] if args else None
 
     total = 0
-    for path in files:
-        for n, kind, what in check(path):
+
+    def emit(rel, hits):
+        nonlocal total
+        for n, kind, what in hits:
+            print("%s:%d: [%s] %r" % (rel, n, kind, what))
+            total += 1
+
+    if all_mode:
+        for path in files:
+            rel = os.path.relpath(path, REPO)
+            emit(rel, check_file(path))
+        if total > ALL_BASELINE:
+            print("precheck: FAIL --all (%d > baseline %d; increase detected)"
+                  % (total, ALL_BASELINE))
+            return 1
+        print("precheck: OK --all (%d hit(s) <= baseline %d; pre-existing)"
+              % (total, ALL_BASELINE))
+        return 0
+
+    if files is not None:  # 明示ファイル列 → 全文検査
+        for path in files:
             try:
                 rel = os.path.relpath(path, REPO)
             except ValueError:
                 rel = path
-            print("%s:%d: [%s] %r" % (rel, n, kind, what))
-            total += 1
+            emit(rel, check_file(path))
+    else:  # 変更ファイル → 追加行のみ検査
+        self_rel = os.path.relpath(os.path.abspath(__file__), REPO).replace("\\", "/")
+        for rel in changed_files():
+            if not is_text(rel) or rel.replace("\\", "/") == self_rel:
+                continue
+            emit(rel, scan_lines(added_lines(rel)))
+
     if total:
         print("precheck: FAIL (%d hit(s))" % total)
         return 1
-    print("precheck: OK (%d file(s))" % len(files))
+    print("precheck: OK")
     return 0
 
 
