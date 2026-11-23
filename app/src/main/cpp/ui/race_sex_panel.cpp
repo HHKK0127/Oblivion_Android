@@ -8,7 +8,36 @@
 
 RaceSexPanel::RaceSexPanel() : UIPanel("RaceSexPanel") {}
 
+const RaceSexPanel::Element* RaceSexPanel::find_element(int id) const {
+    if (id < 0 || id >= static_cast<int>(id_to_index_.size())) return nullptr;
+    const int slot = id_to_index_[id];
+    return slot == 0 ? nullptr : &elements_[slot - 1];
+}
+
+int RaceSexPanel::add_element(int page_slot, ElemType type, const std::string& label) {
+    Element e;
+    e.id = alloc_id();
+    e.type = type;
+    e.label = label;
+    e.page_slot = page_slot;
+    if (type == ElemType::Slider) {
+        e.user0_id = alloc_id();  // slider consumes a second id (user0 slot)
+    }
+    elements_.push_back(e);
+    const int idx = static_cast<int>(elements_.size());  // 1-based (0 = empty)
+    id_to_index_[e.id] = idx;
+    if (e.user0_id >= 0) id_to_index_[e.user0_id] = idx;
+    return e.id;
+}
+
 bool RaceSexPanel::init() {
+    // spec §3: clear the 21 pane slots and the id table on open. The original's
+    // Init only clears +0x94; clearing +0x40 too is the safe-side deviation the
+    // spec requires.
+    pane_ids_.fill(-1);
+    id_to_index_.fill(0);
+    elements_.clear();
+    counter_ = 200;
     for (int i = 0; i < PAGE_COUNT; ++i) {
         build_page(i);
     }
@@ -65,6 +94,13 @@ void RaceSexPanel::build_main() {
     //                                          -> NOT in FAMILY (action TBD)
     // ids 206/208 are the user0 slots of the two sliders; the next page (Race)
     // starts at id 209.
+    pane_ids_[PAGE_MAIN] = 0;  // spec §2: Main id 0 (arg4=0) -> counter not consumed
+    add_button(PAGE_MAIN, "Race");        // id 201
+    add_button(PAGE_MAIN, "Face");        // id 202
+    add_button(PAGE_MAIN, "Hair");        // id 203
+    add_toggle(PAGE_MAIN, "Eyes");        // id 204
+    add_slider(PAGE_MAIN, "Age");         // id 205 (+206 user0)
+    add_slider(PAGE_MAIN, "Complexion");  // id 207 (+208 user0)
 }
 
 void RaceSexPanel::build_race() {

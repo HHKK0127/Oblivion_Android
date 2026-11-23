@@ -4,6 +4,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 /**
  * @brief RaceSexMenu (chargen) 21-page wizard panel — skeleton.
@@ -135,6 +136,32 @@ public:
     static_assert(FAMILY.size() == 28,
                   "family rows must match docs/chargen_ui_spec.md 6.3");
 
+    // --- Element registry (spec §0: identity is the id, not the name) ---
+    // The original stores tiles in menu+0x40 (21 pane slots) and menu+0x94
+    // (500 id->tile). This panel mirrors both: pane_ids_ is the +0x40 array,
+    // id_to_index_ is the +0x94 array, elements_ owns the tiles. Ids are
+    // assigned by the runtime counter (spec §2): start 200, pane id =
+    // ++counter except Main (id 0, arg4=0, counter not consumed), item id =
+    // ++counter, and a slider consumes two ids (its own and the user0 slot).
+    enum class ElemType { Button, Toggle, Text, Slider };
+
+    struct Element {
+        int id = -1;          // runtime id (spec §0)
+        int user0_id = -1;    // slider only: the second id consumed (user0 slot)
+        ElemType type = ElemType::Button;
+        std::string label;    // Tile::name (0xBBA); display-only (spec §0)
+        int page_slot = -1;   // owning page (0..20)
+    };
+
+    // +0x40: page id per slot (Main=0, others = ++counter at build time).
+    int page_id(int slot) const {
+        return (slot >= 0 && slot < PAGE_COUNT) ? pane_ids_[slot] : -1;
+    }
+    // All elements created so far, in build order.
+    const std::vector<Element>& elements() const { return elements_; }
+    // +0x94 lookup: element by runtime id, or nullptr when the slot is empty.
+    const Element* find_element(int id) const;
+
     RaceSexPanel();
     ~RaceSexPanel() override = default;
 
@@ -146,6 +173,24 @@ public:
     void build_page(int page_index);
 
 private:
+    // Runtime id counter (spec §2): start 200.
+    int alloc_id() { return ++counter_; }
+    // Create one element on a page and register it in the +0x94 table; returns
+    // its id. A slider consumes a second id (user0 slot), recorded in user0_id
+    // and also registered (both ids resolve to the same element).
+    int add_element(int page_slot, ElemType type, const std::string& label);
+    void add_button(int slot, const std::string& label) { add_element(slot, ElemType::Button, label); }
+    void add_toggle(int slot, const std::string& label) { add_element(slot, ElemType::Toggle, label); }
+    void add_text(int slot, const std::string& label) { add_element(slot, ElemType::Text, label); }
+    void add_slider(int slot, const std::string& label) { add_element(slot, ElemType::Slider, label); }
+
+    // +0x40 (21 pane ids; -1 = empty) / +0x94 (500 slots; 0 = empty, else
+    // element index + 1) / the tiles themselves / the runtime counter.
+    std::array<int, PAGE_COUNT> pane_ids_{};
+    std::array<int, 500> id_to_index_{};
+    std::vector<Element> elements_;
+    int counter_ = 200;
+
     // 21 per-page builders. All empty in the skeleton; Main's six elements carry
     // their id/label/range in comments (see race_sex_panel.cpp::build_main).
     void build_main();
