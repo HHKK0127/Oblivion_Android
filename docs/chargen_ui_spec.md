@@ -245,3 +245,35 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | `0x7C7EB0` | `cmp byte [esp+4],0` / `cmp byte [esp+0x10],0`（arg1/arg2） | 上を読まない |
 
 → 定数はフレーム引数として渡されず、**書かれるが読まれない（デッド）**。spec の定数列は情報として残す（実装では不要）。
+
+---
+
+## 9. geometry（item の座標）`[確定(XML)]`
+
+**item の座標はコードではなく XML template が与える**。builder は x/width/height を書かない（`push 0xFAD`(x) / `0xFCB`(width) / `0xFCA`(height) は builder 領域 `[0x5C4000,0x5CA000)` に **0 件**。全域の 47/57/73 件は `[0x57..0x59]` の汎用 tile 層）。座標は 5 template（pane `100` / button `101` / toggle `102` / slider `103` / text `104`）が持つ。item は template の実体化（§5）。
+
+### 9.1 共通 item レイアウト（button / toggle / slider / text）
+
+| 項目 | 式（XML template） |
+|---|---|
+| `x` | `0` |
+| `width` | `parent().width`（= pane 幅） |
+| `height` | `93` |
+| `y` | `me().listindex * me().height`（= `listindex × 93`） |
+| `repeatvertical` | `&true;` |
+| `listindex` | **builder が `0xFAA` に設定**（XML の `<listindex> 0` は初期値） |
+
+→ **1 列・行高 93・行間 0**（`y = listindex*93` で連続。列は無い）。`listindex`（`0xFAA`）は item 生成器が `SetFloat(tile, 0xFAA, GetFloat(parent, 0xFD0) - const)` で設定（button 生成器 `0x5C4480` の `0x5C4536..0x5C455B`。`0xFD0` は親 pane の値）。
+
+### 9.2 pane（`race_template_pane` / `race_pane`, id `100`）
+
+| 項目 | 式（XML template） |
+|---|---|
+| `x` | `0` |
+| `width` | `parent().width - (me().childcount > 6 ? (me().childcount-1)*40 : 0)`（>6 でスクロールバー分を差し引く） |
+| `y` | `0 - race_scroll_bar.user7 * 93`（`onlyif me().visible`）＝スクロールオフセット |
+
+### 9.3 結論
+
+- **item の geometry は XML template が与える**（コード生成ではない）。builder は id/label/`listindex`/user trait のみ設定する。
+- 実装の `Element` に x/y/w/h を持たせる必要はなく、**描画・hit-test は template の式（`x=0`, `w=pane幅`, `h=93`, `y=listindex*93`）から算出**する。`listindex` は builder が `0xFAA` に書く値を使う。
