@@ -153,16 +153,19 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 ### 6.2 層 1: chain（Done/Return の階層上昇）`arg1==90`
 
 - ガード: **`GetFloat(this->tile, 0xFAE=user0) == GetFloat(paneN, 0xFA8=id)`**（現在ページ判定）。一致 → **`SetFloat(this->tile, 0xFAE, paneX.id)`**（ページ切替）。
-- **19 サイトは直列チェーン**（`jnp` で次へ）。不一致なら全部素通りし、末尾 `0x5CC816` で **`SetFloat(race_button_done, 0xFB3=user5, 1.0)` → Main 復帰**。
+- **19 サイトは直列チェーン**。各サイトは `mov eax/dx, [0xB38F38+idx*8]`（pane 名オブジェクト）→ `0x5C3110`（pane 引き）→ `GetFloat(this->tile, 0xFAE)` と `GetFloat(pane, 0xFA8)` を **`fcomp qword [esp+0x1c]; fnstsw ax; test ah,0x44; jnp <paneX commit>`** で比較する。**一致時のみ `jnp` で paneX の commit へ飛ぶ**（`jnp` 先が paneX を表す）。不一致なら素通りし、末尾 `0x5CC816` で **`SetFloat(race_button_done, 0xFB3=user5, 1.0)` → Main 復帰**。
+- **19 サイトの実アドレスと `jnp` 先** `[確定(命令)]`: Main(`0x5CC280`→`0x5CCA77`) / Shape(`0x5CC2D6`→`0x5CCA09`) / Tone(`0x5CC32A`→`0x5CCA09`) / General(Face)(`0x5CC37E`→`0x5CC9C4`) / Brow(`0x5CC3C7`→`0x5CC9C4`) / Cheeks(`0x5CC411`→`0x5CC9C4`) / Chin(`0x5CC45A`→`0x5CC9C4`) / Eyes(`0x5CC4A4`→`0x5CC9C4`) / Forehead(`0x5CC4ED`→`0x5CC9C4`) / Jaw(`0x5CC537`→`0x5CC9C4`) / **Brow(`0x5CC580`→`0x5CC9C4`)** / Mouth(`0x5CC5CA`→`0x5CC9C4`) / Nose(`0x5CC613`→`0x5CC9C4`) / General(Skin)(`0x5CC65D`→`0x5CC97F`) / Beard(`0x5CC6A6`→`0x5CC97F`) / Eye shades(`0x5CC6F0`→`0x5CC97F`) / Eyebrows(`0x5CC739`→`0x5CC97F`) / Mouth(Lips)(`0x5CC783`→`0x5CC97F`) / Nose shades(`0x5CC7CC`→`0x5CC97F`)。
 - **hub/leaf 構造**:
 
-| 現在ページ（paneN） | 遷移先（paneX） |
-|---|---|
-| Main | （commit なし → 名前検証 = Done） |
-| Shape, Tone | **Face** |
-| Face 系（General(Face), Brow, Cheeks, Chin, Eyes, Forehead, Jaw, Mouth, Nose） | **Shape** |
-| Skin 系（General(Skin), Beard, Eye shades, Eyebrows, Mouth(Lips), Nose shades） | **Tone** |
-| その他（Race, Hair, …） | （素通り → Main 復帰） |
+| 現在ページ（paneN） | サイト数 | 遷移先（paneX） |
+|---|---|---|
+| Main | 1 | （commit なし → 名前検証 = Done, `0x5CCA77`） |
+| Shape, Tone | 2 | **Face** |
+| Face 系（General(Face), Brow, Cheeks, Chin, Eyes, Forehead, Jaw, **Brow（重複）**, Mouth, Nose） | **10 サイト / 9 名** | **Shape** |
+| Skin 系（General(Skin), Beard, Eye shades, Eyebrows, Mouth(Lips), Nose shades） | 6 | **Tone** |
+| その他（Race, Hair, …） | 0 | （素通り → Main 復帰） |
+
+- **Brow は 2 サイト存在するが重複** `[確定(命令)]`: `0x5CC3C7` と `0x5CC580` は**同一の pane 名オブジェクト `[0xB39008]`（registry idx 26 = Brow）を引き、`jnp` 先も同一（`0x5CC9C4` = Shape commit）**。両ブロックは 20 命令が完全一致（相対分岐の変位のみ相違）→ **別物ではなく重複**。Face 系の「10 サイト / 9 名」はこの重複を含む（コードの 19 行はこの 2 行を保持する）。
 
 ### 6.3 層 2: family（各タブボタンの遷移）`arg1 = ボタン id`
 
@@ -219,6 +222,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 4. `&generic;`（-1）は非束縛。
 5. 遷移は 2 層: chain（Done/Return・現在ページで分岐）＋ family（28 タブボタン）。
 6. label は `Tile::name`（`0xBBA`）。trait `0xFA8`=id / `0xFAE`=user0（現在ページ）/ `0xFB3`=user5（Done/Return ラベル）。
+7. 実装の要素型 `Element` は **plain struct**（`{id, user0_id, type, label, page_slot}`）。移植側に slider/toggle/text の widget がまだ無いため `UIComponent` 派生 widget ではなく plain 型で id/label を持つ。**widget を実装したら `Element` を実 widget に差し替える**（`app/src/main/cpp/ui/race_sex_panel.h`）。
 
 ---
 
@@ -230,7 +234,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-642-1 | id 98（定数なし。`0xB333C4` vtable[0x170]→`0x526F00`→`0x5C91E0` の Player 系リスト操作） | `[部分確定]` |
 | V-646-3 | fld 反復の増分定数の用途 | `[未確定]` |
 | V-629-1 | `player[0xE8]==-1` の実行時裏取り（pane id には不要） | `[未確定]` |
-| V-631-1 | `race_sex_panel` 未作成（実装単位列の保留） | `[部分確定]` |
+| V-631-1b | `RaceSexPanel` は**どこからも参照されていない（未配線）**。実装 `app/src/main/cpp/ui/race_sex_panel.{h,cpp}` とテスト `app/src/main/cpp/tests/race_sex_panel_tests.cpp` は存在するが、`UICharacterCreation` 等への接続は未着手 | `[確定(データ)]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
