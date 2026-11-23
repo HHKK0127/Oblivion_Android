@@ -38,6 +38,7 @@ bool RaceSexPanel::init() {
     id_to_index_.fill(0);
     elements_.clear();
     counter_ = 200;
+    current_page_ = PAGE_MAIN;
     for (int i = 0; i < PAGE_COUNT; ++i) {
         build_page(i);
     }
@@ -314,4 +315,81 @@ void RaceSexPanel::build_nose_tex() {
     pane_ids_[PAGE_NOSE_TEX] = alloc_id();      // 424
     add_slider(PAGE_NOSE_TEX, "Naso labial lines light/dark");   // 425 (+426)
     add_slider(PAGE_NOSE_TEX, "Nares small/large");              // 427 (+428)
+}
+
+// ---------------------------------------------------------------------------
+// Interaction (spec §6). Pure logic, host-testable.
+// ---------------------------------------------------------------------------
+
+const RaceSexPanel::Element* RaceSexPanel::find_on_page(int slot, const char* label) const {
+    for (const auto& e : elements_) {
+        if (e.page_slot == slot && e.label == label) return &e;
+    }
+    return nullptr;
+}
+
+const char* RaceSexPanel::tileLabel(int tile) {
+    switch (tile) {
+        case TILE_AGE: return "Age";
+        case TILE_FACE: return "Face";
+        case TILE_HAIR: return "Hair";
+        case TILE_RACE: return "Race";
+        case TILE_GENDER: return "Gender";
+        case TILE_RED: return "Red";
+        case TILE_GREEN: return "Green";
+        case TILE_BLUE: return "Blue";
+        case TILE_LENGTH: return "Length";
+        case TILE_SHAPE: return "Shape";
+        case TILE_TONE: return "Tone";
+        case TILE_GENERAL_FACE: return "General(Face)";
+        case TILE_BROW: return "Brow";
+        case TILE_CHEEKS: return "Cheeks";
+        case TILE_CHIN: return "Chin";
+        case TILE_EYES: return "Eyes";
+        case TILE_FOREHEAD: return "Forehead";
+        case TILE_JAW: return "Jaw";
+        case TILE_MOUTH: return "Mouth";
+        case TILE_NOSE: return "Nose";
+        case TILE_GENERAL_SKIN: return "General(Skin)";
+        case TILE_BEARD: return "Beard";
+        case TILE_EYES_TEX: return "Eye shades";
+        case TILE_EYEBROWS: return "Eyebrows";
+        case TILE_MOUTH_LIPS: return "Mouth(Lips)";
+        case TILE_NOSE_TEX: return "Nose shades";
+    }
+    return "";
+}
+
+bool RaceSexPanel::handleClick(int arg1) {
+    // Layer 1: chain (spec §6.2). arg1 == 90 is Done/Return; the row whose pane
+    // is the current page decides. Main's row (next == -1) is the chargen exit;
+    // no match falls through to Main.
+    if (arg1 == 90) {
+        for (const auto& row : CHAIN) {
+            if (row.pane == current_page_) {
+                if (row.next == -1) {
+                    if (on_done_) on_done_();
+                } else {
+                    current_page_ = row.next;
+                }
+                return true;
+            }
+        }
+        current_page_ = PAGE_MAIN;
+        return true;
+    }
+
+    // Layer 2: family (spec §6.3). arg1 is a tab button id; the row whose
+    // (pane, tile) element carries that id decides. target == -1 = finalize
+    // only (Random/Reset/Age/Hair/Race-Gender): no page change.
+    for (const auto& row : FAMILY) {
+        const Element* e = find_on_page(row.pane, tileLabel(row.tile));
+        if (e && e->id == arg1) {
+            if (row.target != -1) {
+                current_page_ = row.target;
+            }
+            return true;
+        }
+    }
+    return false;
 }

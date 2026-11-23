@@ -386,5 +386,37 @@ bool RaceSexPanelTests::runAllTests() {
         record("UIToggle flips checked on operation", start && on && off);
     }
 
+    // --- handleClick transition engine (spec §6; pure logic) ---
+    {
+        RaceSexPanel panel2;
+        panel2.init();
+        int done = 0;
+        panel2.setOnDone([&done]() { ++done; });
+
+        // leaf (Nose) Done -> up one level to Shape.
+        panel2.setCurrentPage(Page::PAGE_NOSE);
+        const bool consumed = panel2.handleClick(90);
+        record("handleClick: leaf Done -> Shape",
+               consumed && panel2.currentPage() == Page::PAGE_SHAPE);
+
+        // Main Done -> onDone fired, page stays Main.
+        panel2.setCurrentPage(Page::PAGE_MAIN);
+        panel2.handleClick(90);
+        record("handleClick: Main Done fires onDone",
+               done == 1 && panel2.currentPage() == Page::PAGE_MAIN);
+
+        // family row with target == -1 (Age, id 205) -> consumed, page unchanged.
+        panel2.setCurrentPage(Page::PAGE_MAIN);
+        const bool ageConsumed = panel2.handleClick(205);
+        record("handleClick: family target -1 keeps page",
+               ageConsumed && panel2.currentPage() == Page::PAGE_MAIN);
+
+        // Done with no chain row (Race) -> fall through to Main.
+        panel2.setCurrentPage(Page::PAGE_RACE);
+        panel2.handleClick(90);
+        record("handleClick: unmatched Done -> Main",
+               panel2.currentPage() == Page::PAGE_MAIN);
+    }
+
     return getFailCount() == 0;
 }

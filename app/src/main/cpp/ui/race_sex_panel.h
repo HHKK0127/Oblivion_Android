@@ -3,6 +3,7 @@
 #include "ui_panel.h"
 
 #include <array>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -183,6 +184,19 @@ public:
     // does not link. Slider/toggle state comes from the element fields above.
     void instantiate(TextRenderer* text_renderer);
 
+    // --- Interaction (spec §6) ---
+    // current_page_ mirrors the +0xFAE "current page" value; it is a page slot
+    // (Main = 0). handleClick implements the two transition layers: arg1 == 90
+    // is Done/Return (chain, §6.2); any other arg1 is a tab button id (family,
+    // §6.3). Returns true when the click was consumed by either table.
+    void setCurrentPage(int slot) { current_page_ = slot; }
+    int currentPage() const { return current_page_; }
+    void setOnDone(std::function<void()> cb) { on_done_ = std::move(cb); }
+    bool handleClick(int arg1);
+
+    // TILE_* registry index -> element label (used by the family walk).
+    static const char* tileLabel(int tile);
+
     RaceSexPanel();
     ~RaceSexPanel() override = default;
 
@@ -211,6 +225,15 @@ private:
     std::array<int, 500> id_to_index_{};
     std::vector<Element> elements_;
     int counter_ = 200;
+
+    // Current page (slot) and the Done callback. current_page_ starts at Main
+    // (spec §2) and is reset by init(); on_done_ is invoked by the chain's Main
+    // row (arg1 == 90), i.e. the chargen exit.
+    int current_page_ = PAGE_MAIN;
+    std::function<void()> on_done_;
+
+    // Find the element on a page by its label (family walk helper).
+    const Element* find_on_page(int slot, const char* label) const;
 
     // 21 per-page builders. All empty in the skeleton; Main's six elements carry
     // their id/label/range in comments (see race_sex_panel.cpp::build_main).
