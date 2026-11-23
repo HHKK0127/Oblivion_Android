@@ -248,10 +248,10 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
 | V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
 | V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
-| V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
-| V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
+| V-660-A1 | **close（v663）**。Reset の既定値＝**raw 0**。`0x521E40` は `0x5538D0`（`[0xb39b80]+8`）→ `0x5528F0(src=テンプレート, dest=actor)` → `0x552880`（3 群 50/30/50 = **130** を `0.0`）の順で、**actor のモーフ値は最終的に 0.0**。対象は**全モーフ（カレントページ非依存）**。`-2.0` は Reset 経路に無い | `[確定(命令)]` |
+| V-660-A2 | **close（v663）**。乱数源＝**CRT `rand()`**（`0x9859DD`、MSVC LCG `*0x343fd+0x269ec3, (>>16)&0x7fff`、[0,32767]）、`0x47DF80` 経由。raw=`rand()/32767*50+15`∈**[15,65]**（`0x5273A0` で clamp）、`value=(raw-15)/50`∈[0,1]。`user3`(0xFB1) は (Main,Age)/(Main,Complexion) へ 3 連書き（sentinel/値/0.0、最終 0.0） | `[確定(命令)]` |
 | V-660-B1 | **close（v662）**。Main "Eyes" トグル（id 204）／Complexion スライダー（id 207）は **family に無く、HandleClick にメニュー側ハンドラも無い＝no menu handler**（`[0xB38FA0]` は HandleClick 内 0 参照）。**204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常**（HandleClick の不在とは独立）。family 全不一致は `0x5CDA11`（epilogue）で return（**Main 復帰ではない**）。family は **28**（26 tab + Random + Reset）で `static_assert(28)` は正しい | `[確定(命令)(negative)]` |
-| V-660-C1 | Race 説明文本体の供給元。**DESC サブレコード（`0x43534544`）を `0x5C7BA0` が読み `0xFB4`(user6) へ SetString**（フォールバック `0xA36430`=" "）まで判明（v661）。残は受ける tile の実名と見出し/本体の割当 | `[部分確定]` |
+| V-660-C1 | **close（v663）**。Race 説明文の受け先＝**pane `[0xB38F78]`("Race") × tile `[0xB38FB0]`("Race Description")**＝Race ページ text **id 212**。`0x5C7BA0` が `0x43534544`("DESC") を読み `0xFB4`(user6) へ `SetString`（フォールバック `0xA36430`=" "）。race 名は別 tile | `[確定(命令)]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 

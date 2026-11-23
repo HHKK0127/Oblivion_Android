@@ -45,6 +45,16 @@
 - **[確定(命令)] 51 `push 0xFA8` サイト分類**: chain 現在ページ判定 **19** + chain commit 先 **3**（`0x5CC984`→Tone / `0x5CC9C9`→Shape / `0x5CCA0E`→Face）+ chain 末尾（Main 復帰）**1**（`0x5CC82E`）+ family tab **26** + Random **1**（`0x5CC8BF`）+ Reset **1**（`0x5CCC21`）= **51**。spec family「28」= 26 tab + Random + Reset なので `19+28=47`、残り 4 = chain 末尾 1 + chain commit 3。
 - **検証**: host `RaceSexPanelTests`（新規 1 件＝`handleClick(204/207)` 非消費・ページ不変）。
 
+## 2026-11-23 — RE v663: chargen Random/Reset 実装仕様・説明文受け先（#175/#176/#177 の実装詰め・V-660-A1/A2/C1 close）
+
+- 成果物 **`tmp/re/v663_random_reset_impl_ruling.md`**、probe **`D:\re\v663_probe.py`（EXIT=0）**、台帳 row661、spec §8（V-660-A1/A2/C1 を close）。
+- **[確定(命令)] Reset 既定値＝raw 0**: `0x521E40` は `0x5538D0`（`[0xb39b80]+8` のグローバル・モーフテンプレート）→ **`0x5528F0(src=テンプレート, dest=actor)`** → **`0x552880`**（3 群 **50/30/50 = 130** を `0.0`）の順。**最終状態は actor モーフ値 = 0.0**（テンプレートコピーは直後の 0 初期化で消える）。対象は**全モーフ**（カレントページ非依存）。`-2.0` は Reset 経路に 0 件。
+- **[確定(命令)] 乱数源＝CRT `rand()`**: `0x9859DD` = MSVC LCG（`imul ecx,ecx,0x343fd` / `add ecx,0x269ec3` / `shr eax,0x10` / `and eax,0x7fff` → [0,32767]）。`0x47DF80(arg)` は seed ラッパ。raw=`rand()/32767*50+15`∈**[15,65]**（`0x5273A0` で clamp）、`value=(raw-15)/50`∈[0,1]。`user3`(0xFB1) は (Main,Age)/(Main,Complexion) へ 3 連書き（sentinel/値/0.0、最終 0.0）。
+- **[確定(命令)] DESC 受け先**: `0x5C7BA0` が `0x43534544`("DESC") を読み、**pane `[0xB38F78]`("Race") × tile `[0xB38FB0]`("Race Description")** へ `SetString(0xFB4)`（フォールバック `0xA36430`=" "）＝ Race ページ text **id 212**。race 名は別 tile。
+- **[確定(命令)] Face 4 ボタン**: **225 Shape`0x5CA76D` / 226 Tone`0x5CA7B1` / 227 Random`0x5CA7F5` / 228 Reset`0x5CA839`**（Face pane id 224）。
+- **[確定(命令)] Random/Reset family 行**: 一致時はダイアログブロック → `jmp 0x5CD9C5`(finalize)＝**遷移なし `target=-1`**。不一致は次ブロック（Random `jp 0x5CCBF4` / Reset `jp 0x5CCCD2`）。本体は cb（Yes）またはフラグ済み経路（`0x5CCBE5`→`0x5C9CD0` / `0x5CCCC8`→`0x5C9C70`）。
+- **port 方針**: `rand()` LCG を移植し `value=rand()/32767`。`morph→slider` は builder 順 1:1。Reset は全スライダー 0.0。`user3` 3 連書きは 2 要素のみ。**いずれも `V-654-4`（morph 未適用）の範囲内**。
+
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 
 - **RE レーン: `RaceSexMenu`(menu id `0x40C`) の構造仕様を確定**。成果物 **`docs/chargen_ui_spec.md`**（v634〜v650 の裁定を集約）。完了条件「**XML を開かずに構造を説明できる**」を達成。
