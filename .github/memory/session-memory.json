@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-24T01:10:00Z",
+  "lastUpdated": "2026-11-24T01:40:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -16054,14 +16054,31 @@
         "host_tests"
       ],
       "content": "2026-11-23（ai-todo #96・実装 lane）＝RaceSexPanel の host テストを追加し完了条件を達成（commit e6c5b22a、worktree feat-race-sex-panel）。新規 app/src/main/cpp/tests/race_sex_panel_tests.{h,cpp}（class RaceSexPanelTests、既存 suite 書式）。10 チェック: init / 118 item / 21 pane id（spec §2 の 0,209,213,224,229,239,246,257,264,275,290,299,306,315,336,365,376,389,402,417,424）/ ページ別 count・type 内訳 / 全 item が id>0・label 非空・slider は user0=id+1・id 単調増加 / +0x94 lookup（id と user0 が同一要素に解決、未使用 slot は null）/ Main 6 item（id 201-208）/ 特徴的 label 存在 / chain 全走査（19 行、-1=1、Face=2、Shape=10〔Brow が 2 回〕、Tone=6）/ family 全走査（28 行、-1=8、Random/Reset は sentinel pane -2/-3）。ローカル実行 D:\\re\\race_sex_suite.exe = Total 10 / Pass 10 / Fail 0。配線: host_runner_main.cpp に RaceSexPanelTests 追加。run_host_tests.sh SOURCES に race_sex_panel.cpp/ui_panel.cpp/ui_component.cpp/ui_draw_helper.cpp/texture_loader.cpp と test cpp を追加（MSVC 版 ps1 は sh から SOURCES を parse する単一正典なので変更不要）。host スタブ拡張: stubs/GLES3/gl3.h に GL_DEPTH_TEST/GL_BLEND/GL_SRC_ALPHA/GL_ONE_MINUS_SRC_ALPHA/GL_TRIANGLE_STRIP/GL_TEXTURE0-3/GL_VIEWPORT/GL_LESS/GL_LEQUAL/GL_DEPTH_BUFFER_BIT/GL_COLOR_BUFFER_BIT/GL_SCISSOR_TEST/GL_CULL_FACE と glGetBooleanv/glDisable/glEnable/glBlendFunc/glUniform4f/glDrawArrays/glActiveTexture/glUniform2f/glUniform3f/glDisableVertexAttribArray/glViewport/glDepthFunc/glClear/glClearColor/glScissor/glUniformMatrix3fv の宣言、host_gl_stubs.cpp に対応する no-op 定義。検証: (a) 対象サブセットの実リンク＋実行で 10/10 PASS、(b) runner と同一 DEFINES/INCLUDES で g++ -fsyntax-only EXIT=0（追加 7 ファイル）、(c) precheck OK。注意: フル host runner（run_host_tests.sh）は Rust FFI ホストアーカイブ（rust/target/gnu/*/release/lib{assets,bsa,plugin,esm}_ffi.a）未生成のためローカルでは実行不可＝CI で検証される。実装 4 コミット（e70222f2 skeleton / 6d675c63 registry+build_main / 9f2d5b35 20 ページ / e6c5b22a test）は worktree 未マージ。"
+    },
+    {
+      "id": "opencode-race-sex-panel-row650-651-done-20261123",
+      "timestamp": "2026-11-24T01:40:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "racesexmenu",
+        "impl",
+        "race_sex_panel",
+        "renderer",
+        "row650",
+        "row651"
+      ],
+      "content": "2026-11-23（ai-todo #96・実装 lane 完了）＝RaceSexPanel の widget 化（row650）と chargen 配線（row651）を完了。row650: Element を descriptor（id/user0_id/type/label/page_slot/value/min/max/step/jump/checked/widget）に拡張し、widget 化は device-only の RaceSexPanel::instantiate(TextRenderer*)（race_sex_panel_instantiator.cpp）に分離（Button→UIButton, Text→MenuTextComponent, Toggle→UIToggle, Slider→UISlider）。新規 UISlider/UISlider::stepValue/UIToggle。CMake と host SOURCES に登録。add_* シグネチャ不変＝パリティスクリプト無変更。commit 8396bacd/6f30d87c。row651: RaceSexPanel::handleClick(arg1) を実装（arg1==90=chain §6.2、他=family §6.3、current_page_ は Main 初期化、Done=arg1==90&&Main で onDone_）。renderer は showCharacterCreation を enum class ChargenUi{None,Legacy,Panel} に置換し全ゲートを isChargenUiActive()/isLegacyChargenActive()/isPanelChargenActive() に統一（二重 active を構造で防止）。raceSexPanel は textRenderer の直後に宣言（破棄順で panel 先）。console コマンド chargenpanel で Legacy<->Panel を切替（既定 Legacy＝Panel は到達可能な dev トグル）。Done 出口は setOnDone→setChargenUi(None)。touch は Panel 中 handleClick(90)（layout/hit-test は未実装＝次段）。commit 4ab88931/9e28f676（後者は UIComponent に clearChildren が無く removeChild へ訂正）。検証: host RaceSexPanelTests 18/18（118 item/21 pane id/ページ別/chain 19/family 28/handleClick 4/UISlider 2/UIToggle 1/descriptor state）、CI 緑（run 45138087600、Build debug APK + Native C++ host tests とも success）。台帳 row650/651 done（open 8→6）。"
     }
   ],
   "metadata": {
-    "totalEntries": 1078,
+    "totalEntries": 1079,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-24T01:10:00Z",
-    "entry_count": 1078,
-    "last_updated": "2026-11-24T01:10:00Z"
+    "lastUpdated": "2026-11-24T01:40:00Z",
+    "entry_count": 1079,
+    "last_updated": "2026-11-24T01:40:00Z"
   }
 }

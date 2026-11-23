@@ -1,5 +1,12 @@
 # Loop State — My Project
 
+## 2026-11-23 — chargen 実装 lane 完了（RaceSexPanel widget 化＋renderer 配線）
+
+- **row650/651 完了**（master にマージ・push 済み）: `RaceSexPanel` を 21 ページ/118 item の descriptor として実装し、widget 化を device-only の `RaceSexPanel::instantiate(TextRenderer*)`（`race_sex_panel_instantiator.cpp`）に分離（Button→`UIButton`, Text→`MenuTextComponent`, Toggle→`UIToggle`, Slider→`UISlider`）。`add_*` シグネチャ不変＝パリティスクリプト `verify_race_sex_impl.py` 無変更。
+- `handleClick(arg1)`（arg1==90=chain §6.2／他=family §6.3、`current_page_` は Main 初期化、Done=arg1==90&&Main で `onDone_`）。renderer は `showCharacterCreation` を `enum class ChargenUi{None,Legacy,Panel}` に置換し全ゲートを `isChargenUiActive()`/`isLegacyChargenActive()`/`isPanelChargenActive()` に統一（二重 active を構造で防止）。console `chargenpanel` で Legacy<->Panel 切替（既定 Legacy）。Done 出口は `setOnDone`→`setChargenUi(None)`。
+- 検証: host `RaceSexPanelTests` **18/18**、CI 緑（run 45138087600、`Build debug APK`＋`Native C++ host tests` success）。台帳 row650/651 done（open 8→6）。コミット: `e340581c`(spec)/`5ba68ff4`(merge)/`8396bacd`・`6f30d87c`・`71178196`(row650)/`4ab88931`・`9e28f676`(row651)/`3c3577fb`・`7caced42`(台帳)。
+- **残点（lane 完了条件外）**: `V-642-1`/`V-646-3`/`V-629-1`、`V-631-1b`（`ChargenUi::Panel` は dev トグル既定 OFF）、widget layout／hit-test-to-id は未実装（touch は `handleClick(90)` 暫定）。
+
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 
 - **RE レーン: `RaceSexMenu`(menu id `0x40C`) の構造仕様を確定**。成果物 **`docs/chargen_ui_spec.md`**（v634〜v650 の裁定を集約）。完了条件「**XML を開かずに構造を説明できる**」を達成。
