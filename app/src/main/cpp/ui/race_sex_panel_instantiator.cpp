@@ -17,7 +17,12 @@
 void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
     // Idempotent: drop any widgets from a previous call before rebuilding, so a
     // re-open (which may call this again) never doubles the children.
-    clearChildren();
+    for (Element& e : elements_) {
+        if (e.widget) {
+            removeChild(e.widget);
+            e.widget.reset();
+        }
+    }
     for (Element& e : elements_) {
         std::shared_ptr<UIComponent> widget;
         switch (e.type) {
