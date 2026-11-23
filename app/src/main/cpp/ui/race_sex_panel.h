@@ -3,6 +3,7 @@
 #include "ui_panel.h"
 
 #include <array>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -151,6 +152,20 @@ public:
         ElemType type = ElemType::Button;
         std::string label;    // Tile::name (0xBBA); display-only (spec §0)
         int page_slot = -1;   // owning page (0..20)
+
+        // Slider / toggle state. Slider defaults are the template values
+        // (spec §5): range 0..1, step 0.04, jump 0.1. Toggles use `checked`.
+        float value = 0.0f;
+        float min = 0.0f;
+        float max = 1.0f;
+        float step = 0.04f;
+        float jump = 0.1f;
+        bool checked = false;
+
+        // Real widget, created by instantiate() (device-only; see
+        // race_sex_panel_instantiator.cpp). Null until then, so the host suite
+        // exercises the descriptor without pulling in the GL / text stack.
+        std::shared_ptr<UIComponent> widget;
     };
 
     // +0x40: page id per slot (Main=0, others = ++counter at build time).
@@ -161,6 +176,12 @@ public:
     const std::vector<Element>& elements() const { return elements_; }
     // +0x94 lookup: element by runtime id, or nullptr when the slot is empty.
     const Element* find_element(int id) const;
+
+    // Turn the descriptors into live widgets (device-only: needs a TextRenderer
+    // and a GL context). Fills Element::widget and parents each widget under the
+    // panel. Defined in race_sex_panel_instantiator.cpp, which the host suite
+    // does not link. Slider/toggle state comes from the element fields above.
+    void instantiate(TextRenderer* text_renderer);
 
     RaceSexPanel();
     ~RaceSexPanel() override = default;

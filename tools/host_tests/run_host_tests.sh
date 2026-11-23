@@ -175,6 +175,8 @@ SOURCES=(
   app/src/main/cpp/ui/ui_panel.cpp
   app/src/main/cpp/ui/ui_component.cpp
   app/src/main/cpp/ui/ui_draw_helper.cpp
+  app/src/main/cpp/ui/ui_slider.cpp
+  app/src/main/cpp/ui/ui_toggle.cpp
   app/src/main/cpp/engine/texture_loader.cpp
   app/src/main/cpp/tests/fatigue_system_tests.cpp
   app/src/main/cpp/tests/combat_formulas_tests.cpp

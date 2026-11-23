@@ -267,6 +267,32 @@ bool RaceSexPanelTests::runAllTests() {
     }
     record("distinctive labels present", spotOk, spotMsg);
 
+    // Element descriptor state (spec §5 template defaults) and the widget slot
+    // stays null until instantiate() (device-only) runs.
+    bool stateOk = true;
+    std::string stateMsg;
+    for (const auto& e : elements) {
+        if (e.widget != nullptr) {
+            stateOk = false;
+            stateMsg = "widget not null before instantiate()";
+            break;
+        }
+        if (e.type == ElemType::Slider) {
+            if (e.min != 0.0f || e.max != 1.0f || e.step != 0.04f || e.jump != 0.1f) {
+                stateOk = false;
+                stateMsg = "slider id " + std::to_string(e.id) + " range/step/jump mismatch";
+                break;
+            }
+        } else if (e.type == ElemType::Toggle) {
+            if (e.checked) {
+                stateOk = false;
+                stateMsg = "toggle id " + std::to_string(e.id) + " starts checked";
+                break;
+            }
+        }
+    }
+    record("descriptor state (spec §5) + widget null pre-instantiate", stateOk, stateMsg);
+
     // --- transition tables (spec §6) ---
     // chain: 19 rows, pane in range, next is -1 or a valid page. Exactly one -1
     // (Main). Hub/leaf counts: 2 -> Face, 10 -> Shape (Brow appears twice), 6 -> Tone.

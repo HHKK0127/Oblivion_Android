@@ -391,6 +391,10 @@ add_library(native-lib SHARED
     ui/ui_menu_stack.cpp
     ui/ui_panel.cpp
     ui/ui_button.cpp
+    ui/ui_slider.cpp
+    ui/ui_toggle.cpp
+    ui/race_sex_panel.cpp
+    ui/race_sex_panel_instantiator.cpp
     ui/ui_draw_helper.cpp
     ui/ui_map_panel.cpp
     ui/ui_inventory_panel.cpp

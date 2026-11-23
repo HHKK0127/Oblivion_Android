@@ -222,7 +222,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 4. `&generic;`（-1）は非束縛。
 5. 遷移は 2 層: chain（Done/Return・現在ページで分岐）＋ family（28 タブボタン）。
 6. label は `Tile::name`（`0xBBA`）。trait `0xFA8`=id / `0xFAE`=user0（現在ページ）/ `0xFB3`=user5（Done/Return ラベル）。
-7. 実装の要素型 `Element` は **plain struct**（`{id, user0_id, type, label, page_slot}`）。移植側に slider/toggle/text の widget がまだ無いため `UIComponent` 派生 widget ではなく plain 型で id/label を持つ。**widget を実装したら `Element` を実 widget に差し替える**（`app/src/main/cpp/ui/race_sex_panel.h`）。
+7. `Element` は **descriptor**（`{id, user0_id, type, label, page_slot, value/min/max/step/jump, checked, widget}`）。identity は id（§0）。**widget 化は device-only の `RaceSexPanel::instantiate(TextRenderer*)`**（`app/src/main/cpp/ui/race_sex_panel_instantiator.cpp`）が行い `Element::widget` を埋める（Button→`UIButton`、Text→`MenuTextComponent`、Toggle→`UIToggle`、Slider→`UISlider`）。descriptor と widget を分けるのは `UIButton`/`MenuTextComponent` が `UISystem`/`TextRenderer` を引き込むため（コードベースの `menu_ui_builder`（descriptor・host 可） vs `menu_ui_instantiator`（device-only）と同じ分離）。slider/toggle の汎用 widget は既存に無いので新設（基底 `UIComponent`・命名は `UIButton` に準拠）。`add_*` のシグネチャは不変（パリティスクリプト `verify_race_sex_impl.py` は無変更）。
 
 ---
 
