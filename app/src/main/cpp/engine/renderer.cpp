@@ -5000,12 +5000,15 @@ void Renderer::render(float deltaTime) {
                 return;
             }
             showTitleScreen = false;
-            chargenUi_ = ChargenUi::Legacy;
             if (characterCreationUI) {
                 characterCreationUI->setESMManager(&assetManager->getEsmManager());
-                characterCreationUI->open();
             }
-            LOGI("Game started! Opening character creation.");
+            // Default chargen UI is the RaceSexPanel (21-page wizard). It is
+            // EXPERIMENTAL: the race is carried as Player::raceFormID only —
+            // bonus/HP/spell/mesh are not applied (V-654-4). The console
+            // `chargenpanel` switches back to the Legacy UI.
+            setChargenUi(ChargenUi::Panel);
+            LOGI("Game started! Opening character creation (Panel, experimental).");
         }
         // Render DebugMenu/GameConsole overlays on top of title screen too
         if (debugMenu) {

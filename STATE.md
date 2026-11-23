@@ -24,6 +24,7 @@
 - **row656 完了（commit 経路・spec §10.3/§10.4）**: `RaceSexPanel` に **race 選択状態**（`RaceEntry` ベクタ、`selectedRaceIndex`/`cycleRace`（clamp）/`cycleRaceFromTap(x,row_width)`/`selectedRaceFormID`/`raceChanged`）と **名前検証＋確定**（`NameCheck`、`articleFor`、`handleDone`→`on_notify_`/`on_confirm_`、`commit`→`on_commit_`）を実装。`handleClick(90)`@Main は `handleDone()` へ、`handleClick(211)` は**消費して何もしない**（値変更は `cycleRaceFromTap`）。renderer は `showMessage(body,{"OK"})`／`{"Yes","No"}`（`UIMessageBox`）に委譲し、`on_commit_` で **`player->raceFormID`（変化時のみ）＋名前反映 → `setChargenUi(None)`**。race 一覧は `assetManager->getEsmManager().getAllRaces()` を playable でフィルタして供給。host `RaceSexPanelTests` **71/71**（新規 10 件）。
 - **CI 赤の原因と修正（重要）**: 直前 push `35b1ed8d` の APK が **`renderer.cpp:8961: non-const lvalue reference to type 'NPC' cannot bind to ... 'Player'`** で失敗。`NpcManager::initializePlayerFromESM` は **`NPC&`** を取り、`Player` は `struct Player`（NPC ではない）ので呼べない。→ `Player::raceFormID` のみ設定する形に修正し、`V-654-4`（Player への race 適用は未配線）を起票。host 側の失敗は既知の **`Phase45UnitTests` async flake**（`Async_PriorityOrder`、RaceSexPanel は 69/69 で緑）。
 - **構文ゲート拡張**: `scripts/syntax_check_ui.sh` に **`renderer.cpp` を追加**（`-fsyntax-only` はリンクしないので GL 実体不要）。テストスタブ `tools/host_tests/stubs/GLES3/gl3.h` に不足シンボル（`GL_NO_ERROR`/`GL_INVALID_*`/`GL_TEXTURE4`/`glGetError`/`glDepthMask`）を追加。→ 以後は **APK を待たずに renderer.cpp の型エラーをローカルで検出**できる（今回の取りこぼしの再発防止）。
+- **既定 `Panel` 化（実験的）**: New Game の起点を `chargenUi_ = Legacy` から **`setChargenUi(ChargenUi::Panel)`** に変更（`renderer.cpp`）。**`Legacy` は console `chargenpanel` で戻せる**（`registerCommand("chargenpanel")` → `cmdChargenPanel` → `refs.toggleChargenPanel` → `setChargenUi(chargenUi_==Panel ? Legacy : Panel)`）。**注意: 既定 Panel は実験的。race 適用は `Player::raceFormID` のみで、bonus/HP/spell/mesh は未適用（`V-654-4`）。実機未確認（人間ゲート）。**
 
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 
@@ -4657,4 +4658,14 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **verifier APPROVE**（指摘: 末尾改行 nit → 修正済み／`load_loading`(固定 "Loading...") と `load_text`(user2) の役割差は宣言済み逸脱として記録／STATE.md 未更新 → 本エントリで解消／`TODO.md:657` の記述がコードより先行）。
 - **実測**: `gradlew :app:assembleDebug` BUILD SUCCESSFUL・APK **233.9MB**・`LoadingScreen textures loaded (bg=180, symbol=181, default=182, ribbon=183/184/185)`・`LoadingScreen shown: Loading game data...` 11:53:22→11:53:44。スクリーンショットでリボンバー＋左端スライダー＋茶色 Kingthings ラベルを確認（`%TEMP%\opencode\loadcanon\L02.png` / `bar_zoom.png`）。
 - **docs 不整合**: `TODO.md:657` は「loading_screen.{h,cpp} を title page へ置換済」「setBackgroundImage のコメントを訂正済」と記すが、base コードに `setBackgroundImage` は 0 件（grep）。台帳記述がコードより先行していた。
+
+## 2026-11-23 (mv) — #96 の未解析3点を RE へ依頼（#175 / #176 / #177）
+
+- **背景**: #96（chargen 21ページ）で「正典が無いため推測実装を避けて見送った」箇所のうち、RE 未起票だった3件を起票して RE セッション（`ses_e55f5e1e1ffeqZJLiJKVdeB9rI`）へ送信した。
+- **#175 Random/Reset 実行本体の全容**: v570 §4 は骨格のみ（Random `0x5C9CD0` / Reset `0x5C9C70`）。問い＝触る trait の列挙と書込値の分布（一様乱数か軸別既定値表か）／Reset の既定値実体／乱数源関数とスケール／再確認ループの意図／yes-no ボタン id と文字列完全形。
+- **#176 Main の Toggle "Eyes"（sEyes）の制御対象**（V-610-A1）: 問い＝トグル id と HandleClick `0x5CC200` の該当分岐／書く trait と XML への効き／chargen データへの効果／既定値。
+- **#177 Race ページ説明文本体の供給元**: 問い＝選択種族 DESC をどの tile のどの trait へ書くか（書手アドレス）／`0xFB4`（v283 記録）が見出しか本文か／更新タイミング。
+- **送信**: `opencode api post /api/session/<id>/prompt --data '{"text":...}'`（`text` キー必須・`subprocess.run(shell=False)`）。**returncode 0**・メッセージ id `msg_208322599001Wc64CfPfHcV9Yl`。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。
+- **期待する成果物**: tmp/re に v 採番（v635 以降）で3件の裁定。受領後に #96 の残スライダー／トグル／説明文を実装可能になる。
+- 対象バイナリ: Oblivion.exe v1.2.0416（md5 `cdd2f0c5eff198d4f26b7b5b54ce4930`）。
 
