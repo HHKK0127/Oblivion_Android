@@ -26,6 +26,16 @@
 - **構文ゲート拡張**: `scripts/syntax_check_ui.sh` に **`renderer.cpp` を追加**（`-fsyntax-only` はリンクしないので GL 実体不要）。テストスタブ `tools/host_tests/stubs/GLES3/gl3.h` に不足シンボル（`GL_NO_ERROR`/`GL_INVALID_*`/`GL_TEXTURE4`/`glGetError`/`glDepthMask`）を追加。→ 以後は **APK を待たずに renderer.cpp の型エラーをローカルで検出**できる（今回の取りこぼしの再発防止）。
 - **既定 `Panel` 化（実験的）**: New Game の起点を `chargenUi_ = Legacy` から **`setChargenUi(ChargenUi::Panel)`** に変更（`renderer.cpp`）。**`Legacy` は console `chargenpanel` で戻せる**（`registerCommand("chargenpanel")` → `cmdChargenPanel` → `refs.toggleChargenPanel` → `setChargenUi(chargenUi_==Panel ? Legacy : Panel)`）。**注意: 既定 Panel は実験的。race 適用は `Player::raceFormID` のみで、bonus/HP/spell/mesh は未適用（`V-654-4`）。実機未確認（人間ゲート）。**
 
+## 2026-11-23 — RE v660: chargen Random/Reset 本体・Main "Eyes" トグル・Race 説明文（作製レーン依頼 #175/#176/#177）
+
+- 成果物 **`tmp/re/v660_random_reset_eyes_race_ruling.md`**、probe **`D:\re\v660_probe.py`（EXIT=0）**、台帳 row658、spec §10.6/§8。
+- **[確定(命令)]**: Random 本体 = **`0x5C9CD0`**（cb `0x5C9FC0` が `0x5C9FFC: jmp`）／Reset 本体 = **`0x5C9C70`**（cb `0x5C9F70` が `0x5C9FAC: jmp`）。Random 本体が書く trait は **`0xFB1`(user3) のみ**（顔モーフ軸 `0xFB5` 等への直接書込なし）。Reset 本体は trait を書かず `0x521E40(actor)`→`0x5C91E0`→`0x5C7BA0(base,0)` へ委譲。cb は `0x578D70()!=2` でフラグ `[0xB3B4C8]`/`[0xB3B4C9]` を 0 にして ret＝**キャンセル時は本体不実行（状態不変）**。
+- **[確定(データ)]**: 定数 `[0xA492F0]`=15.0 / `[0xA3F3D0]`=50.0（`(v-15)/50`）、`[0xA3F400]`=-2.0 / `[0xA3C770]`=0.25 / `[0xA2FC68]`=0.0。
+- **[部分確定]**: ダイアログ `FUN_00579C10`（message_menu.xml）のボタンは `button_1..button_10` = **id 4..13**、「Yes」は `0x578D70()==2`（コールバック側の規約）。`0xFB4`(user6) は「項目の表示名」で説明文本体ではない。
+- **[確定(命令)(negative)]**: **Main "Eyes" トグル（id 204）専用の分岐は無い**（`FUN_005CC200` の arg1 即値比較は 90/10/98 のみ）→ `V-610-A1` は `V-660-B1` に引き継ぎ。
+- **spec 訂正**: §10.2 の「commit `0x5C9CD0`」は誤り。**`0x5C9CD0` = Random 本体**、commit は `0x5C28F0`。
+- **残点**: `V-660-A1`（Reset 既定値の実体）／`V-660-A2`（Random の乱数源と分布）／`V-660-B1`（Eyes トグルの制御対象＝汎用経路 `0x5CC8BA`〜）／`V-660-C1`（Race 説明文本体の書手）＝いずれも `[未確定]`。**port 側はこれらが解けるまで Random/Reset/Eyes/Race 説明文を推測実装しない**。
+
 ## 2026-11-23 — chargen lane 完了（RE 構造仕様 確定・以降は人間ゲート待ち）
 
 - **RE レーン: `RaceSexMenu`(menu id `0x40C`) の構造仕様を確定**。成果物 **`docs/chargen_ui_spec.md`**（v634〜v650 の裁定を集約）。完了条件「**XML を開かずに構造を説明できる**」を達成。

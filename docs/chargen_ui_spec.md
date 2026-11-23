@@ -240,12 +240,16 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-652-2 | **close**。`screen()` の canvas 1280x960 はアプリ既存規約（`ui_inventory_panel`）に追従して `[確定]` に上げ、描画側も同じ変換（`layoutScale`＋`panelOrigin`）を通した（§9.5） | `[確定(データ)]` |
 | V-652-3 | マウスホイール/キーボードによるスクロールは**対象外**（原典未計測）。ドラッグ入力のみ実装 | `[未確定]` |
 | V-653-1 | `[0xB39440]`（`race_name` の値の片方）の設定元。`.data` 実行時初期化で `.text` に絶対書き込み 0 件（§10.1） | `[未確定]` |
-| V-653-2 | **選択 race の出所は判明**（Race トグル id 211、レンジ/文字列は `FUN_005C7BA0` が `[player+0xE8]+0xA8` のリンクリストから設定＝§10.4）。残るは `[0xB37D00]`（選択 race FormID）の**書き手**と、commit `0x5C9CD0` の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割 | `[部分確定]` |
+| V-653-2 | **選択 race の出所は判明**（Race トグル id 211、レンジ/文字列は `FUN_005C7BA0` が `[player+0xE8]+0xA8` のリンクリストから設定＝§10.4）。残るは `[0xB37D00]`（選択 race FormID）の**書き手**と、`0x5C28F0`（commit）/`0x5C9CD0`（Random 本体）の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割 | `[部分確定]` |
 | V-653-3 | 名前検証の成功/失敗時のダイアログ文言と `0x5C2BA0` callback の動作（§10.3） | `[未確定]` |
 | V-654-1 | **close**。port に race 受け皿あり（一覧 `ESMManager::getAllRaces()` ＋ playable フィルタ `(flags & 1u)`、適用 `NpcManager::initializePlayerFromESM()` ＋ `Player::raceFormID`）。§10.5 | `[確定(データ)]` |
 | V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
 | V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
 | V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
+| V-660-A1 | Reset の既定値の実体（actor 外見データ／軸別テーブルの有無）＝`0x521E40`→`0x5528F0`/`0x5538D0` | `[未確定]` |
+| V-660-A2 | Random の乱数源と分布（`0x5273A0`/`0x553B30`/`0x522230` のどれが発生源か） | `[未確定]` |
+| V-660-B1 | Main "Eyes" トグル（id 204）の制御対象。`FUN_005CC200` の arg1 即値比較は 90/10/98 のみ＝専用分岐なし。汎用経路 `0x5CC8BA`〜 の解析が必要 | `[未確定]` |
+| V-660-C1 | Race 説明文本体の書手と trait（`0x5C7BA0` の `[0xB38FB0]` サイト／RACE DESC 供給元）。`0xFB4`(user6) は項目名であって本文明ではない | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -397,7 +401,7 @@ return elementIdAt(row)                        // §9.4
 
 ## 10. chargen 確定経路（name / race / validation）`[部分確定]`
 
-RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005CA010`、menu handler `FUN_005CC200`（`ret 8`・vtable 経由）、commit `0x5C9CD0`、UI refresh `0x5C9650`、list helper `0x5C93F0`。
+RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005CA010`、menu handler `FUN_005CC200`（`ret 8`・vtable 経由）、**Random 本体 `0x5C9CD0`（v660 で同定。旧記載の「commit」は誤り）**、UI refresh `0x5C9650`、list helper `0x5C93F0`。
 
 ### 10.1 `race_name` の文字列（builder 末尾）`[部分確定]`
 
@@ -414,7 +418,7 @@ RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005C
 
 - `FUN_005CC200` は menu 0x40C の **message handler**（arg1 が要素 id / コード。`arg1==0x5A(90)` が Done）。vtable 経由で呼ばれる（直接 `call` 0 件）。
 - **`0x5C9650` は player 書き込みではない**。呼び元は `FUN_005CC200`（`0x5CCFCC`）のみで、本体は tile の trait（`0xFB3`/`0xFAE`/`0xFAF`/`0xFB7`）を設定する **UI 更新（player→UI）**。
-- **player 反映は `0x5C9CD0`**（呼び元 `FUN_005CC200` の Done/commit 経路 `0x5CCBE5`）: `FindMenu(0x40C)` → base tile → `0x9832E6` → player actor（vtable `+0x170`）→ `0x5273A0` → `0x5C91E0`（V-642-1 の Player リスト操作）→ struct ctor（`0x984BCF`, `0x43ACE0`/`0x43EB30`）→ `0x5221C0` / `0x553B30`（player に適用）。これが確定経路。**各 callee の役割は V-653-2**。
+- **訂正（v660）**: `0x5C9CD0` は **Random 本体**（cb `0x5C9FC0` が `0x5C9FFC: jmp 0x5C9CD0`）であり「commit」ではない。本体は `FindMenu(0x40C)` → base tile → `0x9832E6` → player actor（vtable `+0x170`）→ `0x5273A0` → `0x5C91E0` → struct ctor（`0x984BCF`, `0x43ACE0`/`0x43EB30`）→ `0x5221C0` / `0x553B30` を呼び、**書く trait は `0xFB1`(user3) のみ**（裁定書 `tmp/re/v660_random_reset_eyes_race_ruling.md` A.1）。**confirmed 経路（commit）は `0x5C28F0`**。各 callee の役割は `V-653-2`。
 - trait `user1`(0xFAF) は、**slider/toggle では「開始値/最小値」**（XML 578/636 行）であり、race editor id ではない。race の同一性は **要素 id**（spec §0）で運ばれる。→ 「user1 に race editor id が入る」前提の実装は不可。
 
 **確定フロー（`0x5C28F0` / 比較の向き）** `[部分確定]`:
@@ -445,7 +449,7 @@ Done(arg1=0x5A) → 0x5CC280（user0 比較）→ 0x5CCA77（名前検証）
 - `0x5CCBB7`: `0x579C10` を 5 引数で呼び、そのまま `ret 8`（**commit しない**）。
 - 成功側（`0x5CCB0E`〜）: `sprintf("%s %s?" /*0xA6B4D8*/, 冠詞 /*[0xB38660]/[0xB38668]*/, 名前)`（`0x402E30`）を作り、`0x579C10` を callback `0x5C2BA0` 付きで呼ぶ。
 - `0x579C10` は menu メッセージ送出系（内部で `0x582160`=FindMenu を反復）。→ **失敗時は通知/ダイアログで戻る（無視ではない）**。成功側も `"%s %s?"` から**確認ダイアログ**。厳密な文言・`0x5C2BA0` callback は **V-653-3**。
-- **確定チェーン（実測）**: Done(`0x5A`) → 名前検証 → `0x579C10`（callback **`0x5C2BA0`**）→ Yes で `0x5C2BA0` → `0x5C28F0` → commit `0x5C9CD0`。`0x5C2BA0` は `0x578D70()` が 2 のときだけ `0x5C28F0` へ。
+- **確定チェーン（実測）**: Done(`0x5A`) → 名前検証 → `0x579C10`（callback **`0x5C2BA0`**）→ Yes で `0x5C2BA0` → `0x5C28F0`（**commit**）→ 適用。`0x5C2BA0` は `0x578D70()` が 2 のときだけ `0x5C28F0` へ。`0x5C9CD0` は Random 本体（v660）。
 - **実装（row656）**: `RaceSexPanel::handleDone()` が検証（`NameCheck` = Empty/HasSpace/Unchanged）→ `on_notify_`（通知のみ・commit しない）or `on_confirm_`（`"%s %s?"` = 冠詞＋名前）。Yes で `commit()`（`confirmed_=true` → `on_commit_`）。renderer は `showMessage(body, {"OK"})` / `showMessage(body, {"Yes","No"})`（`UIMessageBox`）に委譲し、`on_commit_` で **race（変化時のみ `player->raceFormID`＋`initializePlayerFromESM`）＋名前反映 → `setChargenUi(None)`**。冠詞は `articleFor()`（先頭母音で "an"、他は "a"／`V-654-2`）。race 適用は **`Player::raceFormID` のみ**（`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct で呼べない／`V-654-4`）。
 
 ### 10.4 Race ページの中身（race 選択の実体）`[確定(命令)]`
@@ -487,4 +491,16 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 
 - `RaceData` に `fullName` / `description` / `maleModelPath` / `femaleModelPath` / `attr*` / `startingHealth` / `spellFormIDs` / `skillBonuses`（`esm_reader.h:692`）＝トグルの表示（race 名）と `Race Description` text に使える。
 - → **`V-654-1` はクローズ**。`commit()` は選択 race を適用できる（Legacy と同じ `player->raceFormID` ＋ `initializePlayerFromESM`）。
+
+### 10.6 Random/Reset 本体・Main "Eyes" トグル・Race 説明文（v660 / ai-todo #175-#177）`[部分確定]`
+
+詳細: `tmp/re/v660_random_reset_eyes_race_ruling.md`（probe `D:\re\v660_probe.py` EXIT=0）。
+
+- **Random 本体 = `0x5C9CD0`**（cb `0x5C9FC0` が `0x5C9FFC: jmp`）、**Reset 本体 = `0x5C9C70`**（cb `0x5C9F70` が `0x5C9FAC: jmp`）。cb は `0x578D70()!=2` ならフラグ `[0xB3B4C8]`/`[0xB3B4C9]` を 0 にして ret（**キャンセル時は本体不実行＝状態不変**）`[確定(命令)]`。
+- **Random 本体が書く trait は `0xFB1`(user3) のみ**（2 tile へ各 3 回、tile は名前引き）。顔モーフ軸（`0xFB5` 等）への直接書込は無い `[確定(命令)]`。
+- **Reset 本体は trait を書かない**: `0x521E40(actor)` → `0x5C91E0(base)` → `0x5C7BA0(base,0)`。既定値は actor 外見側（`V-660-A1`）。
+- **定数**: `15.0`/`50.0`（`(v-15)/50`）と `-2.0`/`0.25`/`0.0`（`(v+2)*0.25*x`）。乱数源は未同定（`V-660-A2`）。
+- **ダイアログ**: `FUN_00579C10`（message_menu.xml）。ボタンは `button_1..button_10` = **id 4..13**。「Yes」は `0x578D70()==2`（コールバック側の規約）。
+- **Main "Eyes" トグル**: `FUN_005CC200` の arg1 即値比較は **90/10/98 のみ**＝専用分岐なし（`V-660-B1`）。
+- **Race 説明文**: 見出し/項目名は `0xFB4`(user6)、本文明の供給元は未確定（`V-660-C1`）。
 
