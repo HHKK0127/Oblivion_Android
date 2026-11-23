@@ -693,6 +693,24 @@ bool RaceSexPanelTests::runAllTests() {
                "hi=" + std::to_string(dragHi) + " 93=" + std::to_string(drag93));
         p.setScreenSize(1280, 960);
 
+        // Rounding rule (spec §9.7): half a row rounds away from zero.
+        p.setCurrentPage(Page::PAGE_SHAPE);
+        const auto bar3 = p.scrollBarRectDevice();
+        const float bx3 = bar3.x + bar3.w * 0.5f;
+        const float by3 = bar3.y + 10.0f;
+        p.setScrollRows(1);
+        p.beginScrollDrag(bx3, by3);
+        p.updateScrollDrag(by3 + 46.5f);  // exactly half a row -> +1
+        const bool halfUp = (p.scrollRows() == 2);
+        p.endScrollDrag();
+        p.setScrollRows(1);
+        p.beginScrollDrag(bx3, by3);
+        p.updateScrollDrag(by3 - 46.5f);  // half a row up -> -1
+        const bool halfDown = (p.scrollRows() == 0);
+        p.endScrollDrag();
+        record("drag: half a row rounds away from zero (+1/-1)", halfUp && halfDown,
+               "up=" + std::to_string(halfUp) + " down=" + std::to_string(halfDown));
+
         // The drag updates the culling.
         p.setCurrentPage(Page::PAGE_SHAPE);
         p.setScrollRows(0);

@@ -596,8 +596,11 @@ void RaceSexPanel::updateScrollDrag(float screen_y) {
     // One row is 93 canvas px; on screen that is ROW_HEIGHT * layoutScale().
     const float row_px = static_cast<float>(ROW_HEIGHT) * layoutScale();
     if (row_px <= 0.0f) return;
+    // Round half away from zero (std::llround): a drag of half a row or more
+    // moves one row, and the sign is symmetric. llround avoids lround's
+    // long-range edge case.
     const float rows = scroll_drag_accum_px_ / row_px;
-    setScrollRows(scroll_drag_start_rows_ + static_cast<int>(std::lround(rows)));
+    setScrollRows(scroll_drag_start_rows_ + static_cast<int>(std::llround(rows)));
 }
 
 void RaceSexPanel::endScrollDrag() { scroll_dragging_ = false; }

@@ -238,6 +238,9 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-652-1 | **close**。スクロールバーの hit-test と `user7`（`scrollRows`）の更新を実装（§9.7: `isScrollBarHit`/`beginScrollDrag`/`updateScrollDrag`、クランプ、ページ切替で 0 リセット） | `[確定(データ)]` |
 | V-652-2 | **close**。`screen()` の canvas 1280x960 はアプリ既存規約（`ui_inventory_panel`）に追従して `[確定]` に上げ、描画側も同じ変換（`layoutScale`＋`panelOrigin`）を通した（§9.5） | `[確定(データ)]` |
 | V-652-3 | マウスホイール/キーボードによるスクロールは**対象外**（原典未計測）。ドラッグ入力のみ実装 | `[未確定]` |
+| V-653-1 | `[0xB39440]`（`race_name` の値の片方）の設定元。`.data` 実行時初期化で `.text` に絶対書き込み 0 件（§10.1） | `[未確定]` |
+| V-653-2 | commit `0x5C9CD0` の各 callee（`0x9832E6`/`0x5C91E0`/`0x984BCF`/`0x5221C0`/`0x553B30`）の役割と race id の受け渡し（§10.2） | `[部分確定]` |
+| V-653-3 | 名前検証の成功/失敗時のダイアログ文言と `0x5C2BA0` callback の動作（§10.3） | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -362,6 +365,7 @@ return elementIdAt(row)                        // §9.4
 **行カリング（クリップ代替）** `[確定(データ)]`:
 - `UIComponent` にクリップ機構が無い（XML の `clipwindow`/`clips` は未実装）ため、窓外の行は `setVisible(false)` にする。
 - `visibleRows = race_window.height / ROW_HEIGHT = 558/93 = 6`。XML の `race_scroll_bar.user8`（`<!-- How many items are visible at once -->`）も **6** で一致。
+  - **user8 の由来** `[部分確定]`: `user8`(0xFB6) は「一度に見える項目数」で、原作はコードからも書く（リスト生成ヘルパ `0x5C93F0` が `0x5C9571 push 0xFB6` → `0x58CEB0 SetFloat` で設定）。XML の `<user8> 6 </user8>` はエディタ既定で、両者とも **6**。本実装は定数 6 を使う（XML を実行時ロードするようになったら `race_scroll_bar.user8` を読む）。
 - 可視条件: `slot == current_page_` かつ `floor(scroll) <= row < floor(scroll) + visibleRows`。
 - scroll 変化・ページ切替のたびに再計算（`applyLayout()`）。
 - **指示との差分**: 依頼時のテスト値「`visibleRows=7` で row 7 が非表示」は 1 大きい。`558/93 = 6`（python 検算）および `user8=6` に合わせて **6** を採用（row 6 が最初の非表示行）。
@@ -369,7 +373,8 @@ return elementIdAt(row)                        // §9.4
 ### 9.7 scroll 入力（実装仕様）`[確定(データ)]`
 
 - `setScrollRows(int rows)`: `[0, max(0, itemCount(current_page_) - visibleRows)]` にクランプ。**値が変化したときだけ** layout hook（`setOnLayoutChanged` → `applyLayout()`）を呼ぶ。
-- ドラッグ: `scrollBarRectDevice()` 内の touch down で捕捉（`beginScrollDrag`）。`Δy / (93 * layoutScale())` を行数に換算し、ドラッグ開始行に加算（`lround`）。移動は `updateScrollDrag`、離すと `endScrollDrag`。
+- ドラッグ: `scrollBarRectDevice()` 内の touch down で捕捉（`beginScrollDrag`）。`Δy / (93 * layoutScale())` を行数に換算し、ドラッグ開始行に加算。移動は `updateScrollDrag`、離すと `endScrollDrag`。
+  - **丸め規則**: 行数は **0 から遠い側への四捨五入**（`std::llround`、half-away-from-zero）。1 行 = `93 * layoutScale()` px。例: scale 1 で 93px→+1、46.5px→+1（半分行で切り上がる）、scale 1.125 で 104.625px→+1、93px→+1（0.889→1）。
 - バーは `itemCount > SCROLL_VISIBLE(6)` のページにのみ存在（`isScrollBarHit` はそれ以外で false）。
 - **優先順位**: renderer は touch down で**まずバーを判定**し、捕捉できたら `hitTestScreen`/`handleClick` に流さない（バー上で Done を踏まない）。
 - **ページ切替で `scroll = 0` にリセット**（`user7` は 1 本の scrollbar を全ページが共有するため、前ページの値を引き継がない）`[部分確定]`。
@@ -382,3 +387,34 @@ return elementIdAt(row)                        // §9.4
 - **描画実装（row653）**: `RaceSexPanel::instantiate()`（device-only）が widget を作り、`applyLayout()` が §9.5b の矩形を適用して可視集合を決める。pane 外の Done / scroll bar も同じ変換を通す。`UIPanel` のタイトルバー/閉じるボタンは無効化（`setTitleBarHeight(0)`/`setCloseButtonVisible(false)`）。
 - host テストは**矩形と可視集合**まで（pixel 比較はしない。device 目視は人間ゲート）。
 - **scroll 入力（row654）**: `setScrollRows` のクランプ＋変化時 layout hook、`beginScrollDrag`/`updateScrollDrag`/`endScrollDrag`、バー優先の touch 分岐。ページ切替で scroll=0。ホイールは `V-652-3`。
+
+---
+
+## 10. chargen 確定経路（name / race / validation）`[部分確定]`
+
+RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005CA010`、menu handler `FUN_005CC200`（`ret 8`・vtable 経由）、commit `0x5C9CD0`、UI refresh `0x5C9650`、list helper `0x5C93F0`。
+
+### 10.1 `race_name` の文字列（builder 末尾）`[部分確定]`
+
+- `0x5CBC67`（`SetString(tile, 0xFDE, name)`）と `0x5CBC7A`（`SetFloat(tile, 0xFF0, 2.0)`; `0xA379B4`=2.0）は **build のたびに無条件で実行**（分岐で囲われていない）。
+- `name` は 2 経路:
+  - **A**（`0x5CBC3F`）: `playerName = [0xB333C4]->name`（`0x4DA2A0`）をそのまま使う。
+  - **B**（`0x5CBC42`→`0x5CBC60`）: `playerName` を buffer `0xB3B4D0` にコピーし、`[0xB39440]` を使う。
+- A/B の選択（`0x5CBBF1`〜）: フラグ `[0xB14500]` が非 0 → B。フラグ 0 のとき、`strcmp(buffer, playerName)==0` または `playerName == "Bendu Olo"`（`0xA6D3E8`）→ B、それ以外 → A。
+- `[0xB39440]` / `[0xB3B4D0]` / `[0xB39438]` は `.data` の**実行時初期化グローバル**（`.text` に絶対書き込み 0 件＝間接設定）。`[0xB39440]` の設定元は **V-653-1**。
+- **実装への含意**: `race_name` は「プレイヤーの現名 or 保存名」。空欄回避には builder 相当の「現名を入れる」処理が要る。
+
+### 10.2 race 選択の player 反映`[部分確定]`
+
+- `FUN_005CC200` は menu 0x40C の **message handler**（arg1 が要素 id / コード。`arg1==0x5A(90)` が Done）。vtable 経由で呼ばれる（直接 `call` 0 件）。
+- **`0x5C9650` は player 書き込みではない**。呼び元は `FUN_005CC200`（`0x5CCFCC`）のみで、本体は tile の trait（`0xFB3`/`0xFAE`/`0xFAF`/`0xFB7`）を設定する **UI 更新（player→UI）**。
+- **player 反映は `0x5C9CD0`**（呼び元 `FUN_005CC200` の Done/commit 経路 `0x5CCBE5`）: `FindMenu(0x40C)` → base tile → `0x9832E6` → player actor（vtable `+0x170`）→ `0x5273A0` → `0x5C91E0`（V-642-1 の Player リスト操作）→ struct ctor（`0x984BCF`, `0x43ACE0`/`0x43EB30`）→ `0x5221C0` / `0x553B30`（player に適用）。これが確定経路。**各 callee の役割は V-653-2**。
+- trait `user1`(0xFAF) は、**slider/toggle では「開始値/最小値」**（XML 578/636 行）であり、race editor id ではない。race の同一性は **要素 id**（spec §0）で運ばれる。→ 「user1 に race editor id が入る」前提の実装は不可。
+
+### 10.3 名前検証 `0x5CCA77`（`FUN_005CC200` 内）`[部分確定]`
+
+- 入力名 `GetString(tile, 0xFDE)`（`0x588C10`）→ 長さと空白（0x20）スキャン。
+- `strcmp(入力名, [0xB39440])`（`0x98539F`）が 0、**または** 空白フラグが立っていれば `0x5CCBB7`。
+- `0x5CCBB7`: `0x579C10` を 5 引数で呼び、そのまま `ret 8`（**commit しない**）。
+- 成功側（`0x5CCB0E`〜）: `sprintf("%s %s?" /*0xA6B4D8*/, 冠詞 /*[0xB38660]/[0xB38668]*/, 名前)`（`0x402E30`）を作り、`0x579C10` を callback `0x5C2BA0` 付きで呼ぶ。
+- `0x579C10` は menu メッセージ送出系（内部で `0x582160`=FindMenu を反復）。→ **失敗時は通知/ダイアログで戻る（無視ではない）**。成功側も `"%s %s?"` から**確認ダイアログ**。厳密な文言・`0x5C2BA0` callback は **V-653-3**。
