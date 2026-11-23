@@ -10,6 +10,11 @@ void UISlider::setValue(float v) {
     value_ = std::max(min_, std::min(max_, v));
 }
 
+void UISlider::stepValue(int direction) {
+    if (direction == 0) return;
+    setValue(value_ + (direction > 0 ? step_ : -step_));
+}
+
 float UISlider::normalized() const {
     if (max_ <= min_) return 0.0f;
     return (value_ - min_) / (max_ - min_);

@@ -1,9 +1,12 @@
 #include "race_sex_panel_tests.h"
 
 #include "../ui/race_sex_panel.h"
+#include "../ui/ui_slider.h"
+#include "../ui/ui_toggle.h"
 
 #include <android/log.h>
 #include <array>
+#include <cmath>
 #include <string>
 
 #define LOG_TAG "RaceSexPanelTests"
@@ -350,6 +353,38 @@ bool RaceSexPanelTests::runAllTests() {
         familyMsg = "family -1 count " + std::to_string(famMinus1) + " want 8";
     }
     record("family table walks 28 tab transitions (spec §6.3)", familyOk, familyMsg);
+
+    // --- widget behaviour (UISlider / UIToggle) ---
+    // These widgets are compiled into the suite (run_host_tests.sh SOURCES);
+    // RaceSexPanel::instantiate() itself is device-only and not exercised here.
+    {
+        UISlider slider("test");
+        slider.setRange(0.0f, 1.0f, 0.04f, 0.1f);
+        slider.setValue(5.0f);
+        const bool clampHi = (slider.getValue() == 1.0f);
+        slider.setValue(-3.0f);
+        const bool clampLo = (slider.getValue() == 0.0f);
+        record("UISlider clamps setValue to [min,max]", clampHi && clampLo,
+               "hi=" + std::to_string(clampHi) + " lo=" + std::to_string(clampLo));
+
+        slider.setValue(0.0f);
+        slider.stepValue(+1);
+        const bool stepUp = std::fabs(slider.getValue() - 0.04f) < 1e-6f;
+        slider.setValue(1.0f);
+        slider.stepValue(+1);
+        const bool stepClamp = (slider.getValue() == 1.0f);
+        record("UISlider stepValue moves by step (0.04) and clamps",
+               stepUp && stepClamp, "v=" + std::to_string(slider.getValue()));
+    }
+    {
+        UIToggle toggle("test");
+        const bool start = !toggle.isChecked();
+        toggle.toggleChecked();
+        const bool on = toggle.isChecked();
+        toggle.toggleChecked();
+        const bool off = !toggle.isChecked();
+        record("UIToggle flips checked on operation", start && on && off);
+    }
 
     return getFailCount() == 0;
 }

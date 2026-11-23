@@ -31,6 +31,10 @@ public:
     void setValue(float v);          // clamped to [min, max]
     float getValue() const { return value_; }
 
+    // Move by one step in `direction` (-1 / +1), clamped to [min, max]. This is
+    // the per-tap adjustment the original applies with step 0.04 (spec §5).
+    void stepValue(int direction);
+
     void setLabel(const std::string& label) { label_ = label; }
     const std::string& getLabel() const { return label_; }
 
