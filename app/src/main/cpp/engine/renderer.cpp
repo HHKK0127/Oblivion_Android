@@ -8938,6 +8938,11 @@ void Renderer::setChargenUi(ChargenUi ui) {
         // refresh it on every switch in case the surface resized.
         raceSexPanel->setScreenSize(static_cast<int>(screenWidth),
                                     static_cast<int>(screenHeight));
+        // spec §10.1: the original sets race_name (id 10) to the player's current
+        // name on every build, so the field is never blank.
+        if (playerController && playerController->getPlayer()) {
+            raceSexPanel->setPlayerName(playerController->getPlayer()->name);
+        }
         if (textRenderer) {
             raceSexPanel->instantiate(textRenderer.get());
         }

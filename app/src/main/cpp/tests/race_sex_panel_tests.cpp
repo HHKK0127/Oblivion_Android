@@ -751,5 +751,36 @@ bool RaceSexPanelTests::runAllTests() {
                "captured=" + std::to_string(qCaptured) + " done=" + std::to_string(done));
     }
 
+    // --- name label + visibleRows source (spec §10.1 / §9.5b) ---
+    {
+        const auto close = [](float a, float b) { return std::fabs(a - b) < 1e-3f; };
+
+        RaceSexPanel p;
+        p.setScreenSize(1280, 960);  // scale 1, origin (100,195)
+        p.init();
+        p.setVisible(true);
+
+        // §10.1: the name shown on race_name comes from the player.
+        p.setPlayerName("Bendu Olo");
+        record("setPlayerName stores the name", p.playerName() == "Bendu Olo");
+
+        // race_name canvas (250,-65) -> device (350,130,425,30) at 1:1.
+        const auto nr = p.nameRectDevice();
+        record("nameRectDevice: 1280x960 (350,130,425,30)",
+               close(nr.x, 350.0f) && close(nr.y, 130.0f) && close(nr.w, 425.0f) &&
+                   close(nr.h, 30.0f),
+               "(" + std::to_string(nr.x) + "," + std::to_string(nr.y) + "," +
+                   std::to_string(nr.w) + "," + std::to_string(nr.h) + ")");
+
+        // §9.5b: visibleRows defaults to race_scroll_bar.user8 = 6 and can be set.
+        record("visibleRows defaults to 6 (user8)", p.visibleRows() == 6,
+               std::to_string(p.visibleRows()));
+        p.setCurrentPage(Page::PAGE_NOSE);  // 14 items
+        p.setVisibleRows(4);
+        record("setVisibleRows drives the culling",
+               p.visibleRows() == 4 && p.isElementVisible(Page::PAGE_NOSE, 3) &&
+                   !p.isElementVisible(Page::PAGE_NOSE, 4));
+    }
+
     return getFailCount() == 0;
 }

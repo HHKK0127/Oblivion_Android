@@ -536,6 +536,18 @@ RaceSexPanel::RectF RaceSexPanel::scrollBarRectDevice() const {
     return r;
 }
 
+RaceSexPanel::RectF RaceSexPanel::nameRectDevice() const {
+    // §10.1 race_name (id 10): justify centre at canvas x=350, y=130, wrapwidth
+    // 425. Relative to the race_window origin (100,195) that is (250,-65).
+    const float s = layoutScale();
+    RectF r;
+    r.x = panelOriginX() + 250.0f * s;
+    r.y = panelOriginY() + (-65.0f) * s;
+    r.w = 425.0f * s;
+    r.h = 30.0f * s;
+    return r;
+}
+
 bool RaceSexPanel::isRowVisible(int row) const {
     if (row < 0) return false;
     return row >= scroll_rows_ && row < scroll_rows_ + visibleRows();

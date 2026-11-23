@@ -365,7 +365,7 @@ return elementIdAt(row)                        // §9.4
 **行カリング（クリップ代替）** `[確定(データ)]`:
 - `UIComponent` にクリップ機構が無い（XML の `clipwindow`/`clips` は未実装）ため、窓外の行は `setVisible(false)` にする。
 - `visibleRows = race_window.height / ROW_HEIGHT = 558/93 = 6`。XML の `race_scroll_bar.user8`（`<!-- How many items are visible at once -->`）も **6** で一致。
-  - **user8 の由来** `[部分確定]`: `user8`(0xFB6) は「一度に見える項目数」で、原作はコードからも書く（リスト生成ヘルパ `0x5C93F0` が `0x5C9571 push 0xFB6` → `0x58CEB0 SetFloat` で設定）。XML の `<user8> 6 </user8>` はエディタ既定で、両者とも **6**。本実装は定数 6 を使う（XML を実行時ロードするようになったら `race_scroll_bar.user8` を読む）。
+  - **user8 の由来** `[部分確定]`: `user8`(0xFB6) は「一度に見える項目数」で、原作はコードからも書く（リスト生成ヘルパ `0x5C93F0` が `0x5C9571 push 0xFB6` → `0x58CEB0 SetFloat` で設定）。XML の `<user8> 6 </user8>` はエディタ既定で、両者とも **6**。本実装は既定 6 を持ち、`setVisibleRows(int)` で XML 由来の値を差し込める（XML を実行時ロードするようになったら `race_scroll_bar.user8` を読む）。
 - 可視条件: `slot == current_page_` かつ `floor(scroll) <= row < floor(scroll) + visibleRows`。
 - scroll 変化・ページ切替のたびに再計算（`applyLayout()`）。
 - **指示との差分**: 依頼時のテスト値「`visibleRows=7` で row 7 が非表示」は 1 大きい。`558/93 = 6`（python 検算）および `user8=6` に合わせて **6** を採用（row 6 が最初の非表示行）。
@@ -403,6 +403,7 @@ RE 2026-11-23（capstone, `D:\re\v655_*.py`）。対象関数: builder `FUN_005C
 - A/B の選択（`0x5CBBF1`〜）: フラグ `[0xB14500]` が非 0 → B。フラグ 0 のとき、`strcmp(buffer, playerName)==0` または `playerName == "Bendu Olo"`（`0xA6D3E8`）→ B、それ以外 → A。
 - `[0xB39440]` / `[0xB3B4D0]` / `[0xB39438]` は `.data` の**実行時初期化グローバル**（`.text` に絶対書き込み 0 件＝間接設定）。`[0xB39440]` の設定元は **V-653-1**。
 - **実装への含意**: `race_name` は「プレイヤーの現名 or 保存名」。空欄回避には builder 相当の「現名を入れる」処理が要る。
+- **実装（row655）**: `RaceSexPanel::setPlayerName(name)` を追加し、`race_name` 相当のラベル（`name_widget_`）に player の現名を入れる。`[0xB39440]`（保存名）は**初期値には使わない**（`V-653-1` のまま）。位置は canvas `(250,-65)`（race_name は justify center / canvas x=350, y=130）。renderer は open 時に `playerController->getPlayer()->name` を渡す。
 
 ### 10.2 race 選択の player 反映`[部分確定]`
 

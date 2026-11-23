@@ -245,6 +245,12 @@ public:
     // stack.
     void setOnLayoutChanged(std::function<void()> cb) { on_layout_changed_ = std::move(cb); }
 
+    // --- Name label (spec §10.1) ---
+    // The original sets race_name (id 10) to the player's current name on every
+    // build; the port shows the same string so the field is never blank.
+    void setPlayerName(const std::string& name) { player_name_ = name; }
+    const std::string& playerName() const { return player_name_; }
+
     // Pane-local (race_window) hit test -> runtime id; DONE_ID for the Done
     // button; -1 for the scroll gutter, empty rows, or a hidden panel.
     int hitTest(int x, int y) const;
@@ -274,11 +280,16 @@ public:
     RectF itemRectDevice(int slot, int row) const;
     RectF doneRectDevice() const;       // §9.3 Done (id 90), pane-external
     RectF scrollBarRectDevice() const;  // §9.3 race_scroll_bar, pane-external
+    // §10.1 race_name (id 10): the name label. Canvas x = race_background 70 +
+    // 560/2 (centre) = 350, y = 110 + 20 = 130 -> pane-local (250, -65).
+    RectF nameRectDevice() const;
 
     // §9.5 row culling: UIComponent has no clip, so rows outside the window are
-    // hidden instead. visibleRows = race_scroll_bar.user8 = 6, which is also
-    // race_window.height / ROW_HEIGHT (558 / 93 = 6).
-    int visibleRows() const { return WINDOW_HEIGHT / ROW_HEIGHT; }
+    // hidden instead. The default is race_scroll_bar.user8 = 6, which is also
+    // race_window.height / ROW_HEIGHT (558 / 93 = 6); setVisibleRows() lets an
+    // XML loader push the authored value.
+    int visibleRows() const { return visible_rows_; }
+    void setVisibleRows(int rows) { visible_rows_ = rows > 0 ? rows : 1; }
     bool isRowVisible(int row) const;
     // True only for the current page's in-window rows.
     bool isElementVisible(int slot, int row) const;
@@ -343,6 +354,12 @@ private:
     // instantiate(); null until then (and on the host, which never instantiates).
     std::shared_ptr<UIComponent> done_widget_;
     std::shared_ptr<UIComponent> scroll_bar_widget_;
+    std::shared_ptr<UIComponent> name_widget_;   // §10.1 race_name (id 10)
+
+    // §9.5 visible rows: race_scroll_bar.user8 (default 6).
+    int visible_rows_ = 6;
+    // §10.1 the name shown on race_name (player's current name).
+    std::string player_name_;
 
     // Find the element on a page by its label (family walk helper).
     const Element* find_on_page(int slot, const char* label) const;

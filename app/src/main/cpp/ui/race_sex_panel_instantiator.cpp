@@ -96,6 +96,15 @@ void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
         scroll_bar_widget_ = bar;
         addChild(scroll_bar_widget_);
     }
+    // §10.1 race_name (id 10): the name label. Text is filled from the player
+    // name in applyLayout().
+    if (!name_widget_) {
+        auto label =
+            std::make_shared<oblivion::ui::MenuTextComponent>("RaceName", text_renderer);
+        label->setJustify("center");
+        name_widget_ = label;
+        addChild(name_widget_);
+    }
 
     // The chargen menu is a game screen, not a desktop window: no title bar and
     // no close button (spec §9.5).
@@ -140,5 +149,16 @@ void RaceSexPanel::applyLayout() {
         scroll_bar_widget_->setSize(r.w, r.h);
         // §9.2: the scroll bar only exists when the page overflows the window.
         scroll_bar_widget_->setVisible(itemCount(current_page_) > SCROLL_VISIBLE);
+    }
+    if (name_widget_) {
+        // §10.1: race_name shows the player's current name (never blank).
+        const RectF r = nameRectDevice();
+        name_widget_->setPosition(r.x, r.y);
+        name_widget_->setSize(r.w, r.h);
+        name_widget_->setVisible(true);
+        setWidgetScale(name_widget_.get(), s);
+        if (auto* text = dynamic_cast<oblivion::ui::MenuTextComponent*>(name_widget_.get())) {
+            text->setText(player_name_);
+        }
     }
 }
