@@ -26,7 +26,7 @@ CURRENT_MIN = 540          # 旧書式（セル内パイプ混入）の境界。
 EXPECT_PIPES = 7
 LEGACY_BASELINE = 33       # 旧書式行の baseline（2026-11-21）。増加は ERROR
 TOTAL_BASELINE = 537       # V-row 総数 baseline（2026-11-23, row650-651 追加）。増減は --allow-row-delta でのみ許可
-OPEN_BASELINE = 8          # open row 数 baseline（2026-11-23, row629-649 done 化＋row650-651）。増減は --allow-row-delta でのみ許可
+OPEN_BASELINE = 6          # open row 数 baseline（2026-11-23, row650-651 done 化）。増減は --allow-row-delta でのみ許可
 ALLOW_ROW_DELTA = "--allow-row-delta" in sys.argv
 
 rows = {}
