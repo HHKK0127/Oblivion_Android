@@ -143,3 +143,6 @@ graphify-out/
 
 # Vendored Rust workspace: build output stays local (source under rust/).
 rust/target/
+
+# ai-todo tamper backups (local-only, created by accept_tamper)
+.ai-todo/tamper/
