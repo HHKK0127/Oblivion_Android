@@ -43,6 +43,7 @@ DEFINES=(
 # Device-only TUs (in the APK CMake build, not in the host runner).
 SOURCES=(
   app/src/main/cpp/ui/race_sex_panel_instantiator.cpp
+  app/src/main/cpp/ui/ui_character_creation.cpp
   app/src/main/cpp/ui/ui_slider.cpp
   app/src/main/cpp/ui/ui_toggle.cpp
   app/src/main/cpp/ui/game_console.cpp

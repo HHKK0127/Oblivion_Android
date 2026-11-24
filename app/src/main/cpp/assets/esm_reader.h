@@ -694,8 +694,11 @@ struct RaceData {
     std::string editorID;
     std::string fullName;              // FULL name
     std::string description;           // DESC subrecord
-    // Skill bonuses (8 skills: 2 major bonus skills)
-    std::vector<std::pair<uint32_t, int8_t>> skillBonuses;  // skillFormID, bonus
+    // Skill bonuses: (skill AV index 0x0C..0x20, bonus). The RACE DATA subrecord
+    // stores up to 7 of these; an AV of 0xFF marks an unused slot (skipped). The
+    // AV order is the canonical skill order (Armorer..Speechcraft), the same as
+    // Player::Skills (v664, measured against Oblivion.esm).
+    std::vector<std::pair<uint8_t, int8_t>> skillBonuses;
     // Attribute bonuses (7 attributes)
     uint8_t attrStrength = 0;
     uint8_t attrIntelligence = 0;

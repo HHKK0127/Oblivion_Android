@@ -1,5 +1,6 @@
 #include "player.h"
 #include "fatigue_system.h"
+#include <algorithm>
 #include <cmath>
 #include <android/log.h>
 
@@ -156,36 +157,60 @@ void Player::maxOutAllSkills() {
 }
 
 void Player::resetSkills() {
-    skills.Armorer = 10;
-    skills.Athletics = 10;
-    skills.Blade = 10;
-    skills.Block = 10;
-    skills.Blunt = 10;
-    skills.HandToHand = 10;
-    skills.HeavyArmor = 10;
-    skills.Alchemy = 10;
-    skills.Alteration = 10;
-    skills.Conjuration = 10;
-    skills.Destruction = 10;
-    skills.Illusion = 10;
-    skills.Mysticism = 10;
-    skills.Restoration = 10;
-    skills.Acrobatics = 10;
-    skills.LightArmor = 10;
-    skills.Marksman = 10;
-    skills.Mercantile = 10;
-    skills.Security = 10;
-    skills.Sneak = 10;
-    skills.Speechcraft = 10;
+    // The base is the Skills struct's own defaults (BASE_SKILL each): one source
+    // of truth, so a corrected base only has to change in player.h.
+    skills = Skills{};
 }
 
 void Player::resetAttributes() {
-    attributes.Strength = 40;
-    attributes.Intelligence = 40;
-    attributes.Willpower = 40;
-    attributes.Agility = 40;
-    attributes.Speed = 40;
-    attributes.Endurance = 40;
-    attributes.Personality = 40;
-    attributes.Luck = 40;
+    // The base is the Attributes struct's own defaults (BASE_ATTRIBUTE each).
+    attributes = Attributes{};
+}
+
+const std::array<Player::SkillAvBinding, 21>& Player::skillAvBindings() {
+    // AV index 0x0C..0x20 (Armorer..Speechcraft) -> Player::Skills member, in the
+    // canonical AV order (RE_EXE_REPORT §46.1, name table 0x00B0A1A8). This is
+    // the single mapping used by applyRace() and the Legacy chargen base setup.
+    static const std::array<SkillAvBinding, 21> kBindings = {{
+        {0x0C, &Skills::Armorer},    {0x0D, &Skills::Athletics},   {0x0E, &Skills::Blade},
+        {0x0F, &Skills::Block},      {0x10, &Skills::Blunt},       {0x11, &Skills::HandToHand},
+        {0x12, &Skills::HeavyArmor}, {0x13, &Skills::Alchemy},     {0x14, &Skills::Alteration},
+        {0x15, &Skills::Conjuration},{0x16, &Skills::Destruction}, {0x17, &Skills::Illusion},
+        {0x18, &Skills::Mysticism},  {0x19, &Skills::Restoration}, {0x1A, &Skills::Acrobatics},
+        {0x1B, &Skills::LightArmor}, {0x1C, &Skills::Marksman},    {0x1D, &Skills::Mercantile},
+        {0x1E, &Skills::Security},   {0x1F, &Skills::Sneak},       {0x20, &Skills::Speechcraft},
+    }};
+    return kBindings;
+}
+
+void Player::applyRace(const RaceBonus& rb) {
+    // 1. Revert to the chargen base (no accumulation on re-apply).
+    resetAttributes();
+    resetSkills();
+    maxHealth = BASE_MAX_HEALTH;
+    health = maxHealth;
+    maxMagicka = BASE_MAX_MAGICKA;
+    magicka = maxMagicka;
+    maxStamina = BASE_MAX_STAMINA;
+    stamina = maxStamina;
+    // 2. Drop the previous race's spells so a race switch leaves nothing behind.
+    for (uint32_t s : race_granted_spells_) {
+        auto it = std::find(knownSpells.begin(), knownSpells.end(), s);
+        if (it != knownSpells.end()) knownSpells.erase(it);
+    }
+    race_granted_spells_.clear();
+    // 3. Race skill bonuses (AV index -> field).
+    for (const auto& [av, bonus] : rb.skillBonuses) {
+        for (const SkillAvBinding& b : skillAvBindings()) {
+            if (b.av == av) {
+                skills.*(b.field) += bonus;
+                break;
+            }
+        }
+    }
+    // 4. Race spells.
+    for (uint32_t s : rb.spells) {
+        knownSpells.push_back(s);
+        race_granted_spells_.push_back(s);
+    }
 }

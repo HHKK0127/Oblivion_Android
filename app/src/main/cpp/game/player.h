@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <utility>
 #include "../world/world_data.h"
 #include "item.h"
 #include "spell.h"
@@ -45,13 +46,24 @@ struct Player {
     bool isOnGround = false;
     float groundCheckRadius = 0.3f;
 
+    // --- Chargen base (v664) ---
+    // The values the chargen applies race bonuses on top of. These are the ONE
+    // definition: the member initializers below use them, resetAttributes()/
+    // resetSkills() and applyRace() revert to them, and the Legacy chargen reads
+    // them, so the Panel and Legacy paths cannot drift apart.
+    static constexpr int BASE_ATTRIBUTE = 40;
+    static constexpr int BASE_SKILL = 10;
+    static constexpr float BASE_MAX_HEALTH = 100.0f;
+    static constexpr float BASE_MAX_MAGICKA = 100.0f;
+    static constexpr float BASE_MAX_STAMINA = 100.0f;
+
     // Health, Magicka & Stamina
-    float health = 100.0f;
-    float maxHealth = 100.0f;
-    float magicka = 100.0f;
-    float maxMagicka = 100.0f;
-    float stamina = 100.0f;
-    float maxStamina = 100.0f;
+    float health = BASE_MAX_HEALTH;
+    float maxHealth = BASE_MAX_HEALTH;
+    float magicka = BASE_MAX_MAGICKA;
+    float maxMagicka = BASE_MAX_MAGICKA;
+    float stamina = BASE_MAX_STAMINA;
+    float maxStamina = BASE_MAX_STAMINA;
 
     // Identity flags
     uint8_t gender = 0;  // 0=Male, 1=Female
@@ -72,39 +84,39 @@ struct Player {
 
     // Skills (0-100 scale, mirroring Oblivion)
     struct Skills {
-        int Armorer = 10;
-        int Athletics = 10;
-        int Blade = 10;
-        int Block = 10;
-        int Blunt = 10;
-        int HandToHand = 10;
-        int HeavyArmor = 10;
-        int Alchemy = 10;
-        int Alteration = 10;
-        int Conjuration = 10;
-        int Destruction = 10;
-        int Illusion = 10;
-        int Mysticism = 10;
-        int Restoration = 10;
-        int Acrobatics = 10;
-        int LightArmor = 10;
-        int Marksman = 10;
-        int Mercantile = 10;
-        int Security = 10;
-        int Sneak = 10;
-        int Speechcraft = 10;
+        int Armorer = BASE_SKILL;
+        int Athletics = BASE_SKILL;
+        int Blade = BASE_SKILL;
+        int Block = BASE_SKILL;
+        int Blunt = BASE_SKILL;
+        int HandToHand = BASE_SKILL;
+        int HeavyArmor = BASE_SKILL;
+        int Alchemy = BASE_SKILL;
+        int Alteration = BASE_SKILL;
+        int Conjuration = BASE_SKILL;
+        int Destruction = BASE_SKILL;
+        int Illusion = BASE_SKILL;
+        int Mysticism = BASE_SKILL;
+        int Restoration = BASE_SKILL;
+        int Acrobatics = BASE_SKILL;
+        int LightArmor = BASE_SKILL;
+        int Marksman = BASE_SKILL;
+        int Mercantile = BASE_SKILL;
+        int Security = BASE_SKILL;
+        int Sneak = BASE_SKILL;
+        int Speechcraft = BASE_SKILL;
     } skills = Skills();
 
     // Attributes
     struct Attributes {
-        int Strength = 40;
-        int Intelligence = 40;
-        int Willpower = 40;
-        int Agility = 40;
-        int Speed = 40;
-        int Endurance = 40;
-        int Personality = 40;
-        int Luck = 40;
+        int Strength = BASE_ATTRIBUTE;
+        int Intelligence = BASE_ATTRIBUTE;
+        int Willpower = BASE_ATTRIBUTE;
+        int Agility = BASE_ATTRIBUTE;
+        int Speed = BASE_ATTRIBUTE;
+        int Endurance = BASE_ATTRIBUTE;
+        int Personality = BASE_ATTRIBUTE;
+        int Luck = BASE_ATTRIBUTE;
     } attributes = Attributes();
 
     // Current Cell
@@ -148,9 +160,34 @@ struct Player {
     void levelUp();                                          // Advance one level
     void setLevel(uint32_t newLevel);                        // Set level directly (for cheats)
     void maxOutAllSkills();                                  // Set all skills to 100 (for MAX_SKILLS cheat)
-    void resetSkills();                                      // Reset all skills to 10
-    void resetAttributes();                                  // Reset all attributes to 40
+    void resetSkills();                                      // Reset all skills to the base
+    void resetAttributes();                                  // Reset all attributes to the base
+
+    // --- Race application (v664) ---
+    // Skill AV index (0x0C..0x20) -> Player::Skills member, in AV order. ONE
+    // mapping, shared by applyRace() and the Legacy chargen base setup.
+    struct SkillAvBinding {
+        uint8_t av;
+        int Skills::* field;
+    };
+    static const std::array<SkillAvBinding, 21>& skillAvBindings();
+
+    // The race-derived inputs applyRace() needs, kept free of the ESM reader so
+    // the pure logic stays host-testable; the owner (NpcManager) maps RaceData
+    // onto it. Attribute bonuses and health are not filled yet (V-664-2/V-664-3).
+    struct RaceBonus {
+        std::vector<std::pair<uint8_t, int8_t>> skillBonuses;  // AV 0x0C..0x20, bonus
+        std::vector<uint32_t> spells;                          // SPLO formIDs
+    };
+    // Revert to the chargen base, then apply the race. Idempotent: re-applying
+    // the same race does not double a bonus, and a different race leaves nothing
+    // behind (the previous race's spells are removed first).
+    void applyRace(const RaceBonus& rb);
+    // Spell FormIDs granted by the last applyRace() (tests / callers).
+    const std::vector<uint32_t>& raceGrantedSpells() const { return race_granted_spells_; }
 
 private:
     static inline float difficultyScale = 1.0f;
+    // Spells granted by the last applyRace(); removed on the next apply.
+    std::vector<uint32_t> race_granted_spells_;
 };

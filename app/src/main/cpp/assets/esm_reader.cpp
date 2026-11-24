@@ -1849,17 +1849,26 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
         }
     }
 
-    // DATA subrecord (36 bytes): byte32..35 = u32 flags, bit0 = playable.
-    // The original memcpy's the whole subrecord to [TESRace+0x50], so byte32
-    // lands at +0x70 where the race list walk tests bit0 (RE v369 [確定]).
+    // DATA subrecord (36 bytes): byte0..13 = 7 x (int8 skill AV index, int8
+    // bonus) with AV 0x0C..0x20 (Armorer..Speechcraft) and 0xFF = unused slot;
+    // byte14..15 reserved; byte16..31 = 4 floats (male/female height/weight);
+    // byte32..35 = u32 flags, bit0 = playable. The original memcpy's the whole
+    // subrecord to [TESRace+0x50], so byte32 lands at +0x70 where the race list
+    // walk tests bit0 (RE v369). Layout measured against Oblivion.esm (v664).
     auto* data = rec.findSubRecord("DATA");
     if (data && data->size() >= 36) {
+        for (int i = 0; i < 7; ++i) {
+            const uint8_t skillAV = data->data[i * 2];
+            const int8_t bonus = static_cast<int8_t>(data->data[i * 2 + 1]);
+            if (skillAV == 0xFF) continue;  // unused slot
+            race.skillBonuses.emplace_back(skillAV, bonus);
+        }
         std::memcpy(&race.flags, data->data.data() + 32, 4);
     }
 
-    // Attribute/Skill bonuses parsed but simplified for now
-    // Full parsing requires understanding subrecord order in RACE
-    // ATTR and SKIL subrecords are not always present in decompiled dumps
+    // The RACE attribute values live in the ATTR subrecord (16 bytes); its
+    // layout and the health source are not yet confirmed (V-664-2/V-664-3), so
+    // RaceData.attr* / startingHealth stay at their defaults (0) for now.
 
     m_races.push_back(std::move(race));
 }

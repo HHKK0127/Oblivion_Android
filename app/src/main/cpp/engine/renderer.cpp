@@ -8940,7 +8940,9 @@ void Renderer::setChargenUi(ChargenUi ui) {
     // RaceSexPanel is created + instantiated before it is first shown.
     if (ui == ChargenUi::Panel) {
         if (!raceSexPanel) {
-            raceSexPanel = std::make_unique<RaceSexPanel>();
+            // make_shared（make_unique ではない）: instantiate() が addChild を通じて
+            // shared_from_this() を使うため。実機クラッシュの修正（ai-todo #178）。
+            raceSexPanel = std::make_shared<RaceSexPanel>();
             raceSexPanel->init();
             // spec §10.3: Done(Main) validates the name, then either notifies
             // (bad name) or asks for confirmation. Yes applies the state and
@@ -8960,15 +8962,16 @@ void Renderer::setChargenUi(ChargenUi ui) {
                     // §10.2/§10.4: apply the race only when it changed (the
                     // original's 0x51C090 no-op guard), then the name.
                     //
-                    // NpcManager::initializePlayerFromESM takes an NPC&, and
-                    // Player is a separate struct (not an NPC), so it cannot be
-                    // used here. The port carries the race as Player::raceFormID
-                    // and looks the record up via ESMManager::findRace when a
-                    // name/bonus is needed (player.h), the same reference-hold
-                    // the Legacy path sets (renderer.cpp:924). The full race
-                    // application for Player is not wired (V-654-4).
+                    // V-664: the race application reverts to the chargen base and
+                    // applies the race's skill bonuses and racial spells through
+                    // NpcManager (Player is not an NPC, so the NPC path
+                    // initializePlayerFromESM cannot be used). Attribute bonuses
+                    // (ATTR) and health are not wired yet (V-664-2/V-664-3).
                     if (raceSexPanel->raceChanged()) {
                         player->raceFormID = raceSexPanel->selectedRaceFormID();
+                        if (npcManager) {
+                            npcManager->applyRaceToPlayer(*player, player->raceFormID);
+                        }
                     }
                     if (!raceSexPanel->playerName().empty()) {
                         player->name = raceSexPanel->playerName();

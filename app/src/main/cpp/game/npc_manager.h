@@ -21,6 +21,7 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 class AssetManager;
+struct Player;  // game/player.h — applied by applyRaceToPlayer
 
 class NpcManager {
 private:
@@ -76,6 +77,11 @@ public:
     // ESM-driven player initialization
     void initializePlayerFromESM(NPC& player, uint32_t raceFormID,
                                   uint32_t classFormID, uint32_t birthsignFormID);
+
+    // Apply a RACE record's skill bonuses and racial spells to the game Player
+    // (V-664). Reverts to the chargen base first, so re-applying is idempotent.
+    // Returns false when the race is unknown.
+    bool applyRaceToPlayer(Player& player, uint32_t raceFormID) const;
 
     // Phase 52: FaceGen integration
     bool generateNpcFace(uint32_t npcId, uint32_t formID);

@@ -3,6 +3,7 @@
 #include "../ui/race_sex_panel.h"
 #include "../ui/ui_slider.h"
 #include "../ui/ui_toggle.h"
+#include "../game/player.h"
 
 #include <android/log.h>
 #include <array>
@@ -790,6 +791,64 @@ bool RaceSexPanelTests::runAllTests() {
                    anyNonZero && allZero && p.currentPage() == Page::PAGE_FACE,
                    "n=" + std::to_string(resetVals.size()));
         }
+    }
+
+    // --- race application to the Player (spec §10.8; pure logic) ---
+    {
+        // AV 0x0E = Blade, 0x12 = Heavy Armor, 0x0C = Armorer (canonical order).
+        Player p;  // struct defaults = the chargen base (10 skills / 40 attrs)
+        Player::RaceBonus a;
+        a.skillBonuses = {{0x0E, 10}, {0x12, 5}};  // Blade +10, Heavy Armor +5
+        a.spells = {0xAAA, 0xBBB};
+        p.applyRace(a);
+        record("race: skill bonuses applied on the base",
+               p.skills.Blade == 20 && p.skills.HeavyArmor == 15 &&
+                   p.skills.Armorer == 10 && p.knownSpells.size() == 2,
+               "Blade=" + std::to_string(p.skills.Blade) +
+                   " HA=" + std::to_string(p.skills.HeavyArmor) +
+                   " known=" + std::to_string(p.knownSpells.size()));
+
+        // Re-applying the SAME race must not double the bonus or the spells.
+        p.applyRace(a);
+        record("race: same race re-apply -> no double bonus / no dup spells",
+               p.skills.Blade == 20 && p.skills.HeavyArmor == 15 &&
+                   p.knownSpells.size() == 2,
+               "Blade=" + std::to_string(p.skills.Blade) +
+                   " known=" + std::to_string(p.knownSpells.size()));
+
+        // Switching race drops the previous bonus and spells.
+        Player::RaceBonus b;
+        b.skillBonuses = {{0x0C, 7}};  // Armorer +7
+        b.spells = {0xCCC};
+        p.applyRace(b);
+        record("race: switch -> previous bonus/spells gone, new applied",
+               p.skills.Blade == 10 && p.skills.HeavyArmor == 10 &&
+                   p.skills.Armorer == 17 && p.knownSpells.size() == 1 &&
+                   p.knownSpells[0] == 0xCCC,
+               "Armorer=" + std::to_string(p.skills.Armorer) +
+                   " known=" + std::to_string(p.knownSpells.size()));
+
+        // An unused slot (0xFF) or an out-of-window AV is ignored.
+        Player q;
+        Player::RaceBonus c;
+        c.skillBonuses = {{0xFF, 50}, {0x00, 50}, {0x21, 50}};
+        q.applyRace(c);
+        record("race: 0xFF / out-of-window AV ignored",
+               q.skills.Armorer == 10 && q.skills.Blade == 10 &&
+                   q.skills.Speechcraft == 10,
+               "Armorer=" + std::to_string(q.skills.Armorer));
+
+        // Attributes and vitals revert to the chargen base.
+        Player r;
+        r.attributes.Strength = 99;
+        r.maxHealth = 5.0f;
+        r.applyRace({});
+        record("race: attributes/vitals revert to the base",
+               r.attributes.Strength == Player::BASE_ATTRIBUTE &&
+                   r.maxHealth == Player::BASE_MAX_HEALTH &&
+                   r.health == r.maxHealth && r.skills.Blade == Player::BASE_SKILL,
+               "Str=" + std::to_string(r.attributes.Strength) +
+                   " HP=" + std::to_string(static_cast<int>(r.maxHealth)));
     }
 
     // --- geometry + hitTest (spec §9; pure logic) ---

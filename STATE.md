@@ -1,5 +1,14 @@
 # Loop State — My Project
 
+## 2026-11-24 — chargen race 適用（skill bonus＋spell）＋ Legacy base 統一（V-654-4 一部 close）
+
+- **前提の訂正**: `RaceData` の `attr*`/`startingHealth`/`skillBonuses` は **未 populate** だった（`decodeRace` が RACE `ATTR`/health を未パース、書き手 0 件）。実装済みは `spellFormIDs`(SPLO) のみ。spec §10.5 を訂正。
+- **RACE DATA 解析**: `DATA`(36B) byte0..13 = `7 × (int8 skillAV, int8 bonus)`（AV 0x0C..0x20、`0xFF`=未使用）を `decodeRace` でパース。`RaceData.skillBonuses` の型を `pair<uint8_t AV,int8_t>` に修正。実測が既知値と一致（Redguard = Athletics/Blade/Blunt +10、HeavyArmor/LightArmor/Mercantile +5）。
+- **base 統一**: `Player` の struct 既定を唯一の真実に（`BASE_ATTRIBUTE=40`/`BASE_SKILL=10`/`BASE_MAX_HEALTH|MAGICKA|STAMINA=100`）。`resetAttributes()`/`resetSkills()` は `Attributes{}`/`Skills{}` へ。**Legacy の `initializeDefaultCharacter()`/`applyRaceBonuses()` の 50/15/100/50/100 直書きを撤去し、Legacy 初期値が 40/10/100/100/100 に変わる**。
+- **`Player::applyRace(RaceBonus)`**: ①base へ revert ②skill bonus（AV→skill は `Player::skillAvBindings()` の 1 表）③SPLO の spell 付与（前 race の spell は除去）。renderer は `raceChanged()` のときだけ `NpcManager::applyRaceToPlayer` を呼ぶ。
+- **検証**: host `-NoAsan` ALL GREEN、`RaceSexPanelTests` **87/87**（新規 5 件）。`syntax_check_ui.sh` に `ui_character_creation.cpp` を追加し 6 TU OK（`world_data.h` に `<cfloat>` 追加）。
+- **残**: `V-664-2`（ATTR レイアウト）／`V-664-3`（health 導出元・真の base）＝ai-todo **#179** で RE 起票。morph/mesh は未適用。`V-654-4` は「skill/spell 実装済み・attr/health/mesh 未」に分割更新。
+
 ## 2026-11-23 — chargen Random/Reset port 実装（Face 227/228・台帳 row662・spec §10.7）
 
 - **実装**: `RaceSexPanel` に Random/Reset 本体を追加。`rngNext()` に CRT `rand()` MSVC LCG（`seed=seed*214013+2531011; (seed>>16)&0x7fff`、`uint32_t`）。`init()` で `std::time` シード（原作 `0x47DF80(arg=0)` 経路）＋テスト用 `setSeed()`。`doRandom()`＝全 **90** スライダーを builder 順に `value=rngNext()/32767.0`（原作 `raw=rand/32767*50+15` の [15,65] clamp → `(raw-15)/50` と同値）＋(Main,Age)/(Main,Complexion) の 2 tile へ `user3`(0xFB1) 3 連書き（sentinel→算出値→`0.0`、最終 0.0）。`doReset()`＝全 90 を `0.0`（`V-660-A1`、actor モーフ全 130 ぶん初期化）。

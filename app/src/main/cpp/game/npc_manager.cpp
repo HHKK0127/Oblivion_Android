@@ -1,4 +1,5 @@
 #include "npc_manager.h"
+#include "player.h"
 #include "../assets/asset_manager.h"
 #include <algorithm>
 #include <cctype>
@@ -431,11 +432,12 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
             player.status.knownSpells.push_back(spellFormID);
         }
 
-        // Apply skill bonuses
+        // Skill bonuses: (skill AV index 0x0C..0x20, bonus). The NPC status map
+        // is keyed by name; the game Player applies these through applyRace()
+        // (v664).
         for (const auto& bonus : race->skillBonuses) {
-            // bonus.first = skillFormID (we store as attribute name string for now)
-            // In a full implementation, we'd resolve the MGEF/SKIL formID to a skill name
-            LOGD("Racial skill bonus: skillFormID=0x%08X, bonus=%d", bonus.first, bonus.second);
+            LOGD("Racial skill bonus: skillAV=0x%02X, bonus=%d",
+                 bonus.first, bonus.second);
         }
 
         // Set mesh path (gender selection not yet implemented)
@@ -486,6 +488,28 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
          player.race.c_str(), player.class_.c_str(),
          player.status.maxHealth, player.status.maxMana,
          player.status.knownSpells.size());
+}
+
+bool NpcManager::applyRaceToPlayer(Player& player, uint32_t raceFormID) const {
+    if (!m_esm) {
+        LOGW("applyRaceToPlayer: ESMManager not set");
+        return false;
+    }
+    const oblivion::RaceData* race = m_esm->findRace(raceFormID);
+    if (!race) {
+        LOGW("applyRaceToPlayer: Race 0x%08X not found", raceFormID);
+        return false;
+    }
+    // V-664: only the skill bonuses (RACE DATA, 7 x (AV index, bonus)) and the
+    // racial spells (SPLO) are parsed; attribute bonuses (ATTR) and health are
+    // not yet wired (V-664-2/V-664-3), so they stay at the chargen base.
+    Player::RaceBonus rb;
+    rb.skillBonuses = race->skillBonuses;
+    rb.spells = race->spellFormIDs;
+    player.applyRace(rb);
+    LOGI("Race applied to player: %s (skillBonuses=%zu, spells=%zu)",
+         race->fullName.c_str(), rb.skillBonuses.size(), rb.spells.size());
+    return true;
 }
 
 // ============================================================

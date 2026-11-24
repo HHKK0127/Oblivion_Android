@@ -2,6 +2,7 @@
 #include "placeholder_assets.h"
 #include "ui_draw_helper.h"
 #include "../game/gmst_defaults.h"
+#include "../game/player.h"
 #include <GLES3/gl3.h>
 #include <cstdio>
 #include <algorithm>
@@ -75,22 +76,35 @@ bool UICharacterCreation::initialize(TextRenderer* tr) {
 
 void UICharacterCreation::initializeDefaultCharacter() {
     createdCharacter_.name = "Adventurer";
-    // createdCharacter_.level = 1;
-    createdCharacter_.currentHealth = 100;
-    createdCharacter_.maxHealth = 100;
-    createdCharacter_.currentMana = 50;
-    createdCharacter_.maxMana = 50;
-    createdCharacter_.stamina = 100;
-    createdCharacter_.maxStamina = 100;
+    // The base values come from Player (the single source): HP/MP/SP defaults and
+    // the attribute/skill bases. Do not hardcode 50/15/50 here (v664); a base
+    // correction then only has to change in player.h.
+    const Player base;
+    createdCharacter_.currentHealth = base.maxHealth;
+    createdCharacter_.maxHealth = base.maxHealth;
+    createdCharacter_.currentMana = base.maxMagicka;
+    createdCharacter_.maxMana = base.maxMagicka;
+    createdCharacter_.stamina = base.maxStamina;
+    createdCharacter_.maxStamina = base.maxStamina;
 
-    // Set default attributes (50 each)
+    // Default attributes (ATTRIBUTE_NAMES order matches Player::Attributes order).
+    const int baseAttrs[8] = {
+        base.attributes.Strength,    base.attributes.Intelligence,
+        base.attributes.Willpower,   base.attributes.Agility,
+        base.attributes.Speed,       base.attributes.Endurance,
+        base.attributes.Personality, base.attributes.Luck,
+    };
     for (int i = 0; i < 8; ++i) {
-        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] = 50.0f;
+        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] = static_cast<float>(baseAttrs[i]);
     }
 
-    // Set default skills
+    // Default skills (SKILL_NAMES order == the canonical AV order == the
+    // Player::skillAvBindings() order).
+    const Player::Skills baseSkills = base.skills;
+    const auto& bindings = Player::skillAvBindings();
     for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
-        createdCharacter_.skills[SKILL_NAMES[i]] = 15.0f;
+        createdCharacter_.skills[SKILL_NAMES[i]] =
+            static_cast<float>(baseSkills.*(bindings[i].field));
     }
 
     playerName_ = "Adventurer";
@@ -746,30 +760,30 @@ void UICharacterCreation::applyRaceBonuses() {
 
     const auto& race = availableRaces_[selectedRaceIndex_];
 
-    // Reset attributes to base values
+    // Revert attributes and skills to the chargen base (Player's own defaults,
+    // v664) before re-applying, so switching races does not stack bonuses.
     for (int i = 0; i < 8; ++i) {
-        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] = 50.0f;
+        createdCharacter_.attributes[ATTRIBUTE_NAMES[i]] =
+            static_cast<float>(Player::BASE_ATTRIBUTE);
+    }
+    for (int i = 0; i < static_cast<int>(SKILL_NAMES.size()); ++i) {
+        createdCharacter_.skills[SKILL_NAMES[i]] =
+            static_cast<float>(Player::BASE_SKILL);
     }
 
-    // Apply race attribute bonuses
-    createdCharacter_.attributes["Strength"] += static_cast<float>(race.attrStrength);
-    createdCharacter_.attributes["Intelligence"] += static_cast<float>(race.attrIntelligence);
-    createdCharacter_.attributes["Willpower"] += static_cast<float>(race.attrWillpower);
-    createdCharacter_.attributes["Agility"] += static_cast<float>(race.attrAgility);
-    createdCharacter_.attributes["Speed"] += static_cast<float>(race.attrSpeed);
-    createdCharacter_.attributes["Endurance"] += static_cast<float>(race.attrEndurance);
-    createdCharacter_.attributes["Personality"] += static_cast<float>(race.attrPersonality);
-
-    // Apply race skill bonuses
-    for (const auto& bonus : race.skillBonuses) {
-        // Skill bonuses use formID, need to look up skill name
-        // For now, skip skill bonuses that use formID
-        (void)bonus;
+    // Race skill bonuses: RACE DATA stores 7 x (skill AV index, bonus). Map the
+    // AV to a skill name through the single Player::skillAvBindings() table.
+    // Attribute bonuses (ATTR) and health are not parsed yet (V-664-2/V-664-3),
+    // so nothing is added for them.
+    const auto& bindings = Player::skillAvBindings();
+    for (const auto& [av, bonus] : race.skillBonuses) {
+        for (int i = 0; i < static_cast<int>(bindings.size()); ++i) {
+            if (bindings[i].av == av) {
+                createdCharacter_.skills[SKILL_NAMES[i]] += static_cast<float>(bonus);
+                break;
+            }
+        }
     }
-
-    // Apply race HP bonus
-    createdCharacter_.maxHealth += static_cast<float>(race.startingHealth);
-    createdCharacter_.currentHealth = createdCharacter_.maxHealth;
 
     LOGD("Applied race bonuses for: %s", race.fullName.c_str());
 }

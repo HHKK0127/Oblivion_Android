@@ -247,11 +247,13 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-654-1 | **close**。port に race 受け皿あり（一覧 `ESMManager::getAllRaces()` ＋ playable フィルタ `(flags & 1u)`、適用 `NpcManager::initializePlayerFromESM()` ＋ `Player::raceFormID`）。§10.5 | `[確定(データ)]` |
 | V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
 | V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
-| V-654-4 | `Player` への race 適用（bonus/HP/spell/mesh）は**未配線**。`NpcManager::initializePlayerFromESM` は `NPC&` を取り、`Player` は別 struct（`struct Player`）で呼べない。port は `Player::raceFormID` のみ設定（Legacy と同じ参照保持／`player.h`） | `[部分確定]` |
+| V-654-4 | **一部 close（v664）**。`Player` への race 適用は **skill bonus（RACE DATA）＋ racial spell（SPLO）を実装**（`Player::applyRace`、§10.8）。**残**: 属性 bonus（RACE `ATTR` 16B のレイアウト未確定＝`V-664-2`）・health（`V-664-3`）・mesh/morph（未適用）。`NpcManager::initializePlayerFromESM` は `NPC&` を取り `Player` は別 struct のため、`applyRaceToPlayer` を新設 | `[部分確定]` |
 | V-660-A1 | **close（v663）**。Reset の既定値＝**raw 0**。`0x521E40` は `0x5538D0`（`[0xb39b80]+8`）→ `0x5528F0(src=テンプレート, dest=actor)` → `0x552880`（3 群 50/30/50 = **130** を `0.0`）の順で、**actor のモーフ値は最終的に 0.0**。対象は**全モーフ（カレントページ非依存）**。`-2.0` は Reset 経路に無い | `[確定(命令)]` |
 | V-660-A2 | **close（v663）**。乱数源＝**CRT `rand()`**（`0x9859DD`、MSVC LCG `*0x343fd+0x269ec3, (>>16)&0x7fff`、[0,32767]）、`0x47DF80` 経由。raw=`rand()/32767*50+15`∈**[15,65]**（`0x5273A0` で clamp）、`value=(raw-15)/50`∈[0,1]。`user3`(0xFB1) は (Main,Age)/(Main,Complexion) へ 3 連書き（sentinel/値/0.0、最終 0.0） | `[確定(命令)]` |
 | V-660-B1 | **close（v662）**。Main "Eyes" トグル（id 204）／Complexion スライダー（id 207）は **family に無く、HandleClick にメニュー側ハンドラも無い＝no menu handler**（`[0xB38FA0]` は HandleClick 内 0 参照）。**204 の toggle 値反転は widget 側の責務、207 は slider でドラッグ変更が正常**（HandleClick の不在とは独立）。family 全不一致は `0x5CDA11`（epilogue）で return（**Main 復帰ではない**）。family は **28**（26 tab + Random + Reset）で `static_assert(28)` は正しい | `[確定(命令)(negative)]` |
 | V-660-C1 | **close（v663）**。Race 説明文の受け先＝**pane `[0xB38F78]`("Race") × tile `[0xB38FB0]`("Race Description")**＝Race ページ text **id 212**。`0x5C7BA0` が `0x43534544`("DESC") を読み `0xFB4`(user6) へ `SetString`（フォールバック `0xA36430`=" "）。race 名は別 tile | `[確定(命令)]` |
+| V-664-2 | RACE **`ATTR`（16B）** のレイアウト未確定。8 属性ぶんの値（30-50）を含むと見られるが、8×int16 で各値が同バイト重複に見え 2 スロットだけ相違。port の `RaceData.attr*` は**宣言のみ・未 populate**（`decodeRace` 未実装） | `[未確定]` |
+| V-664-3 | RACE に **starting-health フィールドが無い**（`RaceData.startingHealth` は幻）。プレイヤー HP の導出元（Endurance 由来か）と **真の base 値（属性 30 か 40 か）** は未計測 | `[未確定]` |
 
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
@@ -491,7 +493,7 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 | 選択 race の保持 | `Player::raceFormID` | `npc.h:31`、`renderer.cpp:924` |
 | 名前の適用 | `player->name = character.name` | `renderer.cpp:922` |
 
-- `RaceData` に `fullName` / `description` / `maleModelPath` / `femaleModelPath` / `attr*` / `startingHealth` / `spellFormIDs` / `skillBonuses`（`esm_reader.h:692`）＝トグルの表示（race 名）と `Race Description` text に使える。
+- `RaceData` の実装状況（v664 実測）: **`fullName` / `description` / `maleModelPath` / `femaleModelPath` / `spellFormIDs`(SPLO) / `skillBonuses`(DATA) / `flags` は populate される**。一方 **`attr*` / `startingHealth` は宣言のみで未 populate**（`decodeRace` が RACE の `ATTR`（16B）と health を未パース＝常に 0。真因は `V-664-2`/`V-664-3`）。`skillBonuses` は `pair<uint8_t AV, int8_t bonus>`（AV 0x0C..0x20、`0xFF`=未使用スロット）。
 - → **`V-654-1` はクローズ**。`commit()` は選択 race を適用できる（Legacy と同じ `player->raceFormID` ＋ `initializePlayerFromESM`）。
 
 ### 10.6 Random/Reset 本体・Main "Eyes" トグル・Race 説明文（v660 / ai-todo #175-#177）`[部分確定]`
@@ -516,4 +518,14 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **`doReset()`** `[確定(命令)]`（`V-660-A1`）: 全 90 スライダー `value = 0.0`（原作は actor のモーフ配列全体を 3 群 50/30/50 = 130 ぶん `0.0` 初期化、カレントページ非依存）。trait は書かない。ページは Face のまま。
 - **確認ダイアログ** `[確定(命令)]`: Random `[0xB3B4C8]` / Reset `[0xB3B4C9]`。初回クリックで `on_confirm_`（Yes/No）を出しフラグを立て、armed 中クリックは本体直行（`0x5CCBE5`/`0x5CCCC8`）。**No は cb がフラグを 0 に戻す**（次回クリックで再度ダイアログ）。ページ離脱ではフラグをリセットしない（原作はグローバル）。**ダイアログ本文**は GameSetting `sRandomizeFace`＝**"Randomize face?"** / `sResetFace`＝**"Reset face?"**（v664）。`[0xB39450]`/`[0xB39448]` は文字列ポインタでなく **GameSetting オブジェクト**で、起動時 init thunk `0x9f7b70`/`0x9f7b50` が ctor `0x419a70(EDID, 既定値)` で構築し `0x981fb4` で登録する（`%s` 組み立てではない）。既定値リテラルは exe 内 `0xa63b40`/`0xa63b24` に実在し、`Oblivion.esm` には両文字列とも無い（生検索で未検出）ため exe 既定値が表示される。port はこの 2 文字列をそのまま使う（**`V-664-1` close**）。
 - **`V-654-4` の範囲内** `[方針]`: morph への実際の適用は未配線（`Player` は `NPC&` を取る API を呼べない）。`morph → slider` の対応は未確定のため **builder 順 1:1 近似**で引き、値は descriptor の `value` に留まる（widget は `applyLayout()` が反映）。
+
+### 10.8 race の Player 適用（skill bonus＋spell、v664）`[部分確定]`
+
+実装: `app/src/main/cpp/game/player.{h,cpp}`（`applyRace`）、`game/npc_manager.cpp`（`applyRaceToPlayer`）、`engine/renderer.cpp`（commit 配線）、`ui/ui_character_creation.cpp`（Legacy base 統一）。テスト: `tests/race_sex_panel_tests.cpp`。
+
+- **chargen base は Player の struct 既定が唯一の真実** `[方針]`: `BASE_ATTRIBUTE=40` / `BASE_SKILL=10` / `BASE_MAX_HEALTH|MAGICKA|STAMINA=100`（`player.h`）。`resetAttributes()`/`resetSkills()` は `Attributes{}`/`Skills{}`（＝既定）へ戻し、`applyRace()` は最初にこの base へ revert する。**Legacy の `initializeDefaultCharacter()`/`applyRaceBonuses()` も同じ base を参照**（旧 50/15/100/50/100 の直書きを撤去。**Legacy 初期値が 40/10/100/100/100 に変わる**）。
+- **適用順** `[方針]`: ①base へ revert（属性・skill・HP/MP/SP）②race の skill bonus を加算（AV→skill は `Player::skillAvBindings()` の 1 表、AV 0x0C..0x20）③SPLO の spell を付与（**前 race の spell は除去**）④名前・raceFormID。
+- **条件** `[方針]`: **race が変わったときだけ**（`raceChanged()`、原作 `0x51C090` no-op ガード）。同一 race の再適用は revert のため二重加算しない（host テストで固定）。
+- **RACE DATA skill bonus** `[確定(データ)]`: `DATA`（36B）byte0..13 = `7 × (int8 skillAV, int8 bonus)`（AV 0x0C..0x20、`0xFF`=未使用）。実測が既知値と一致（Redguard = Athletics/Blade/Blunt +10、HeavyArmor/LightArmor/Mercantile +5）。
+- **未配線** `[未確定]`: 属性 bonus（RACE `ATTR` 16B のレイアウト未確定＝`V-664-2`）と health（RACE に starting-health フィールドが無い＝`V-664-3`）、真の base 値（30 か 40 か）。`Player::RaceBonus` は skillBonuses と spells のみ。
 
