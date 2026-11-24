@@ -140,7 +140,12 @@ private:
     // right after textRenderer so it is destroyed BEFORE textRenderer: its
     // setOnDone callback binds Renderer's `this` and its widgets borrow the
     // TextRenderer, so Renderer (and textRenderer) must outlive it.
-    std::unique_ptr<RaceSexPanel> raceSexPanel;
+    // shared_ptr（unique_ptr ではない）: UIComponent::addChild は
+    // child->setParent(shared_from_this()) を呼ぶため、enable_shared_from_this を
+    // 持つ型は shared_ptr で所有しないと std::bad_weak_ptr を投げる。実機で
+    // New Game が SIGABRT した原因（2026-11-23・tombstone_24・ai-todo #178）。
+    // parent 側は weak_ptr なので循環参照にはならない（ui_component.h:234）。
+    std::shared_ptr<RaceSexPanel> raceSexPanel;
     std::unique_ptr<DebugHUD> debugHUD;
     std::unique_ptr<SettingsUI> settingsUI;
     std::unique_ptr<SaveLoadUI> saveLoadUI;
