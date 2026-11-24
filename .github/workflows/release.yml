@@ -1,0 +1,153 @@
+name: Release
+
+# タグ v* で起動するリリース。ドライラン（workflow_dispatch, publish=false）では
+# release を作らず artifact に上げる。設計は ByroRedux の release.yml に倣う
+# （根拠: docs/CI_PORT_FROM_BYROREDUX.md §2.2）。
+#
+# パッケージ前に 2 条件を要求する（ByroRedux と同じ）:
+#   1. このコミットの Android CI が緑であること
+#   2. タグのコミットが master 上にあること
+# さらに「GPU 無しで動くか」の代わりに、headless エミュレータで既定経路のスモークを通す。
+#
+# 注意: 現状このプロジェクトには release 署名が未設定なので、配布するのは debug APK である。
+# 署名を足したら assembleRelease に差し替える（そのときは APK の生成元も変える）。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a GitHub pre-release (otherwise only upload as an artifact)"
+        type: boolean
+        default: false
+      release_name:
+        description: "Release name for a dry run, e.g. v0.9.11"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    name: Package and smoke-test the APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag and commit
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          elif [ -n "${{ inputs.release_name }}" ]; then
+            TAG="${{ inputs.release_name }}"
+          else
+            TAG="dry-run-$(git rev-parse --short HEAD)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "release tag: $TAG"
+
+      # ByroRedux release.yml の条件 1。
+      - name: Require a green CI run on this commit
+        id: green
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ steps.tag.outputs.commit }}"
+          gh run list --workflow "Android CI" --commit "$SHA" --status success --limit 1 \
+            --json databaseId > run.json
+          ID=$(python3 -c "import json;d=json.load(open('run.json'));print(d[0]['databaseId'] if d else '')")
+          if [ -z "$ID" ]; then
+            echo "::error::このコミットの Android CI が緑ではありません（release 不可）"
+            exit 1
+          fi
+          echo "run_id=$ID" >> "$GITHUB_OUTPUT"
+          echo "green CI run: $ID"
+
+      # ByroRedux release.yml の条件 2。
+      - name: Require the tagged commit to be on master
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin master
+          if ! git merge-base --is-ancestor "${{ steps.tag.outputs.commit }}" origin/master; then
+            echo "::error::タグのコミットが master 上にありません"
+            exit 1
+          fi
+
+      # 緑の CI が作った APK をそのまま使う（同じ成果物を配る＝再ビルドの食い違いを避ける）。
+      - name: Download the APK from that green run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh run download "${{ steps.green.outputs.run_id }}" -n app-debug -D dist
+          # artifact 名がずれると「LOG を待ち続けて失敗」という分かりにくい形になるため明示検査。
+          test -s dist/app-debug.apk || {
+            echo "::error::dist/app-debug.apk がありません（artifact 名 'app-debug' を確認）"
+            ls -R dist || true
+            exit 1
+          }
+
+      # ByroRedux の「GPU 無しスモーク」に相当。既定経路が成立しなければ release しない。
+      - name: Emulator smoke test (default path)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            bash docs/smoke-tests/newgame.sh dist/app-debug.apk
+
+      - name: Package (APK + SHA256SUMS)
+        id: package
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          mkdir -p out
+          cp dist/app-debug.apk "out/oblivion-android-${TAG}.apk"
+          ( cd out && sha256sum "oblivion-android-${TAG}.apk" > SHA256SUMS && cat SHA256SUMS )
+          echo "apk=out/oblivion-android-${TAG}.apk" >> "$GITHUB_OUTPUT"
+          echo "sums=out/SHA256SUMS" >> "$GITHUB_OUTPUT"
+
+      - name: Upload (dry run)
+        if: github.event_name == 'workflow_dispatch' && !inputs.publish
+        uses: actions/upload-artifact@v4
+        with:
+          name: oblivion-android-${{ steps.tag.outputs.tag }}
+          path: |
+            ${{ steps.package.outputs.apk }}
+            ${{ steps.package.outputs.sums }}
+            artifacts/smoke-newgame.png
+            artifacts/smoke-newgame.log
+
+      - name: Publish pre-release
+        if: github.event_name == 'push' || inputs.publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          {
+            echo "Automated pre-release built from the green Android CI run on this commit."
+            echo
+            echo "- **Verify:** \`sha256sum -c SHA256SUMS\`"
+            echo "- **Smoke:** the default path (ESM load -> scenario build) passed on a headless emulator before packaging."
+            echo "- **Note:** this APK is the debug build (release signing is not configured yet)."
+          } > notes.md
+          gh release create "$TAG" \
+            --prerelease \
+            --title "Oblivion Android $TAG (alpha)" \
+            --notes-file notes.md \
+            "${{ steps.package.outputs.apk }}" "${{ steps.package.outputs.sums }}"

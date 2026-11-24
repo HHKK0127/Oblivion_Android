@@ -88,6 +88,9 @@ external/
 # Host test scratch output (tools/host_tests/run_host_tests.sh)
 host_saves/
 
+# Smoke test output (docs/smoke-tests/*.sh writes screenshots and logcat dumps here)
+/artifacts/
+
 # Repo-root scratch: local build/launch logs and the local game-data pull.
 # oblivion_esm_pull/ holds the real Oblivion.esm used for offline verification;
 # it is data, not source, and must never be committed (BYO-data model).

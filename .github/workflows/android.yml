@@ -153,3 +153,95 @@ jobs:
 
       - name: Run native host tests
         run: bash tools/host_tests/run_host_tests.sh
+
+  # 未マージブランチの滞留を機械的に可視化する（docs/claims.md の WIP 上限）。
+  # エージェントは書くのが速いので滞留が「タダ」に見えるが、律速は人間の注意と
+  # マージ帯域。
+  #
+  # 当面は warn-only（`continue-on-error: true` ＋ check_wip_limit.py は既定で exit 0）。
+  # 未マージ 33 本に対して上限 3 なので、初回から必ず超過する。33 本を 3 本に減らすのは
+  # 30 回のマージで、ゴールデン採取とは時間軸が違う。加えて release.yml は「緑の CI」を
+  # 要求するので、ここを blocking にするとリリースも止まる。
+  # 滞留が上限内に収まったら `continue-on-error` を外し `--strict` を付けて blocking にする。
+  wip-limit:
+    name: WIP limit (unmerged branches)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # 未マージ判定には他ブランチの ref が要る。既定の checkout は単一 ref の
+      # 浅い取得なので、全ブランチを取り直す。
+      - name: Fetch all branches
+        run: git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Check unmerged branch count
+        run: python3 scripts/check_wip_limit.py --base origin/master --limit 3 --overlap
+
+  # 既定経路の実機検証。build が作った APK を headless エミュレータで起動し、
+  # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較
+  # （scripts/compare_golden.py）を通す。2026-11 の停滞の主因は「既定経路の
+  # 実機検証が 0」だったので、これを完了条件に含める。
+  smoke:
+    name: Default path smoke (headless emulator)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # TODO: remove once docs/evidence/golden/newgame-no-esm.json is committed (V-665-1)
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug
+          path: dist
+
+      # 明示的に `app-debug.apk` を渡す。artifact 名がずれると「LOG を待ち続けて
+      # 180s で失敗」という分かりにくい形になるため、先に存在を検査する。
+      - name: Verify the APK artifact
+        run: |
+          set -euo pipefail
+          test -s dist/app-debug.apk || {
+            echo "::error::dist/app-debug.apk がありません（artifact 名 'app-debug' を確認）"
+            ls -R dist || true
+            exit 1
+          }
+
+      # compare_golden.py は Pillow/numpy を使う（launcher icon 検査と同じ依存）。
+      - name: Install Python imaging deps
+        run: python3 -m pip install --quiet --disable-pip-version-check pillow numpy
+
+      - name: Emulator smoke test (default path)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            bash docs/smoke-tests/newgame.sh dist/app-debug.apk
+
+      - name: Compare against the golden image
+        run: |
+          python3 scripts/compare_golden.py artifacts/smoke-newgame.png \
+            --require --diff artifacts/smoke-newgame.diff.png
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-newgame
+          path: |
+            artifacts/smoke-newgame.png
+            artifacts/smoke-newgame.log
+            artifacts/smoke-newgame.diff.png
+          retention-days: 14
