@@ -192,7 +192,10 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # TODO: remove once docs/evidence/golden/newgame-no-esm.json is committed (V-665-1)
+    # 45 分かかる headless スモーク。golden 投入までは push ごとに走らせない
+    # （workflow_dispatch / pull_request のみ）。blocking に戻すときにこの if: を外す（V688）。
+    if: github.event_name != 'push'
+    # TODO: remove once docs/evidence/golden/newgame-no-esm.json is committed (V688)
     continue-on-error: true
 
     steps:

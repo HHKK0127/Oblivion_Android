@@ -116,7 +116,7 @@ ByroRedux の `docs/smoke-tests/<gate>.sh` に相当。**既定経路が成立�
 
 - `newgame.sh` が撮るスクリーンショットを、原版スクショとの差分比較に置き換える。
 - 項目ごとの RE 目視ではなく、**画像差分**をゲートにする（スケールするのはこちら）。
-- **暫定（V-665-1）**: `docs/evidence/golden/newgame-no-esm.json` を採取してコミットするまで、`android.yml` の `smoke` ジョブは `continue-on-error: true`（warn-only。golden 不在だと `compare_golden.py --require` が exit 1 になるため）。golden 投入後に blocking へ戻す（`--require` は**外さない**）。
+- **暫定（V688）**: `docs/evidence/golden/newgame-no-esm.json` を採取してコミットするまで、`android.yml` の `smoke` ジョブは `continue-on-error: true`（warn-only。golden 不在だと `compare_golden.py --require` が exit 1 になるため）かつ `if: github.event_name != 'push'`（45 分の headless スモークを毎 push で回さないため）。golden 投入後に `if:` と `continue-on-error` を外して blocking へ戻す（`--require` は**外さない**）。
 
 ---
 
