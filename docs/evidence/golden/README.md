@@ -18,3 +18,20 @@ python scripts/compare_golden.py artifacts/smoke-newgame.png --update
 `compare_golden.py --require` が exit 1 になるため）。golden をコミットしたら
 `android.yml` の `smoke` ジョブから `continue-on-error` と `if:` を外し、blocking に
 戻す（`--require` は**外さない**: 外すと golden を入れても落ちなくなる）。
+
+## ホスト smoke の JSON ゴールデン（`newgame-no-esm.json`）
+
+`tools/host_tests/newgame_smoke` が固定フィクスチャ ESM で chargen を再現し、状態を
+JSON で出す（V688a の代替・A 案）。`scripts/compare_golden.py` は候補が `.json` のとき
+**完全一致**で比較する（PNG は従来の 32x18 グリッド比較のまま）。
+
+- **フィクスチャ**: `docs/evidence/fixtures/minimal.esm`（合成・Bethesda データ非含有。
+  `tools/host_tests/make_fixture_esm.py` が決定論的に生成、sha256 は再実行で不変）。
+- **決定性**: 固定 seed（`12345`）・時計なし・相対パス・固定キー順・`%.6f`。CI は同一
+  ジョブで 2 回実行し `diff` で一致を確認してから比較する。
+- **golden は CI（ubuntu / linux-gnu）産のみ**。手元 Windows の MSVC 産は混ぜない
+  （triple 差で浮動小数がずれ得る）。
+- **採取**: `bash tools/host_tests/run_smoke.sh > out.json` →
+  `python scripts/compare_golden.py out.json --update --golden docs/evidence/golden/newgame-no-esm.json`。
+- **初回は現状の挙動（既知の未実装・バグを含む）を固定する**。採取後に `smoke-host`
+  ジョブの `continue-on-error` を外して blocking にする。

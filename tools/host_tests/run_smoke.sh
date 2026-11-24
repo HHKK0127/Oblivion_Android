@@ -50,13 +50,15 @@ SMOKE_SOURCES=(
   app/src/main/cpp/engine/texture_loader.cpp
 )
 
-echo "::group::Build newgame smoke"
+# Progress/build messages go to stderr so stdout is exactly the smoke JSON
+# (the CI job redirects stdout to out.json and compares it).
+echo "::group::Build newgame smoke" >&2
 g++ -std=c++17 -O0 -ffunction-sections -fdata-sections \
     "${DEFINES[@]}" "${INCLUDES[@]}" "${SMOKE_SOURCES[@]}" \
     "${RUST_LIBS[@]}" ${EXTRA_LIBS[@]+"${EXTRA_LIBS[@]}"} \
     -Wl,--gc-sections -o "$BIN" -lz
-echo "::endgroup::"
+echo "::endgroup::" >&2
 
-echo "::group::Run newgame smoke"
+echo "::group::Run newgame smoke" >&2
 "$BIN" "$@"
-echo "::endgroup::"
+echo "::endgroup::" >&2

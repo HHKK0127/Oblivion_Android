@@ -154,6 +154,70 @@ jobs:
       - name: Run native host tests
         run: bash tools/host_tests/run_host_tests.sh
 
+  # V688a の代替（A 案）: エミュレータを捨て、host レベルの newgame smoke を
+  # 固定フィクスチャ ESM（docs/evidence/fixtures/minimal.esm）で回す。
+  # 決定性は同一ジョブ内の 2 回実行 diff で証明し、golden は CI（linux-gnu）で
+  # 採取する（手元 Windows の MSVC 産は混ぜない）。golden 投入までは warn-only。
+  smoke-host:
+    name: New game host smoke (fixture ESM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # TODO: golden (docs/evidence/golden/newgame-no-esm.json) を採取したら外す。
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # run_host_tests.sh/run_smoke.sh compile against <zlib.h> and link -lz.
+      - name: Ensure zlib development headers
+        run: sudo apt-get install -y --no-install-recommends zlib1g-dev
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust
+
+      # run_smoke.sh reuses run_host_tests.sh's discovery: it *searches* for the
+      # host-triple archives, so build the six ffi crates first.
+      - name: Build Rust FFI host archives
+        working-directory: rust
+        run: cargo build --release -p assets-ffi -p bsa-ffi -p plugin-ffi -p esm-ffi -p nif-ffi -p dds-ffi
+
+      # Determinism: two runs must produce byte-identical JSON (fixed RNG seed,
+      # no clock, relative paths). A non-zero diff stops the golden collection.
+      - name: Run host smoke twice (determinism)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/host_tests/run_smoke.sh > out1.json
+          bash tools/host_tests/run_smoke.sh > out2.json
+          if ! diff -u out1.json out2.json; then
+            echo "::error::host smoke output differs between two runs (non-deterministic)"
+            exit 1
+          fi
+          echo "determinism OK: two runs identical"
+
+      - name: Show smoke output
+        shell: bash
+        run: cat out1.json
+
+      - name: Upload smoke output
+        uses: actions/upload-artifact@v4
+        with:
+          name: newgame-smoke-json
+          path: out1.json
+          retention-days: 14
+
+      - name: Compare against the golden
+        shell: bash
+        run: |
+          python3 scripts/compare_golden.py out1.json --require \
+            --golden docs/evidence/golden/newgame-no-esm.json
+
   # 未マージブランチの滞留を機械的に可視化する（docs/claims.md の WIP 上限）。
   # エージェントは書くのが速いので滞留が「タダ」に見えるが、律速は人間の注意と
   # マージ帯域。
