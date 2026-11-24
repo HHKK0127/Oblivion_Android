@@ -333,6 +333,7 @@ add_library(native-lib SHARED
 
     # Player & Movement (Phase 3+)
     game/player.cpp
+    game/chargen_commit.cpp
     game/player_controller.cpp
     input/touch_input_handler.cpp
 
