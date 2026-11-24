@@ -46,8 +46,31 @@
 | re | RE セッション | `tmp/re/**`, `D:\re\**` | —（成果は master へ `re vXXX:` コミット） | active |
 | process | 本セッション | `scripts/**`, `docs/claims.md`, `docs/CI_PORT_FROM_BYROREDUX.md`, `docs/smoke-tests/**`, `.github/workflows/**` | 未コミット | active |
 
-## 滞留の棚卸し（この表を縮めるのが最優先の仕事）
+## 引き渡し（2026-11-24・Panel レーン）→ **同日 landing 済み**
 
+`initialize()` の無描画修正と chargen の確定経路を **1 つの引き渡しに束ねて** Panel レーンへ渡した。**同日中に master へ landing した**（当方の作業ツリーの差分がそのまま取り込まれた）。
+
+当初の引き渡し文:
+
+```
+claim: Panel レーン
+対象: race_sex_panel.cpp の initialize()（無描画修正）＋ renderer.cpp の setOnCommit
+内容: (a) initialize() で描画が成立すること (b) on_commit_ で Legacy と同順に
+      HP/Magicka/Stamina/level/8属性/21スキルを適用し、最後に startGame() を呼ぶ
+完了条件: 実機で New Game → chargen → Done → Yes → セル侵入まで到達し、その画面で golden #2 を採取
+```
+
+landing 後の実態（`git show HEAD:…` で確認）:
+- (a) **済**: `renderer.cpp` の `setChargenUi` が `raceSexPanel->initialize();` → `init();` の順で呼ぶ。`instantiate()` も各 widget に `initialize()`。
+- (b) **一部**: 共有 `app/src/main/cpp/game/chargen_commit.{h,cpp}` が追加され、`player.raceFormID` と `NpcManager::applyRaceToPlayer` まで実装。**ATTR ボーナスと health は未配線**（`V-664-2`/`V-664-3`・RE 待ち）で、**`startGame()` 到達の完了条件は未達**。
+- 当方の未コミット差分（claims.md の本節・`docs/evidence/README.md`・`docs/reviews/2026-11-23-handoff.md` §9・`docs/smoke-tests/newgame.sh` の追加タップ・`docs/evidence/golden/newgame-no-esm-prefix.json`）は、landing 済み分を壊さない追補として別途コミットする。
+
+根拠（当方の実測・2026-11-24）:
+- `UIComponent::render()` は `if (!visible || !initialized) return;`（`ui_component.cpp:35`）で、`initialized` の既定は false（`ui_component.h:230`）。`RaceSexPanel` は `initialize()` を呼んでおらず、**chargen が 1 ピクセルも描かれない**（マーカーは出るので気づきにくい）。
+- `UIComponent::initialize()` は `UIDrawHelper::initialize()`（GL）を呼ぶため、**`init()` ではなく renderer 側**（`setChargenUi`）で呼ぶこと。`init()` はホストテストが多数回呼ぶ（`race_sex_panel_tests.cpp:119` ほか）。
+- 2026-11-24 09:53 のコミットが当方のビルド中に `renderer.cpp` を動かし、**同一ツリー同時編集**が実際に起きた。以後、当方は `race_sex_panel*` / `renderer.cpp` の chargen 配線を触らない。
+
+## 滞留の棚卸し（この表を縮めるのが最優先の仕事）
 上表の「未マージ（滞留）」は 7 ブランチ・21 コミット。上限 3 本に対して超過している。
 推奨する処理順:
 

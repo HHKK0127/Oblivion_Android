@@ -237,5 +237,17 @@ if [ ! -s "$OUT_DIR/smoke-newgame.png" ]; then
   exit 1
 fi
 
+# 任意の追加タップ（"x,y"）。chargen 表示後に 1 回だけ押して 2 枚目を撮る。
+# 例: SMOKE_EXTRA_TAP=122,379 bash docs/smoke-tests/newgame.sh   # Main の Eyes トグル
+if [ -n "${SMOKE_EXTRA_TAP:-}" ]; then
+  tx="${SMOKE_EXTRA_TAP%,*}"
+  ty="${SMOKE_EXTRA_TAP#*,}"
+  echo "extra tap: ($tx, $ty)"
+  "$ADB" shell input tap "$tx" "$ty"
+  sleep 2
+  "$ADB" exec-out screencap -p > "$OUT_DIR/smoke-newgame-after-tap.png" 2>/dev/null || true
+  [ -s "$OUT_DIR/smoke-newgame-after-tap.png" ] || { echo "::error::2 枚目が空です"; exit 1; }
+fi
+
 echo "PASS: 既定経路が chargen まで繋がった"
 echo "screenshot: $OUT_DIR/smoke-newgame.png"
