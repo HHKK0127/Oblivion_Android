@@ -285,7 +285,7 @@ SOURCES=(
   app/src/main/cpp/system/oblivion_ini_defaults.cpp
 )
 
-echo "::group::Build host tests"
+echo "::group::Build host tests" >&2
 # Rust archives must follow the objects that reference them (link order).
 # Rust's std drags in winsock/ntdll/userenv symbols on a MinGW host only, so
 # keep those out of the Linux CI link line.
@@ -324,8 +324,8 @@ g++ -std=c++17 -O0 -ffunction-sections -fdata-sections \
     "${DEFINES[@]}" "${INCLUDES[@]}" "${SOURCES[@]}" \
     "${RUST_LIBS[@]}" ${EXTRA_LIBS[@]+"${EXTRA_LIBS[@]}"} \
     -Wl,--gc-sections -o "$BIN" -lz
-echo "::endgroup::"
+echo "::endgroup::" >&2
 
-echo "::group::Run host tests"
+echo "::group::Run host tests" >&2
 "$BIN"
-echo "::endgroup::"
+echo "::endgroup::" >&2
