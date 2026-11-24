@@ -190,7 +190,7 @@ jobs:
   smoke:
     name: Default path smoke (headless emulator)
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 45
     # 45 分かかる headless スモーク。golden 投入までは push ごとに走らせない
     # （workflow_dispatch / pull_request のみ）。blocking に戻すときにこの if: を外す（V688）。
@@ -211,6 +211,7 @@ jobs:
       # 明示的に `app-debug.apk` を渡す。artifact 名がずれると「LOG を待ち続けて
       # 180s で失敗」という分かりにくい形になるため、先に存在を検査する。
       - name: Verify the APK artifact
+        shell: bash
         run: |
           set -euo pipefail
           test -s dist/app-debug.apk || {
@@ -221,19 +222,25 @@ jobs:
 
       # compare_golden.py は Pillow/numpy を使う（launcher icon 検査と同じ依存）。
       - name: Install Python imaging deps
+        shell: bash
         run: python3 -m pip install --quiet --disable-pip-version-check pillow numpy
 
+      # macOS arm64 (M1) は native 加速が使える。ubuntu は KVM 無しで emulator が
+      # 起動できなかった（V688a）。x86_64 AVD は macOS では結局エミュレーションに
+      # なるため arm64-v8a を使う（APK は arm64-v8a を含む）。
       - name: Emulator smoke test (default path)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          arch: x86_64
+          arch: arm64-v8a
+          target: google_apis
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          emulator-options: -no-window -no-audio -no-boot-anim
           script: |
             bash docs/smoke-tests/newgame.sh dist/app-debug.apk
 
       - name: Compare against the golden image
+        shell: bash
         run: |
           python3 scripts/compare_golden.py artifacts/smoke-newgame.png \
             --require --diff artifacts/smoke-newgame.diff.png
