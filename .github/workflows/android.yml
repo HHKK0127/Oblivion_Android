@@ -221,9 +221,10 @@ jobs:
           }
 
       # compare_golden.py は Pillow/numpy を使う（launcher icon 検査と同じ依存）。
+      # macOS の python3 は PEP 668（externally-managed）なので --break-system-packages。
       - name: Install Python imaging deps
         shell: bash
-        run: python3 -m pip install --quiet --disable-pip-version-check pillow numpy
+        run: python3 -m pip install --break-system-packages --quiet --disable-pip-version-check pillow numpy
 
       # macOS arm64 (M1) は native 加速が使える。ubuntu は KVM 無しで emulator が
       # 起動できなかった（V688a）。x86_64 AVD は macOS では結局エミュレーションに
