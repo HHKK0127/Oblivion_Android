@@ -23,6 +23,7 @@
 #include "../world/distant_lod/original_lod_provider.h"
 #include "../world/distant_lod/original_object_lod_provider.h"
 #include "../util/msvc_lcg.h"
+#include "../game/chargen_commit.h"
 // #include "../jni_audio_bridge.h"  // Deferred - requires Java MainActivity
 
 #include <glm/glm.hpp>
@@ -8967,23 +8968,15 @@ void Renderer::setChargenUi(ChargenUi ui) {
             raceSexPanel->setOnCommit([this]() {
                 if (playerController && playerController->getPlayer()) {
                     Player* player = playerController->getPlayer().get();
-                    // §10.2/§10.4: apply the race only when it changed (the
-                    // original's 0x51C090 no-op guard), then the name.
-                    //
-                    // V-664: the race application reverts to the chargen base and
-                    // applies the race's skill bonuses and racial spells through
-                    // NpcManager (Player is not an NPC, so the NPC path
-                    // initializePlayerFromESM cannot be used). Attribute bonuses
-                    // (ATTR) and health are not wired yet (V-664-2/V-664-3).
-                    if (raceSexPanel->raceChanged()) {
-                        player->raceFormID = raceSexPanel->selectedRaceFormID();
-                        if (npcManager) {
-                            npcManager->applyRaceToPlayer(*player, player->raceFormID);
-                        }
-                    }
-                    if (!raceSexPanel->playerName().empty()) {
-                        player->name = raceSexPanel->playerName();
-                    }
+                    // §10.2/§10.4: the race/name application lives in
+                    // chargen::commit() so the host newgame smoke drives the
+                    // exact same code (a copied commit could pass the smoke
+                    // while this path regressed).
+                    chargen::CommitInput in;
+                    in.raceChanged = raceSexPanel->raceChanged();
+                    in.raceFormID = raceSexPanel->selectedRaceFormID();
+                    in.name = raceSexPanel->playerName();
+                    chargen::commit(npcManager.get(), *player, in);
                 }
                 setChargenUi(ChargenUi::None);
             });

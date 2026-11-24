@@ -220,6 +220,7 @@ SOURCES=(
   app/src/main/cpp/game/npc.cpp
   app/src/main/cpp/game/npc_manager.cpp
   app/src/main/cpp/game/player.cpp
+  app/src/main/cpp/game/chargen_commit.cpp
   app/src/main/cpp/game/player_controller.cpp
   app/src/main/cpp/game/spell_manager.cpp
   app/src/main/cpp/game/navmesh_manager.cpp
@@ -283,6 +284,13 @@ SOURCES=(
   app/src/main/cpp/system/oblivion_ini.cpp
   app/src/main/cpp/system/oblivion_ini_defaults.cpp
 )
+
+# Other host tools (run_smoke.sh) reuse this file's build environment
+# (RUST_LIB_DIR, INCLUDES, DEFINES, SOURCES, RUST_LIBS) without building or
+# running the test binary: source it with HOST_TESTS_SOURCE_ONLY=1.
+if [ "${HOST_TESTS_SOURCE_ONLY:-0}" = "1" ]; then
+  return 0
+fi
 
 echo "::group::Build host tests"
 # Rust archives must follow the objects that reference them (link order).
