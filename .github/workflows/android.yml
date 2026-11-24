@@ -191,7 +191,7 @@ jobs:
     name: Default path smoke (headless emulator)
     needs: build
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 25
     # 45 分かかる headless スモーク。golden 投入までは push ごとに走らせない
     # （workflow_dispatch / pull_request のみ）。blocking に戻すときにこの if: を外す（V688）。
     if: github.event_name != 'push'
@@ -226,17 +226,20 @@ jobs:
         shell: bash
         run: python3 -m pip install --break-system-packages --quiet --disable-pip-version-check pillow numpy
 
-      # macOS arm64 (M1) は native 加速が使える。ubuntu は KVM 無しで emulator が
-      # 起動できなかった（V688a）。x86_64 AVD は macOS では結局エミュレーションに
-      # なるため arm64-v8a を使う（APK は arm64-v8a を含む）。
+      # hypervisor 無し（ubuntu=KVM 無し / macOS=HVF 無し）でも TCG なら動き得る。
+      # arm64 guest を arm64 host で TCG するので ISA 変換は無く、x86 相互変換より
+      # 遅くない見込み。-accel off ＋ ANDROID_I_WANT_MY_TCG=yes で強制（V688a）。
       - name: Emulator smoke test (default path)
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: yes
         with:
           api-level: 34
           arch: arm64-v8a
           target: google_apis
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim
+          emulator-options: -no-window -no-audio -no-boot-anim -accel off -no-snapshot
+          emulator-boot-timeout: 900
           script: |
             bash docs/smoke-tests/newgame.sh dist/app-debug.apk
 
