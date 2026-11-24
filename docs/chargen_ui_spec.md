@@ -255,6 +255,8 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-664-2 | RACE **`ATTR`（16B）** のレイアウト未確定。8 属性ぶんの値（30-50）を含むと見られるが、8×int16 で各値が同バイト重複に見え 2 スロットだけ相違。port の `RaceData.attr*` は**宣言のみ・未 populate**（`decodeRace` 未実装） | `[未確定]` |
 | V-664-3 | RACE に **starting-health フィールドが無い**（`RaceData.startingHealth` は幻）。プレイヤー HP の導出元（Endurance 由来か）と **真の base 値（属性 30 か 40 か）** は未計測 | `[未確定]` |
 
+**RE 待ち（ai-todo #179 に集約）**: `V-664-2`（RACE `ATTR` 16B レイアウト）／`V-664-3`（HP 導出元・真の base 30 or 40）／morph・mesh 適用（`V-654-4` の残）。これらが揃うまで race 適用は **skill bonus＋spell に留まる**（§10.8）。
+
 ### V-649-1 の根拠（`[確定(命令)(negative)]`）
 
 | 関数 | prologue の `[esp+NN]` 読 | 判定 |
