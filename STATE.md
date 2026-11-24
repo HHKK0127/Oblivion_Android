@@ -4726,3 +4726,15 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **特記**: chargen の実機スクショは前セッションで保存されておらず、§3.1 の視覚主張は `STATE.md` 記録のみが根拠（評価者に明記）。ローディングのスクショは `%TEMP%\opencode\loadcanon\L02.png`・`bar_zoom.png`。
 - **フォント正典の再確認**: `docs/RE_FONT_REPORT.md` の `[Fonts]` は `SFontFile_1=Kingthings_Regular.fnt`（＝XML `<font>1</font>` と一致。port の `xmlFontToFontType` case1→KingthingsRegular は正しい）。`.fnt` ヘッダ size は Kingthings_Regular=28.0 / Shadowed=35.0 / Daedric=55.0 / Handwritten=57.0 / Tahoma_Bold_Small=22.0 `[データ]`。
 
+## 2026-11-24 (mx) — V688a 代替（A 案）step1-2: host newgame smoke と commit 共有化（master・push 済み）
+
+- **後始末**: `android.yml` の smoke ジョブを `ubuntu-latest` へ戻し TCG 設定を撤去（commit `8a40efd2`）。`continue-on-error` と `if: github.event_name != 'push'` は維持。
+- **背景**: V688a（hosted runner に hypervisor 無し）の代替として emulator を捨て、host レベルの smoke を採る（A 案）。golden は CI 採取。
+- **step1（フィクスチャ）**: `tools/host_tests/make_fixture_esm.py` が `docs/evidence/fixtures/minimal.esm`（578B）を決定論的に生成。TES4 ヘッダ＋`RACE`(TestRaceA/B/非playable C)＋`CLAS`＋`BSGN`。**2 回実行で同一 SHA256 `9063A534…C115AC`**。RACE DATA は v664 実測の 36B（7×(AV,bonus)＋2予約＋4float＋u32 flags, bit0=playable）。`.gitignore` の `*.esm` に例外 `!docs/evidence/fixtures/*.esm` を追加（合成物・Bethesda データ非含有）。
+- **step2（host ツール）**: `tools/host_tests/newgame_smoke.cpp`。フィクスチャ読込 → `RaceSexPanel` 構築（`init()`→`setSeed(12345)`→playable 種族→`doRandom()`）→ `chargen::commit()` → JSON を stdout。`run_smoke.sh` は `run_host_tests.sh` のビルド環境を `HOST_TESTS_SOURCE_ONLY=1` で再利用し main だけ差し替える。
+- **commit 共有化（ユーザ指摘反映）**: `game/chargen_commit.{h,cpp}` を新設。`Renderer::setChargenUi` の onCommit と smoke が**同一の `chargen::commit()`** を呼ぶ（コピー実装だと renderer 側の退行を smoke が見逃す）。V-664 のコメントも移設。`npcManager` は `unique_ptr` のため `.get()` で渡す。
+- **JSON 出力項目**: `name`/`raceFormID`/`raceName`/`raceChanged`/`raceApplied`/`pageCount`/`itemCount`（panel 実値の合計）/属性8/スキル21/`spells`（ソート）/`sliders`90（固定 seed の doRandom 結果）。固定キー順・`%.6f`。
+- **ビルド結果（重要・triple 差）**: 手元 Windows では host 書庫が **MSVC 成果物（`*.dll/*.lib/*.pdb`）**になり、host runner が要求する **`lib*.a` が出ない**。gnu ツールチェーンは `rustup` 上は導入済み（`stable-x86_64-pc-windows-gnu`）だが、PATH 前方の `/c/Program Files/Rust stable MSVC 1.100/bin` と scoop shim が優先し、gnu cargo を直接叩いても `.a` が生成されなかった。→ **手元実行は不可**。CI（ubuntu / linux-gnu）は host-tests ジョブで `.a` を生成済みなので、**golden は CI で採取**する（浮動小数・triple 差のため）。smoke と `chargen_commit.cpp` は `g++ -fsyntax-only` で SYNTAX_OK。
+- **commit**: `f9f5f506`（push 済み）。他レーンと思われる未コミット4件（`docs/claims.md`/`docs/evidence/README.md`/`docs/reviews/2026-11-23-handoff.md`/`scripts/compare_golden.py`）と未追跡 `docs/evidence/golden/newgame-no-esm-prefix.json` は**触らず温存**。
+- **次**: step5 の CI ジョブ `smoke-host`（ubuntu・Rust 書庫ビルド→`run_smoke.sh`→golden 比較）を追加し、初回緑後に golden を採取（step4）。V688b の対象を host smoke の golden に張り替え。
+
