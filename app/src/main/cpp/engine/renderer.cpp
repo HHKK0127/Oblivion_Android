@@ -8943,6 +8943,14 @@ void Renderer::setChargenUi(ChargenUi ui) {
             // make_shared（make_unique ではない）: instantiate() が addChild を通じて
             // shared_from_this() を使うため。実機クラッシュの修正（ai-todo #178）。
             raceSexPanel = std::make_shared<RaceSexPanel>();
+            // UIComponent::render() early-returns while `initialized` is false
+            // (ui_component.cpp:35), so the panel must be initialized before use —
+            // every other UI does this (title_screen.cpp:200, launcher_screen.cpp:89).
+            // It is called here and not inside init() because the host suite calls
+            // init() many times and UIComponent::initialize() touches GL.
+            // 実機確認は人間ゲート（本 commit 時点で未実施。2026-11-23 の
+            // tombstone_24 由来の修正。ai-todo #178）。
+            raceSexPanel->initialize();
             raceSexPanel->init();
             // spec §10.3: Done(Main) validates the name, then either notifies
             // (bad name) or asks for confirmation. Yes applies the state and

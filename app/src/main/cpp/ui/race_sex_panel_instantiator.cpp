@@ -76,6 +76,11 @@ void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
         }
         e.widget = widget;
         if (widget) {
+            // Every UIComponent starts with initialized == false and
+            // UIComponent::render() early-returns in that state, so widgets must be
+            // initialized explicitly (title_screen.cpp:222 / launcher_screen.cpp:111
+            // do the same for their buttons).
+            widget->initialize();
             addChild(widget);
         }
     }
@@ -87,12 +92,14 @@ void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
         auto done = std::make_shared<UIButton>("RaceDone");
         done->setLabel("Done");
         done->setTextRenderer(text_renderer);
+        done->initialize();
         done_widget_ = done;
         addChild(done_widget_);
     }
     if (!scroll_bar_widget_) {
         auto bar = std::make_shared<UIComponent>("RaceScrollBar");
         bar->setBackgroundColor(glm::vec4(0.55f, 0.55f, 0.60f, 0.6f));
+        bar->initialize();
         scroll_bar_widget_ = bar;
         addChild(scroll_bar_widget_);
     }
@@ -102,6 +109,7 @@ void RaceSexPanel::instantiate(TextRenderer* text_renderer) {
         auto label =
             std::make_shared<oblivion::ui::MenuTextComponent>("RaceName", text_renderer);
         label->setJustify("center");
+        label->initialize();
         name_widget_ = label;
         addChild(name_widget_);
     }

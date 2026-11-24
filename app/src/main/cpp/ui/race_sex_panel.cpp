@@ -34,6 +34,12 @@ int RaceSexPanel::add_element(int page_slot, ElemType type, const std::string& l
 }
 
 bool RaceSexPanel::init() {
+    // NOTE: do not call initialize() here. UIComponent::initialize() runs
+    // UIDrawHelper::initialize() (GL) and the host suite calls init() many times
+    // (race_sex_panel_tests.cpp:119 and others), so the GL side belongs to the
+    // device-only path. The renderer calls initialize() before init() in
+    // setChargenUi().
+
     // spec §3: clear the 21 pane slots and the id table on open. The original's
     // Init only clears +0x94; clearing +0x40 too is the safe-side deviation the
     // spec requires.
