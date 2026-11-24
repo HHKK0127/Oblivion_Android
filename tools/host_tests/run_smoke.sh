@@ -21,34 +21,18 @@ HOST_TESTS_SOURCE_ONLY=1 source tools/host_tests/run_host_tests.sh
 BIN="${TMPDIR:-/tmp}/host_tests/newgame_smoke"
 mkdir -p "$(dirname "$BIN")"
 
-# Only what the commit path needs: Player + NpcManager::applyRaceToPlayer over
-# the ESM reader, with the same host stubs the unit-test binary uses. Unused
-# functions are dropped by -ffunction-sections/--gc-sections at link time.
-SMOKE_SOURCES=(
-  tools/host_tests/newgame_smoke.cpp
-  tools/host_tests/host_stub_syms.cpp
-  tools/host_tests/host_gl_stubs.cpp
-  tools/host_tests/host_physics_stubs.cpp
-  app/src/main/cpp/game/npc_manager.cpp
-  app/src/main/cpp/game/npc.cpp
-  app/src/main/cpp/game/player.cpp
-  app/src/main/cpp/game/chargen_commit.cpp
-  app/src/main/cpp/game/spell_manager.cpp
-  app/src/main/cpp/assets/esm_reader.cpp
-  app/src/main/cpp/assets/asset_manager.cpp
-  app/src/main/cpp/assets/asset_path_resolver.cpp
-  app/src/main/cpp/character/face_gen_morpher.cpp
-  app/src/main/cpp/character/face_gen_cache.cpp
-  # RaceSexPanel (page/item totals + the Random body), with the same UI/GL
-  # stubs the unit-test binary links.
-  app/src/main/cpp/ui/race_sex_panel.cpp
-  app/src/main/cpp/ui/ui_panel.cpp
-  app/src/main/cpp/ui/ui_component.cpp
-  app/src/main/cpp/ui/ui_draw_helper.cpp
-  app/src/main/cpp/ui/ui_slider.cpp
-  app/src/main/cpp/ui/ui_toggle.cpp
-  app/src/main/cpp/engine/texture_loader.cpp
-)
+# Reuse the unit-test binary's full source set (every dependency already links
+# there), swapping the test runner main for the smoke main. This avoids a
+# hand-curated list drifting out of sync with the ESM/quest/formid TUs that
+# esm_reader.cpp pulls in.
+SMOKE_SOURCES=()
+for _src in "${SOURCES[@]}"; do
+  case "$_src" in
+    tools/host_tests/host_runner_main.cpp) continue ;;
+  esac
+  SMOKE_SOURCES+=("$_src")
+done
+SMOKE_SOURCES+=(tools/host_tests/newgame_smoke.cpp)
 
 # Progress/build messages go to stderr so stdout is exactly the smoke JSON
 # (the CI job redirects stdout to out.json and compares it).

@@ -285,13 +285,6 @@ SOURCES=(
   app/src/main/cpp/system/oblivion_ini_defaults.cpp
 )
 
-# Other host tools (run_smoke.sh) reuse this file's build environment
-# (RUST_LIB_DIR, INCLUDES, DEFINES, SOURCES, RUST_LIBS) without building or
-# running the test binary: source it with HOST_TESTS_SOURCE_ONLY=1.
-if [ "${HOST_TESTS_SOURCE_ONLY:-0}" = "1" ]; then
-  return 0
-fi
-
 echo "::group::Build host tests"
 # Rust archives must follow the objects that reference them (link order).
 # Rust's std drags in winsock/ntdll/userenv symbols on a MinGW host only, so
@@ -318,6 +311,15 @@ case "$(uname -s)" in
     EXTRA_LIBS=(-lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32)
     ;;
 esac
+# Other host tools (run_smoke.sh) reuse this file's build environment
+# (RUST_LIB_DIR, INCLUDES, DEFINES, SOURCES, RUST_LIBS, EXTRA_LIBS) without
+# building or running the test binary: source it with HOST_TESTS_SOURCE_ONLY=1.
+# The guard sits here, after every array is populated, so a sourced caller sees
+# RUST_LIBS/EXTRA_LIBS too.
+if [ "${HOST_TESTS_SOURCE_ONLY:-0}" = "1" ]; then
+  return 0
+fi
+
 g++ -std=c++17 -O0 -ffunction-sections -fdata-sections \
     "${DEFINES[@]}" "${INCLUDES[@]}" "${SOURCES[@]}" \
     "${RUST_LIBS[@]}" ${EXTRA_LIBS[@]+"${EXTRA_LIBS[@]}"} \
