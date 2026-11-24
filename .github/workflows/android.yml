@@ -157,13 +157,12 @@ jobs:
   # V688a の代替（A 案）: エミュレータを捨て、host レベルの newgame smoke を
   # 固定フィクスチャ ESM（docs/evidence/fixtures/minimal.esm）で回す。
   # 決定性は同一ジョブ内の 2 回実行 diff で証明し、golden は CI（linux-gnu）で
-  # 採取する（手元 Windows の MSVC 産は混ぜない）。golden 投入までは warn-only。
+  # 採取する（手元 Windows の MSVC 産は混ぜない）。golden は採取済み
+  # （docs/evidence/golden/newgame-no-esm.json）なので blocking。
   smoke-host:
     name: New game host smoke (fixture ESM)
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # TODO: golden (docs/evidence/golden/newgame-no-esm.json) を採取したら外す。
-    continue-on-error: true
 
     steps:
       - name: Checkout

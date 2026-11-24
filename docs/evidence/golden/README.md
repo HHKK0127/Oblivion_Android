@@ -31,7 +31,9 @@ JSON で出す（V688a の代替・A 案）。`scripts/compare_golden.py` は候
   ジョブで 2 回実行し `diff` で一致を確認してから比較する。
 - **golden は CI（ubuntu / linux-gnu）産のみ**。手元 Windows の MSVC 産は混ぜない
   （triple 差で浮動小数がずれ得る）。
-- **採取**: `bash tools/host_tests/run_smoke.sh > out.json` →
+- **採取（CI linux-gnu 産）**: `bash tools/host_tests/run_smoke.sh > out.json` →
   `python scripts/compare_golden.py out.json --update --golden docs/evidence/golden/newgame-no-esm.json`。
-- **初回は現状の挙動（既知の未実装・バグを含む）を固定する**。採取後に `smoke-host`
-  ジョブの `continue-on-error` を外して blocking にする。
+- **採取済み**: 初回緑（run `45339668361` / commit `e245f9db`）の artifact
+  `newgame-smoke-json` をそのまま固定した。**現状の挙動（既知の未実装・バグを含む）
+  を固定するピンであり、正解基準ではない**。`smoke-host` ジョブは blocking
+  （`continue-on-error` なし）。再採取は意図した変更のときだけ `--update` してレビューする。
