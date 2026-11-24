@@ -246,19 +246,23 @@ jobs:
       - name: Check unmerged branch count
         run: python3 scripts/check_wip_limit.py --base origin/master --limit 3 --overlap
 
-  # 既定経路の実機検証。build が作った APK を headless エミュレータで起動し、
+  # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較
   # （scripts/compare_golden.py）を通す。2026-11 の停滞の主因は「既定経路の
   # 実機検証が 0」だったので、これを完了条件に含める。
+  #
+  # V688a park: hosted runner に hypervisor が無く emulator が起動しない
+  # （ubuntu=KVM 無し / macOS arm64=HVF 無し / TCG=adb に登録されず）。
+  # 代替は host smoke（smoke-host ジョブ・A 案）で、そちらが blocking。
+  # このジョブは self-hosted runner（KVM/HVF あり）が用意できたら再開するため残す。
   smoke:
     name: Default path smoke (headless emulator)
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # 45 分かかる headless スモーク。golden 投入までは push ごとに走らせない
-    # （workflow_dispatch / pull_request のみ）。blocking に戻すときにこの if: を外す（V688）。
+    # 45 分かかる headless スモーク。emulator が runner で起動しない間は push ごとに
+    # 走らせない（workflow_dispatch / pull_request のみ）＋ warn-only。
     if: github.event_name != 'push'
-    # TODO: remove once docs/evidence/golden/newgame-no-esm.json is committed (V688)
     continue-on-error: true
 
     steps:

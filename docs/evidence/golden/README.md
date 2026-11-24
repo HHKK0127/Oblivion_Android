@@ -12,12 +12,15 @@ python scripts/compare_golden.py artifacts/smoke-newgame.png --update
 
 ## 現状（V688）
 
-`newgame-no-esm.json` は**未採取**。それまでは Android CI の `smoke` ジョブが
-`continue-on-error: true`（warn-only）かつ `if: github.event_name != 'push'`
-（workflow_dispatch / pull_request のみ）で走る（golden 不在だと
-`compare_golden.py --require` が exit 1 になるため）。golden をコミットしたら
-`android.yml` の `smoke` ジョブから `continue-on-error` と `if:` を外し、blocking に
-戻す（`--require` は**外さない**: 外すと golden を入れても落ちなくなる）。
+**エミュレータの PNG ゴールデン（`compare_golden.py` の既定 `newgame-no-esm-prefix.json`）は
+未採取のまま**。V688a park（hosted runner に hypervisor 無し）で emulator が起動しないため、
+Android CI の `smoke` ジョブは `continue-on-error: true`（warn-only）かつ
+`if: github.event_name != 'push'`（workflow_dispatch / pull_request のみ）で残す。self-hosted
+runner（KVM/HVF あり）が用意できたら採取して blocking に戻す（`--require` は**外さない**:
+外すと golden を入れても落ちなくなる）。
+
+**既定経路の blocking ゲートは host smoke の JSON ゴールデン（`newgame-no-esm.json`）が担う**
+（次節。採取済み）。
 
 ## ホスト smoke の JSON ゴールデン（`newgame-no-esm.json`）
 
@@ -37,3 +40,24 @@ JSON で出す（V688a の代替・A 案）。`scripts/compare_golden.py` は候
   `newgame-smoke-json` をそのまま固定した。**現状の挙動（既知の未実装・バグを含む）
   を固定するピンであり、正解基準ではない**。`smoke-host` ジョブは blocking
   （`continue-on-error` なし）。再採取は意図した変更のときだけ `--update` してレビューする。
+
+### 更新手順（blocking 後）
+
+`smoke-host` が赤くなったら、**まず想定内の変化か**を確認する。想定外ならコードを直す。
+想定内（意図した変更）のときだけ golden を差し替える。
+
+1. **意図した変更だと確認する**: 失敗ログの `compare_golden` 差分（`$.*` の一覧）を読み、
+   どのフィールドがなぜ変わったかを説明できること。説明できない差分は想定外 → コードを直す。
+2. **artifact を取得する**: その run の `newgame-smoke-json` を落とす。
+   `gh run download <run-id> -n newgame-smoke-json -D /tmp/smoke`
+3. **golden を差し替える**:
+   `cp /tmp/smoke/out1.json docs/evidence/golden/newgame-no-esm.json`
+   （または `python scripts/compare_golden.py /tmp/smoke/out1.json --update
+   --golden docs/evidence/golden/newgame-no-esm.json`）。
+4. **golden 更新だけのコミットに分ける**（コード変更と混ぜない）。メッセージに、どの
+   変更でなぜ差分が出たかを書く。
+5. **差分を目視**して「想定外の変化が無い」ことを確認する。チェック項目:
+   - `sliders` が **90 個**のままか（数が変われば要素の追加/削除）。
+   - `attributes`(8) / `skills`(21) / `spells` の変化が、その変更で説明できるか。
+   - `pageCount`=21 / `itemCount`=118 が意図せず動いていないか。
+   - 数値が `%.6f` 形式のままか（桁が増えていれば出力側の変更）。

@@ -4738,3 +4738,12 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **commit**: `f9f5f506`（push 済み）。他レーンと思われる未コミット4件（`docs/claims.md`/`docs/evidence/README.md`/`docs/reviews/2026-11-23-handoff.md`/`scripts/compare_golden.py`）と未追跡 `docs/evidence/golden/newgame-no-esm-prefix.json` は**触らず温存**。
 - **次**: step5 の CI ジョブ `smoke-host`（ubuntu・Rust 書庫ビルド→`run_smoke.sh`→golden 比較）を追加し、初回緑後に golden を採取（step4）。V688b の対象を host smoke の golden に張り替え。
 
+## 2026-11-24 (my) — V688a 代替（A 案）step3-5: host smoke を blocking 化・golden 採取・V688a/b 更新
+
+- **step5（CI ジョブ）**: `.github/workflows/android.yml` に `smoke-host`（ubuntu・`needs` なし＝push で実行・`Swatinem/rust-cache`・Rust 書庫ビルド→`run_smoke.sh` 2 回実行 `diff`→artifact `newgame-smoke-json`→`compare_golden --require`）。`scripts/compare_golden.py` に JSON 完全一致モード（候補が `.json` のとき）。
+- **初回実行で見つけた不具合 4 件と修正**: ①Android `CMakeLists.txt` に `game/chargen_commit.cpp` 未追加（`undefined symbol: chargen::commit`）→追加。②`HOST_TESTS_SOURCE_ONLY` ガードを `RUST_LIBS` 定義**前**に置いたため Rust 書庫が渡らず `undefined esm_*` →ガードを `g++` 直前へ移動＋`SMOKE_SOURCES` を host テストの全 SOURCES に。③`tools/host_tests/stubs/android/log.h` が stdout 出力で `out.json` に `[ESMReader]` ログ混入 →**stderr へ**。④`run_host_tests.sh` の `::group::` が source 時に stdout へ 1 行漏れ →**stderr へ**。**stdout = 純 JSON を構造的に保証**（抑制ではなく出力先の修正）。
+- **step3（golden 採取）**: 初回緑 run `45339668361`（`e245f9db`）の artifact `newgame-smoke-json` を `docs/evidence/golden/newgame-no-esm.json` としてコミット（CI linux-gnu 産・純 JSON・固定キー順・`%.6f`・sliders 90・spells ソート）。**現状挙動のピン（正解基準ではない）**。`smoke-host` の `continue-on-error` を除去し blocking 化。
+- **blocking 後の緑確認**: run `45341704577`（`1b191371`）で `smoke-host` の `Compare against the golden` が ✓（`compare_golden --require` 緑）。`build`/`host-tests` も ✓。`smoke-host` には `if:` を付けていない＝push で実行。
+- **台帳更新**: `tmp/re/TODO_re49.md` row665 を **V688a = superseded by host smoke**／**V688b = close** に更新、row666（**V689**）を追加（host smoke A 案・golden 採取）。row665 は emulator ログ引用の `|` が 3 個あり **pipes=10 で round_verify FAIL（HEAD 時点で既存の不整合）**だったため全角 `｜` へ正規化（pipes=7）。`round_verify --allow-row-delta` **ALL OK（rows 31..666 / total 552 / done 545 / open 7）**。`TOTAL_BASELINE` 551→552 は別コミット。
+- **docs**: `docs/evidence/golden/README.md` に**更新手順**（想定内確認→artifact 取得→golden だけのコミット→差分目視のチェック項目）と現状更新。`docs/CI_PORT_FROM_BYROREDUX.md §4.4` を解決済みに。emulator `smoke` ジョブは self-hosted runner 用に残置。
+
