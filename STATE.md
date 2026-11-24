@@ -8,6 +8,7 @@
 - **`Player::applyRace(RaceBonus)`**: ①base へ revert ②skill bonus（AV→skill は `Player::skillAvBindings()` の 1 表）③SPLO の spell 付与（前 race の spell は除去）。renderer は `raceChanged()` のときだけ `NpcManager::applyRaceToPlayer` を呼ぶ。
 - **検証**: host `-NoAsan` ALL GREEN、`RaceSexPanelTests` **87/87**（新規 5 件）。`syntax_check_ui.sh` に `ui_character_creation.cpp` を追加し 6 TU OK（`world_data.h` に `<cfloat>` 追加）。
 - **残**: `V-664-2`（ATTR レイアウト）／`V-664-3`（health 導出元・真の base）＝ai-todo **#179** で RE 起票。morph/mesh は未適用。`V-654-4` は「skill/spell 実装済み・attr/health/mesh 未」に分割更新。
+- **運用**: `.github/workflows/*` を触る push は OAuth の `workflow` スコープ不足で **HTTPS 不可**（`refusing to allow an OAuth App to create or update workflow ... without 'workflow' scope`）。**`gh auth refresh -s workflow` が人間タスク**。応急は SSH（`git push git@github.com:HHKK0127/Oblivion_Android.git master`）。workflow を触るたびに SSH を強いられる状態は継続中。
 - **chargen lane 実装完了（RE 待ち 3 件を除く）**: `V-664-2`（ATTR）／`V-664-3`（health・真の base）／morph・mesh（`V-654-4` の残）は **RE 待ち（ai-todo #179）**。**Legacy の chargen base は 50/15/100/50/100 → 40/10/100/100/100 に変わった**（`Player` 既定が唯一の真実。50/15 前提の host テストは 0 件）。**既定 `Panel` は依然実験的**（実機未確認・morph 未適用）。
 
 ## 2026-11-23 — chargen Random/Reset port 実装（Face 227/228・台帳 row662・spec §10.7）
