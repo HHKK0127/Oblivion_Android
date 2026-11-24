@@ -190,8 +190,8 @@ jobs:
   smoke:
     name: Default path smoke (headless emulator)
     needs: build
-    runs-on: macos-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     # 45 分かかる headless スモーク。golden 投入までは push ごとに走らせない
     # （workflow_dispatch / pull_request のみ）。blocking に戻すときにこの if: を外す（V688）。
     if: github.event_name != 'push'
@@ -226,20 +226,15 @@ jobs:
         shell: bash
         run: python3 -m pip install --break-system-packages --quiet --disable-pip-version-check pillow numpy
 
-      # hypervisor 無し（ubuntu=KVM 無し / macOS=HVF 無し）でも TCG なら動き得る。
-      # arm64 guest を arm64 host で TCG するので ISA 変換は無く、x86 相互変換より
-      # 遅くない見込み。-accel off ＋ ANDROID_I_WANT_MY_TCG=yes で強制（V688a）。
+      # V688a park: hypervisor 不在（ubuntu=KVM 無し / macOS arm64=HVF 無し / TCG=adb に登録されず）。
+      # emulator は hosted runner では動かない。代替は host smoke（smoke-host ジョブ、A 案）。
       - name: Emulator smoke test (default path)
         uses: reactivecircus/android-emulator-runner@v2
-        env:
-          ANDROID_I_WANT_MY_TCG: yes
         with:
           api-level: 34
-          arch: arm64-v8a
-          target: google_apis
+          arch: x86_64
           disable-animations: true
-          emulator-options: -no-window -no-audio -no-boot-anim -accel off -no-snapshot
-          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           script: |
             bash docs/smoke-tests/newgame.sh dist/app-debug.apk
 
