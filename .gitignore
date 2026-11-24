@@ -39,6 +39,9 @@ app/src/main/assets/textures/ui/tes_oblivion_logo_final.png
 app/src/main/assets/textures/ui/dialog_selection_cut.png
 app/src/main/assets/textures/ui/dialog_selection_full.png
 app/src/main/assets/textures/ui/oblivion_crest.png
+app/src/main/assets/textures/ui/stat_skill_level_ribbon_empty.png
+app/src/main/assets/textures/ui/stat_skill_level_ribbon_full.png
+app/src/main/assets/textures/ui/stat_skill_level_ribbon_slider.png
 
 # Debug screenshots and XML dumps (root directory)
 /*.png
