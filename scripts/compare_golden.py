@@ -96,7 +96,11 @@ def compare_json(args):
     if not os.path.exists(args.candidate):
         print("::error::候補 JSON がありません: %s" % args.candidate)
         return 2
-    cand = load_json(args.candidate)
+    try:
+        cand = load_json(args.candidate)
+    except (json.JSONDecodeError, ValueError) as e:
+        print("::error::候補 JSON を解析できません（%s）: %s" % (args.candidate, e))
+        return 2
     if args.update:
         os.makedirs(os.path.dirname(args.golden) or ".", exist_ok=True)
         with open(args.golden, "w", encoding="utf-8") as fh:

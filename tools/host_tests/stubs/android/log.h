@@ -1,5 +1,7 @@
 #pragma once
 // Host-side stub: emulates the NDK android/log.h API for desktop CI builds.
+// Logs go to stderr so a host tool's stdout is its real output only (e.g. the
+// newgame smoke's JSON, which CI redirects to out.json).
 #include <cstdio>
 #include <cstdarg>
 #define ANDROID_LOG_INFO 4
@@ -10,15 +12,15 @@ static inline int __android_log_print(int prio, const char* tag, const char* fmt
     (void)prio;
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stdout, "[%s] ", tag);
-    vfprintf(stdout, fmt, ap);
-    fprintf(stdout, "\n");
+    fprintf(stderr, "[%s] ", tag);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
     va_end(ap);
     return 0;
 }
 static inline int __android_log_write(int prio, const char* tag, const char* msg) {
     (void)prio;
-    std::fprintf(stdout, "[%s] %s\n", tag, msg);
+    std::fprintf(stderr, "[%s] %s\n", tag, msg);
     return 0;
 }
 typedef enum { ANDROID_LOG_UNKNOWN=0 } android_LogPriority;
