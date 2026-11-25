@@ -4246,6 +4246,24 @@ void Renderer::ensureScenarioBuilt() {
         // Fall back to hardcoded test (existing code below)
     }
 
+    // The hardcoded demo scenario below (Izar/Hellas, their quests and spells) is
+    // a fallback for when no ESM data is available. It used to run
+    // unconditionally, so a late ESM load (empty data dir -> retry succeeds ->
+    // the world is rebuilt) created Izar/Hellas and the two quests a second
+    // time: clearAllCells() only drops cells, not actors or quests. With real
+    // ESM data the world above already has its actors, so skip the fallback and
+    // just report what loaded (#161).
+    if (hasEsmData) {
+        npcMgr->logNpcStatus();
+        questManager->logQuestStatus();
+        combatManager->logCombatStatus();
+        if (spellManager) {
+            spellManager->logSpellStatus();
+        }
+        return;
+    }
+    LOGI("createTestScenario: fallback NPCs/quests created");
+
     // Declare spell variables at function scope so they're available for spell casting
     uint32_t fireball = 0;
     uint32_t heal = 0;
@@ -4309,89 +4327,45 @@ void Renderer::ensureScenarioBuilt() {
         LOGI("Test quests created: Quest1=%u from Izar, Quest2=%u from Hellas",
              quest1, quest2);
 
-        // Create test spells
+        // Create test spells (fallback: hardcoded, because there is no ESM data)
         if (spellManager) {
-            if (hasEsmData) {
-                // ESM mode: pick the first Destruction, Restoration and Mysticism spell
-                const auto& spells = esmMgr.getAllSpells();
-                for (const auto& s : spells) {
-                    uint32_t spellId = s.formID;
-                    if (spellId == 0 || s.effectFormIDs.empty()) continue;
-
-                    // school: 0=Alteration, 1=Conjuration, 2=Destruction,
-                    //         3=Illusion, 4=Mysticism, 5=Restoration
-                    // Assign first Destruction spell to Izar (monster)
-                    if (s.school == 2 && fireball == 0) {
-                        fireball = spellId;
-                        spellManager->teachSpellToNpc(izar->npcId, spellId);
-                        spellManager->equipSpellToNpc(izar->npcId, spellId);
-                        LOGI("  ESM Destruction spell for Izar: 0x%08X '%s'", spellId, s.fullName.c_str());
-                    }
-
-                    // Assign first Restoration spell to Hellas (healer)
-                    if (s.school == 5 && heal == 0) {
-                        heal = spellId;
-                        spellManager->teachSpellToNpc(hellas->npcId, spellId);
-                        spellManager->equipSpellToNpc(hellas->npcId, spellId);
-                        LOGI("  ESM Restoration spell for Hellas: 0x%08X '%s'", spellId, s.fullName.c_str());
-                    }
-
-                    // Assign first Mysticism spell to both
-                    if (s.school == 4 && restoreMana == 0) {
-                        restoreMana = spellId;
-                        spellManager->teachSpellToNpc(izar->npcId, spellId);
-                        spellManager->equipSpellToNpc(izar->npcId, spellId);
-                        LOGI("  ESM Mysticism spell for both: 0x%08X '%s'", spellId, s.fullName.c_str());
-                    }
-
-                    // Also teach the Restoration spell to Izar so he can heal too
-                    if (heal != 0 && spellId == heal && izar) {
-                        spellManager->teachSpellToNpc(izar->npcId, heal);
-                        spellManager->equipSpellToNpc(izar->npcId, heal);
-                    }
-                }
-                LOGI("ESM spells assigned: fireball=0x%08X, heal=0x%08X, restoreMana=0x%08X",
-                     fireball, heal, restoreMana);
-            } else {
-                // No ESM: use hardcoded spells
-                // Destruction magic: Fireball
-                fireball = spellManager->createSpell(
-                    "Fireball", "Fireball",
-                    MagicSchool::DESTRUCTION, 50.0f, 30.0f);
-                if (fireball != 0) {
-                    spellManager->addEffectToSpell(fireball,
-                        SpellEffect(SpellEffectType::DAMAGE, 30.0f, 0.0f));
-                    spellManager->teachSpellToNpc(izar->npcId, fireball);
-                    spellManager->equipSpellToNpc(izar->npcId, fireball);
-                }
-
-                // Restoration magic: Heal
-                heal = spellManager->createSpell(
-                    "Heal", "Heal",
-                    MagicSchool::RESTORATION, 40.0f, 0.0f);
-                if (heal != 0) {
-                    spellManager->addEffectToSpell(heal,
-                        SpellEffect(SpellEffectType::HEAL, 50.0f, 0.0f));
-                    spellManager->teachSpellToNpc(hellas->npcId, heal);
-                    spellManager->teachSpellToNpc(izar->npcId, heal);
-                    spellManager->equipSpellToNpc(hellas->npcId, heal);
-                    spellManager->equipSpellToNpc(izar->npcId, heal);
-                }
-
-                // Mysticism magic: Restore Mana
-                restoreMana = spellManager->createSpell(
-                    "Restore Mana", "Restore Mana",
-                    MagicSchool::MYSTICISM, 30.0f, 0.0f);
-                if (restoreMana != 0) {
-                    spellManager->addEffectToSpell(restoreMana,
-                        SpellEffect(SpellEffectType::RESTORE_MANA, 40.0f, 0.0f));
-                    spellManager->teachSpellToNpc(izar->npcId, restoreMana);
-                    spellManager->equipSpellToNpc(izar->npcId, restoreMana);
-                }
-
-                LOGI("Test spells created: Fireball=%u, Heal=%u, RestoreMana=%u",
-                     fireball, heal, restoreMana);
+            // Destruction magic: Fireball
+            fireball = spellManager->createSpell(
+                "Fireball", "Fireball",
+                MagicSchool::DESTRUCTION, 50.0f, 30.0f);
+            if (fireball != 0) {
+                spellManager->addEffectToSpell(fireball,
+                    SpellEffect(SpellEffectType::DAMAGE, 30.0f, 0.0f));
+                spellManager->teachSpellToNpc(izar->npcId, fireball);
+                spellManager->equipSpellToNpc(izar->npcId, fireball);
             }
+
+            // Restoration magic: Heal
+            heal = spellManager->createSpell(
+                "Heal", "Heal",
+                MagicSchool::RESTORATION, 40.0f, 0.0f);
+            if (heal != 0) {
+                spellManager->addEffectToSpell(heal,
+                    SpellEffect(SpellEffectType::HEAL, 50.0f, 0.0f));
+                spellManager->teachSpellToNpc(hellas->npcId, heal);
+                spellManager->teachSpellToNpc(izar->npcId, heal);
+                spellManager->equipSpellToNpc(hellas->npcId, heal);
+                spellManager->equipSpellToNpc(izar->npcId, heal);
+            }
+
+            // Mysticism magic: Restore Mana
+            restoreMana = spellManager->createSpell(
+                "Restore Mana", "Restore Mana",
+                MagicSchool::MYSTICISM, 30.0f, 0.0f);
+            if (restoreMana != 0) {
+                spellManager->addEffectToSpell(restoreMana,
+                    SpellEffect(SpellEffectType::RESTORE_MANA, 40.0f, 0.0f));
+                spellManager->teachSpellToNpc(izar->npcId, restoreMana);
+                spellManager->equipSpellToNpc(izar->npcId, restoreMana);
+            }
+
+            LOGI("Test spells created: Fireball=%u, Heal=%u, RestoreMana=%u",
+                 fireball, heal, restoreMana);
         }
 
         // Teach spells to the PLAYER directly (Player is not in NpcManager)
