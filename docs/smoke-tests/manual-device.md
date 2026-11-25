@@ -47,17 +47,19 @@ emulator smoke は V688a park（hosted runner に hypervisor 無し）のため�
 | 17 | **有効名**で Done | `an/a <名前>?` の確認（Yes/No） | | |
 | 18 | 確認で **Yes** | chargen が閉じ、ゲームへ（`setChargenUi(None)`）。名前が反映される | | |
 | 19 | タイトルへ復帰 | Back などでタイトルへ戻れる | | |
+| 20 | **Legacy 退避の実効性**: chargen 中に `chargenpanel` → **`Legacy`** chargen が落ちずに**名前欄が出る** → もう一度 `chargenpanel` で **`Panel`** へ戻る | `Legacy` がクラッシュせず名前欄を表示し、`Panel` に戻せる（**戻せないと「既定を `Legacy` に戻す」判定が空文化する**） | | |
 
 ## 記録（リリースごとに追記）
 
-| 日付 | 端末 / Android | ビルド hash | 実施者 | 結果 | smoke.log |
-|---|---|---|---|---|---|
-| | | | | | |
+| 日付 | 端末 / Android | ビルド hash | 実施者 | 結果 | 既定を戻したか | smoke.log |
+|---|---|---|---|---|---|---|
+| | | | | | | |
 
 - 端末機種 / Android バージョン:
 - ビルド hash（`git rev-parse HEAD`）:
 - APK サイズ:
 - 実施者 / 日時:
+- **既定を戻したか**: 未実施 / 戻した（`Legacy` へ戻したコミットの hash）。**判定で P が欠けた場合のみ**「戻した＋hash」を記入する。
 - `smoke.log`（添付 or 保存先）:
 
 ## 既知の制約（失敗ではない）
