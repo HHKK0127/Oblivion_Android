@@ -25,7 +25,7 @@ These rules are loaded by opencode before loop work.
 - 共有 `target/` への MSVC ツールチェーン混在（E0786）
 - ESM 必須マーカーだけに頼った配置判定
 - Panel レーンの関数への無断接触: `race_sex_panel*` / `ui_toggle*` / `chargen_commit*` の全体、および `engine/renderer.cpp` の chargen 系（`seedChargenRaces` / `setChargenUi` と chargen 用 draw）。
-- `engine/renderer.cpp` は共用ファイル。触る前に「どの関数か」を宣言する（#161 の実例: `createTestScenario`（未コミット）/ `loadBSAArchives` / `maybeRetryGameDataLoad` / `onGameDataLoaded` / `ensureScenarioBuilt` / `render` / `setChargenUi`）。
+- `engine/renderer.cpp` は共用ファイル。触る前に「どの関数か」を宣言する（#161 の実例: `createTestScenario` / `loadBSAArchives` / `maybeRetryGameDataLoad` / `onGameDataLoaded` / `ensureScenarioBuilt` / `render` / `setChargenUi`）。`precheck` は Panel 所有ファイルとこのファイルの変更を WARN する。
 - 実測前の claims.md 更新
 - claims.md の各行は「測った値・実行したコマンド・日付」の 3 点セット。推定を書かない。
 
@@ -89,15 +89,16 @@ Safety と Loop Mode は §0 より優先する。この節の規則は、以降
 
 ## precheck（コミット前検査）
 
-- コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可）。**終了コード 1 で失敗**。
-- 検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（**MSVC RTTI 名の `?` 落ち検出**。`\.\?AV<name>@@` は許可し、`?` が落ちた `\.AV<name>` を FAIL。2026-11-23 実測 `.?AV…`=1473 / `.AV…`=23）。
-- 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動 3 検査は行わない。
-- `scripts/precheck.py` 自身は CN リスト（簡体字）を含むため、スクリプトは自分自身を検査対象から除外する。
+- コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可、`--strict`＝レーン WARN を FAIL に昇格）。**テキスト検出は終了コード 1、構造検査は 2 で失敗**。
+- テキスト検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（**MSVC RTTI 名の `?` 落ち検出**。`\.\?AV<name>@@` は許可し、`?` が落ちた `\.AV<name>` を FAIL。2026-11-23 実測 `.?AV…`=1473 / `.AV…`=23）。
+- 構造検査 3 種: **中間ファイル**（`.bak`/`.orig`/`.rej`/`*~`。追跡下＋未追跡の両方）/ **versionCode 単調増加**（変更された `build.gradle` を HEAD と比較。未変更は skip）/ **レーン**（`race_sex_panel*`・`ui_toggle*`・`chargen_commit*`・`engine/renderer.cpp` の変更を WARN。`--strict` で FAIL）。
+- 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動検査は行わない。
+- `scripts/precheck.py` 自身は CN リスト（簡体字）を含むため、スクリプトは自分自身を検査対象から除外する。追跡下 `.bak` の既知 5 本は削除承認待ちの baseline（#188）。
 
 ## 版番号（version）
 
 - versionName は Release タグを切るときだけ変える。内部作業では上げない。
-- versionCode は単調増加。下げない。
+- versionCode の単調増加は `python scripts/precheck.py` が検査する（比較相手は常に HEAD。未変更ファイルは skip）。
 - タグと Release が無い版番号を README に書かない。
 
 ## 1. 着手前
