@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
+
 - [ ] **#182** 【作製・中優先】Panel の race 名が描画されない: パネル Main で Player/Race/Face/Hair のラベルは出るが、種族名（ESM 由来）がプレースホルダのまま描画されない。BSA とは無関係（run 2 でも直らない）。実機スクショ artifacts/161-with-panel.png で確認。独立した描画欠陥。 `#chargen` `#fix` `#render` `#ui`
 
 - [ ] **#181** 【作製・中優先】Panel chargen に名前入力が無い: isCharacterNameInputActive() は isLegacyChargenActive() 限定（renderer.cpp:9054-9056）。Panel ではユーザーが名前を変更できない（現状は既定名を seed して Done を通す回避のみ）。Panel 側の名前入力（IME ブリッジ）を配線する。 `#chargen` `#fix` `#ui`
@@ -3726,6 +3728,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3749,4 +3756,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-25 15:41:03
+**ai-todo** | Last Updated: 2026-11-25 16:36:46
