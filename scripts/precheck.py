@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""precheck.py — コミット前テキスト検査（CN / U+FFFD / dotAV）。
+"""precheck.py — コミット前検査（テキスト 3 種＋構造 3 種）。
 
 背景: 旧 precheck は %TEMP% に置かれ 2026-11-22 の掃除で消失した。本ファイルを
 追跡下（scripts/）に置き直した。以後は手動 3 検査をやめ、本スクリプトを使う。
@@ -9,14 +9,20 @@
   1. CN    : 簡体字専用字（日本語では使わない）の混入
   2. FFFD  : U+FFFD（置換文字＝文字化け）
   3. dotAV : ドット直後の "AV"（.avd/.avi/。AV8 等の英数字サフィックスは除外）
+  4. 中間ファイル: .bak / .orig / .rej / *~（追跡下と未追跡の両方）
+  5. versionCode: 変更された build.gradle で単調増加（比較相手は常に HEAD）
+  6. レーン    : Panel 所有ファイルと共用 renderer.cpp の変更を WARN（--strict で FAIL）
 
 使い方:
-  python scripts/precheck.py                 # 変更ファイルの「追加行」のみ検査（コミット対象）
-  python scripts/precheck.py FILE [FILE...]  # 指定ファイルを全文検査
+  python scripts/precheck.py                 # 変更ファイルの「追加行」＋構造検査（コミット対象）
+  python scripts/precheck.py FILE [FILE...]  # 指定ファイルを全文検査（テキストのみ）
   python scripts/precheck.py --all           # git 追跡下の全文書を検査（baseline 比較）
+  python scripts/precheck.py --strict        # レーン WARN を FAIL に昇格
 
-終了コード: 0 = OK / 1 = 検出あり（--all は baseline からの増加のみ 1）。
+終了コード: 0 = OK（WARN 含む）/ 1 = テキスト検出 / 2 = 構造検査の失敗
+（--all は baseline からの増加のみ 1）。
 """
+import fnmatch
 import os
 import re
 import subprocess
@@ -44,6 +50,24 @@ CN_ALLOW = "precheck: allow-cn"
 # dotAV: MSVC RTTI 名の "?" 落ち検出。`.?AV<Name>@@` は許可し、`?` が落ちた `.AV<Name>`（直後が大文字）を FAIL。
 # （2026-11-23 実測: `.?AV...`=1473 件 / `.AV<大文字>...`=少数。`.AV<name>`・`.AV_STAMINA`・裸の `.AV` は誤検出のため除外）
 DOTAV = re.compile(r"(?<!\?)\.AV[A-Z]")
+
+# 検査 4: 中間ファイル。追跡下は ls-files、未追跡/staged は status --porcelain で見る
+# （片方だけだと経路が丸ごと抜ける）。
+INTERMEDIATE_PATTERNS = ("*.bak", "*.orig", "*.rej", "*~")
+
+# 検査 4 の既知 baseline（追跡下 .bak 5 本）。削除はユーザー確認が必要なため保留中
+# （.github/copilot-instructions.md:33 に「追跡下ファイルの削除はユーザー確認が必要」）。
+# 承認後に削除し、この集合を空にすること。新規の中間ファイルはここに入れない。
+INTERMEDIATE_BASELINE = {
+    ".github/memory/session-memory.json.bak",
+    ".opencode/utf8-console.ts.retired-20261112.bak",
+    "docs/RE_ANALYSIS_ROADMAP.md.bak",
+    "loop-constraints.md.bak",
+    "tools/sync_memory_to_supermemory.py.bak",
+}
+
+# 検査 6: Panel レーン所有ファイル（判定はファイル名だけで機械的に導ける形にする）。
+PANEL_PREFIXES = ("race_sex_panel", "ui_toggle", "chargen_commit")
 
 TEXT_EXT = {
     ".md", ".txt", ".py", ".c", ".h", ".cpp", ".hpp", ".rs", ".json", ".xml",
@@ -73,14 +97,80 @@ def git_out(args):
 
 def changed_files():
     files = []
-    for line in git_out(["status", "--porcelain"]).splitlines():
+    for line in git_out(["-c", "core.quotepath=false", "status", "--porcelain"]).splitlines():
         if len(line) < 4:
             continue
         path = line[3:].strip()
+        if " -> " in path:  # リネームは新側だけを見る
+            path = path.split(" -> ", 1)[1].strip()
         if path.endswith("/") or ".bak-" in path or path.endswith(".bak"):
             continue
         files.append(path)
     return files
+
+
+def intermediate_files():
+    """検査 4: .bak/.orig/.rej/*~ の残存（追跡下＋未追跡/staged の両方）。"""
+    found = []
+    for p in git_out(["ls-files", "--"] + list(INTERMEDIATE_PATTERNS)).splitlines():
+        p = p.strip()
+        if p and p not in found:
+            found.append(p)
+    for line in git_out(["-c", "core.quotepath=false", "status", "--porcelain"]).splitlines():
+        if len(line) < 4:
+            continue
+        p = line[3:].strip()
+        if " -> " in p:
+            p = p.split(" -> ", 1)[1].strip()
+        if not any(fnmatch.fnmatch(p, pat) for pat in INTERMEDIATE_PATTERNS):
+            continue
+        if p and p not in found:
+            found.append(p)
+    return [p for p in found if p not in INTERMEDIATE_BASELINE]
+
+
+def version_code_failures():
+    """検査 5: 変更された build.gradle の versionCode が HEAD より増えているか。"""
+    fails = []
+    for rel in git_out(["ls-files", "--", "*build.gradle*"]).splitlines():
+        rel = rel.strip()
+        base = os.path.basename(rel)
+        if not (base == "build.gradle" or base.startswith("build.gradle.")):
+            continue
+        # 未変更なら比較しない（HEAD と同値でも単調増加違反ではない）。
+        if not git_out(["diff", "--name-only", "HEAD", "--", rel]).strip():
+            continue
+        head = git_out(["show", "HEAD:" + rel])
+        if not head:
+            continue  # 新規ファイル
+        try:
+            with open(os.path.join(REPO, rel), encoding="utf-8", errors="replace") as f:
+                cur_text = f.read()
+        except OSError:
+            continue
+        hm = re.search(r"versionCode\s+(\d+)", head)
+        cm = re.search(r"versionCode\s+(\d+)", cur_text)
+        if not hm or not cm:
+            continue
+        head_code, cur_code = int(hm.group(1)), int(cm.group(1))
+        if cur_code <= head_code:
+            fails.append(
+                "versionCode が増えていません: %s (HEAD=%d, 現在=%d)"
+                % (rel, head_code, cur_code))
+    return fails
+
+
+def lane_warnings():
+    """検査 6: Panel 所有ファイルと共用 renderer.cpp の変更を WARN（--strict で FAIL）。"""
+    warns = []
+    files = changed_files()
+    panel = [f for f in files
+             if any(os.path.basename(f).startswith(p) for p in PANEL_PREFIXES)]
+    if panel:
+        warns.append("Panel レーン所有: %s — 合意済みか確認" % ", ".join(panel))
+    if any(f.replace("\\", "/").endswith("engine/renderer.cpp") for f in files):
+        warns.append("共用ファイル: renderer.cpp — 触った関数をコミット本文に書いたか確認")
+    return warns
 
 
 def all_tracked_files():
@@ -132,6 +222,7 @@ def check_file(path):
 
 def main(argv):
     all_mode = "--all" in argv
+    strict = "--strict" in argv
     if all_mode:
         files = all_tracked_files()
     else:
@@ -145,6 +236,23 @@ def main(argv):
         for n, kind, what in hits:
             print("%s:%d: [%s] %r" % (rel, n, kind, what))
             total += 1
+
+    structural = 0
+    warns = 0
+    if not all_mode and files is None:  # 既定モード（コミット前）だけ構造検査を走らせる
+        for p in intermediate_files():
+            print("FAIL: 中間ファイルが残っています: %s（削除するか .gitignore へ）" % p)
+            structural += 1
+        for msg in version_code_failures():
+            print("FAIL: " + msg)
+            structural += 1
+        for msg in lane_warnings():
+            if strict:
+                print("FAIL: " + msg)
+                structural += 1
+            else:
+                print("WARN: " + msg)
+                warns += 1
 
     if all_mode:
         for path in files:
@@ -172,9 +280,15 @@ def main(argv):
                 continue
             emit(rel, scan_lines(added_lines(rel)))
 
+    if structural:
+        print("precheck: FAIL (%d structural, %d text hit(s))" % (structural, total))
+        return 2
     if total:
         print("precheck: FAIL (%d hit(s))" % total)
         return 1
+    if warns:
+        print("precheck: OK (%d warning(s))" % warns)
+        return 0
     print("precheck: OK")
     return 0
 
