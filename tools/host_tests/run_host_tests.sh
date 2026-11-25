@@ -47,6 +47,20 @@ have_rust_archives() {
   done
   return 0
 }
+
+# E0786 (`invalid metadata version`) の再発防止。
+#   共有 target/ に **別ツールチェーン**の proc-macro 成果物が残っていると GNU ビルドが
+#   落ちる（MSVC 製の thiserror_impl-*.dll を GNU が読む）。また PATH の rustc が
+#   scoop(MSVC) だと GNU を指定しても .lib が出て、この後段の .a 探索に掛からない。
+#   ホスト triple を実行時に取り、Windows は GNU を明示＋専用 target dir（target/gnu）、
+#   それ以外は素通しで作る。staleness（古い .a でテストが緑）も同スクリプトが判定する。
+#   詳細と既知の失敗例: scripts/build_host_rust.sh のヘッダ。
+if [ -z "${OBLIVION_RUST_SKIP_BUILD:-}" ]; then
+  bash scripts/build_host_rust.sh >&2 || {
+    echo "warning: scripts/build_host_rust.sh に失敗。既存のアーカイブを探す" >&2
+  }
+fi
+
 RUST_LIB_DIR=""
 _cand_triples=("$RUST_HOST_TRIPLE")
 case "$(uname -s)" in
@@ -308,7 +322,16 @@ done
 EXTRA_LIBS=()
 case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*)
-    EXTRA_LIBS=(-lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32)
+    # Windows + MinGW g++ linker (the only link path this script uses; the
+    # archives are always lib*.a). `-lsynchronization` is MinGW-only: on Linux
+    # CI there is no such library (`cannot find -lsynchronization`) and the
+    # MSVC toolchain has no file of that name, so it must stay inside this
+    # branch. Rust std for the gnu host reaches for the Windows futex
+    # primitives (WaitOnAddress / WakeByAddressSingle), which MinGW keeps in
+    # libsynchronization.a rather than libkernel32.a; without it every host
+    # link dies with ~308 `undefined reference to WakeByAddressSingle`
+    # (measured 2026-11-25). The rest cover std's sockets/ntdll/userenv paths.
+    EXTRA_LIBS=(-lws2_32 -lntdll -luserenv -lbcrypt -ladvapi32 -lshell32 -lole32 -lsynchronization)
     ;;
 esac
 # Other host tools (run_smoke.sh) reuse this file's build environment
