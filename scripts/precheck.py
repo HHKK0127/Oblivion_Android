@@ -35,6 +35,12 @@ CN_CHARS = set(
 )
 
 FFFD = "\ufffd"
+
+# 行単位の CN 許可マーカー。行内にこの文字列を含む行は CN 判定をスキップする。
+# 付ける条件は 1 つだけ: その行を読めば理由が分かるときだけ
+# （例: 過去の文字化け修正ログが簡体字を例として引用している行）。理由が読めない
+# 行に付けると、次に本物の混入が来ても素通りする。
+CN_ALLOW = "precheck: allow-cn"
 # dotAV: MSVC RTTI 名の "?" 落ち検出。`.?AV<Name>@@` は許可し、`?` が落ちた `.AV<Name>`（直後が大文字）を FAIL。
 # （2026-11-23 実測: `.?AV...`=1473 件 / `.AV<大文字>...`=少数。`.AV<name>`・`.AV_STAMINA`・裸の `.AV` は誤検出のため除外）
 DOTAV = re.compile(r"(?<!\?)\.AV[A-Z]")
@@ -101,6 +107,8 @@ def added_lines(rel):
 def scan_lines(lines):
     hits = []
     for n, line in enumerate(lines, 1):
+        if CN_ALLOW in line:
+            continue  # 行単位の許可（理由がその行を読めば分かるときだけ付ける）
         for ch in line:
             if ch in CN_CHARS:
                 hits.append((n, "CN", ch))
