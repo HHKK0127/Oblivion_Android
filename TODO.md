@@ -2,6 +2,12 @@
 
 ## Tasks
 
+- [ ] **#182** 【作製・中優先】Panel の race 名が描画されない: パネル Main で Player/Race/Face/Hair のラベルは出るが、種族名（ESM 由来）がプレースホルダのまま描画されない。BSA とは無関係（run 2 でも直らない）。実機スクショ artifacts/161-with-panel.png で確認。独立した描画欠陥。 `#chargen` `#fix` `#render` `#ui`
+
+- [ ] **#181** 【作製・中優先】Panel chargen に名前入力が無い: isCharacterNameInputActive() は isLegacyChargenActive() 限定（renderer.cpp:9054-9056）。Panel ではユーザーが名前を変更できない（現状は既定名を seed して Done を通す回避のみ）。Panel 側の名前入力（IME ブリッジ）を配線する。 `#chargen` `#fix` `#ui`
+
+- [ ] **#180** 【作製・中優先】V-653-1 本体: Panel chargen の「変更なし」判定は原作の保存名 [0xB39440] と比較する（spec §10.3）が、port は比較相手を空文字で代用している（renderer.cpp の setCurrentName(std::string())）。[0xB39440] の設定元（何がいつ書くか）を確定し、代用を正典に置き換える。 `#RE` `#chargen` `#fix` `#oblivion`
+
 - [ ] **#179** 【RE レーン依頼・中優先】chargen race 適用の残点（V-664-2/V-664-3）。(1) RACE `ATTR`（16B）のレイアウト確定: 8 属性ぶんの値（30-50）を含むと見られるが、8×int16 で各値が同バイト重複に見え 2 スロットだけ相違（Oblivion.esm 実測: Imperial ATTR=`28281e1e282832322828281e1e283232`、Orc=`2d1e32231e321e322d282d231e321932`）。(2) プレイヤー HP の導出元（RACE に starting-health フィールドが無い。Endurance 由来か）と真の chargen base 値（属性 30 か 40 か）。根拠: port の `decodeRace` は ATTR/health 未パース＝`RaceData.attr*`/`startingHealth` は常に 0（`esm_reader.cpp:1860`）、spec §10.5/§10.8、RE_EXE_REPORT §46.1（name table 0x00B0A1A8）。対象 md5 cdd2f0c5eff198d4f26b7b5b54ce4930。 `#RE` `#chargen` `#oblivion` `#race`
 
 - [ ] **#178** 【作製・高優先（既定経路のクラッシュ・実機で 2 回再現）】New Game を押すとアプリが必ず落ちる（master・既定 `ChargenUi::Panel`）。【証拠】emulator-5554 で `docs/smoke-tests/newgame.sh` を実行。タイトルの `Menu hit rect [1] 'New'` 中央 (485,682) をタップ → `Menu selection: New Game` 確認 → 約 13 秒後に `Process com.example.oblivion (pid 7948) has died: fg TOP`。【tombstone_24（15:30:20）】`signal 6 (SIGABRT)` / `Abort message: terminating due to uncaught exception of type std::__ndk1::bad_weak_ptr`。backtrace: `Renderer::render` → `Renderer::setChargenUi(ChargenUi::Panel)` → `RaceSexPanel::instantiate(TextRenderer*)+953` → `UIComponent::addChild(std::shared_ptr<UIComponent>)+242` → `__cxa_throw` → `abort`。tombstone_23（15:23）も同一。【原因】`UIComponent : public std::enable_shared_from_this<UIComponent>`（ui_component.h:80）で、`addChild` が `child->setParent(shared_from_this())` を呼ぶが、`RaceSexPanel` は `std::unique_ptr<RaceSexPanel> raceSexPanel;`（renderer.h:143）＋`std::make_unique<RaceSexPanel>()`（renderer.cpp:8943）で所有されているため `shared_from_this()` が `std::bad_weak_ptr` を投げ、未捕捉で abort。【修正案】(a) 直ちに解消: `raceSexPanel` を `std::shared_ptr` にし `std::make_shared<RaceSexPanel>()` で作る（2 行）。(b) 本質: `UIComponent` の親を非所有ポインタ（`UIComponent* parent_`）へ変え、`enable_shared_from_this` 依存を外す（renderer.h は 17 個の UI を unique_ptr で持つため同型の罠が残る）。【影響】chargen が描画されないため golden 採取は不能（`--update` を実行していたら Android ランチャー画面を golden に焼いていた）。
@@ -433,6 +439,24 @@
   > ■ V-587-4 [確定(命令)] `0x5AD980` の callers
   > - v597 で確定（`0x57E150` 等）＝**begin/execute から直接呼ばれずメニュー更新ループ経由**。
   > 残点 V-591-2,3/V-592-2/V-593-3,4/V-596-1,2,3【低】。台帳反映＋round_verify ALL OK（rows 31..582 / total 468 / done 463 / open 5）。
+  > 【#161 修正の verifier REJECT（2026-11-25・本セッション）】提案どおり renderer.cpp/h に 4 点を実装したが、verifier が REJECT。以下は本セッションがコードで裏取り済み（推測でない）。
+  > - ①再試行トリガが無い（確定）: loadBSAArchives の呼び出し元は renderer.cpp:159（init/GL スレッド）と jni_bridge.cpp:387（nativeSetDataPath）。後者は GameRenderer.onSurfaceCreated:129 からのみ。MainActivity.kt:140-172 が files/data を背景充填するが完了時に native を再呼び出ししない（ログのみ）。→ archivesLoaded を false のまま残しても再入が無い。
+  > - ②ESM リトライが主因ケースで到達不能（確定）: loadedCount==0 の早期 return（renderer.cpp:3248-3254）が先に効くため、リトライループ（3289-3295）は空 data で一度も走らない。
+  > - ③恒久ハング（確定）: g_pendingDataPath は jni_bridge.cpp:370 で設定後クリアされない（読取は 156/633/3397 のみ）。よって early return で gameDataLoadAttempted を立てないと ensureScenarioBuilt が毎フレーム defer（3397-3400）、New Game も gameDataLoadAttempted でゲート（5036-5041）され永久 no-op。旧コードより悪化。
+  > - ④ダイアログが出ない（確定）: gameDataMissing_ は !extracted 分岐（3298, loadedCount>0 のときのみ）でしか立たず、空 data では 9039 のダイアログが発火しない。
+  > - 併せて: startGame() は本レーンが renderer.cpp setOnCommit に入れた（landed）。Panel レーンは二重に書かないこと（claims.md の V-664-2/3 行にも記載）。archivesLoading_（in-progress 排他）は実装済み・構文 OK。
+  > - 正しい方向（案）: Java 側で抽出完了後に native 再ロードを呼ぶ（例: nativeSetDataPath 再呼出 or 新 JNI）／または render() で data 到着を検知して再ロード。加えて空 data でも gameDataLoadAttempted を立ててハングを避け、gameDataMissing_ を空 data 経路でも設定する。方針は人間判断待ち。
+  > 【#161 修正の verifier 3 回目（2026-11-25）: 実機へ進むための切り分け】
+  > コア（空 data でハングしない・commit ガード・late-load をパース後に）は直った。ただし verifier は 3 回目も REJECT。実機テストを妨げる回帰だけ直し、残りは late-load 固有のため本タスクに積んで実機へ進む。
+  > - 修正済み【blocking 回帰】: onGameDataLoaded() の seed を `isPanelChargenActive() && !gameDataMissing_` に変更。空 data 中は 1 Hz リトライで onGameDataLoaded が毎回走り seedChargenRaces→showMessage が毎秒再表示（UIMessageBox::open は無条件 visible=true）してソフトロックしていた。ダイアログは setChargenUi(Panel) の seedChargenRaces で 1 回だけ出す。
+  > - 修正済み【minor】: renderer.h の archivesLoading_ コメントを GL スレッド専用に修正（verifier はスレッド反論を撤回）。
+  > - 修正済み【nit】: setAvailableRaces が selected_race_index_ を 0 に戻す旨のコメントを seedChargenRaces に追加。
+  > - 未修正（late-load 固有・実機テスト非該当）:
+  > (2) createTestScenario() の再入がクリーンでない: clearAllCells() はセルのみ（world_manager.cpp:717-726）で NPC は消えない。createTestScenario は hasEsmData に関係なく Izar/Hellas とクエストを無条件生成（renderer.cpp:4253-4254/4280-4282）→ late-load の再構築で NPC/クエストが重複。修正案: rebuild 用の fresh-world 操作（NPC/クエストのクリア）を用意するか test 生成をガード。
+  > (4) リトライ上限 kMaxGameDataRetries=300（約5分）後に data が到着しても、サーフェス再生成（nativeSetDataPath）までロードされない。許容範囲だが明記。
+  > (5) gameDataMissing_ をパース結果確定前（renderer.cpp:3282 付近）に false にする。非同期パース失敗時は false のままで seedChargenRaces の早期ダイアログは出ず、commit ガードのみが出す。フラグ意味が曖昧。
+  > 【#161: 実機テストで回帰を検出（2026-11-25）】ユーザー案の `if (loadedCount == 0) { fallback; return; }` は、エミュレータのデータ配置（files/data に Oblivion.esm のみ・.bsa 無し）で **ESM 抽出をスキップ**する回帰を生む。実測ログ: `Loaded 0 / 22 BSA archives` ＋ `no archive under .../files/data - falling back` が 1 Hz で連続 → race が入らない。原コードは早期 return が無く ESM を読んでいたので、これは修正が入れた退行（verifier は論理しか見ずデータ配置を想定できず検出できなかった＝実機でしか出ない類）。
+  > 修正: `loadedCount==0` の早期 return を撤去。**BSA は任意・ESM が本質**とし、`archivesLoaded=true` を ESM 抽出成功後（と plugins.txt 経路）に移動。ESM 抽出失敗時のみ fallback＋retry armed。構文・precheck OK。
 
 - [ ] **#157** 【RE レーン依頼・#127 の正典（StatsMenu 表示仕様の残点 V-364-3/4 を確定）】port のキャラクターシート配線（#127）を正典に合わせるため、**原版 StatsMenu の表示仕様**を確定してほしい。【出発点＝既裁定】`tmp/re/v364_stats_credits_supply_ruling.md`（#133 完遂分）で既に [確定]: menu id **0x3EB**／XML 構造＝**5タブ** `stat_p1`(race・birthsign・class・level・health・magicka・fatigue_layout＋stat_faction_item/stat_misc_item)・`stat_p2`(8属性・各 <id> 24=intelligence 等)・`stat_p3`(minor_label＋window)・`stat_p4`/`stat_p5`(up/down/window/pane のスクロール付きリスト)・`stat_tabs`(prev/next＋stat_tabs_p1..p5 の <id> 1..5)／**タブ通知 id 1..5＝slot3 `0x5DCD70`** [確定(XML+命令)]／値供給チェーン **AV getter→trait→XML copy** [確定(命令)]／ルート traits に `user0`=current visible tab、色定義 `_red/_green/_blue_under/_even/_over`（値 vs base の色分岐用）、menufade 0.25。【依頼3件（判定5段階・根拠は EXE 命令または bsa 抽出 XML のみ・推測禁止）】
   > 【RE 依頼を出した（2026-11-18）】依頼書: `tmp/re/handoff_20261118_chargen_op_video_and_tabs_bundle.md`（OpenCode 作製レーン → ReverseEngineering・対象 EXE v1.2.0416・采番は v539 以降任意・判定5段階/根拠は命令または bsa 抽出 XML のみ）。 依頼3 [high]（再掲）: ①5タブの表示行・ラベル・値供給の完全対応表（特に通知 id4 `0x5DC950` が `[esi+0x3C]` walk で作る行が NPC の何のリストか＝V-364-3）②値 vs base の色分岐 `_under/_even/_over` の正典③tab p1 の SetString 3種（0xFAF/0xFB0/vfunc+0x268）が name/class/race のどれか。出発点 `tmp/re/v364_stats_credits_supply_ruling.md`。
@@ -1380,14 +1404,6 @@
 ---
 
 ## Archived Tasks
-- [x] **#17** V188: opcode/GT 名前 第6束（+0x10 登録帯書手・base+0x58 bit7/bit22 名・slot[6] 値4）— 正本 tmp/re/TODO_re49.md serial 188。親セッションが inline 進行（証拠 v201_* 41点） `#completed` (2026-11-24)
-  > 同期（2026-11-02）: RE 正本 tmp/re/TODO_re49.md で serial 188 が [x] 完了 (2026-10-31) を確認（後続 V207 が同 serial の完了行から起票されている）。ローカル側が同期漏れだったため [x] 化。
-  > 2026-10-30: 子エージェント中断続きのため親セッションが inline 継続。証拠 %TEMP%/opencode/v201_*（41点）を走査済み。判明: ①+0x10 初回書手=FUN_004FF710@0x4FFB0C（[parser+0x410] が 0x14/0x1F → 0='f'、それ以外 → 1='s'）②bit22 読手13件=エフェクトリストチェッカ群（0x414EB0 系）+FUN_00419B30、直接クリアは 0x416854（FUN_004167E0）③slot[6]: SpellItem は [+0x1C] 動的返し（Enchant=6/Alchemy=7/Ingredient=8 済み）。残: v201 成果物への統合執筆。
-  > Reason: 2026-11-06 RE シリアルループ完了分を含む既存完了タスクを一括整理
-  > Reason: Completed-task cleanup (user request, 2026-11-10)
-  > Reason: Completed-task cleanup (user request, 2026-11-10)
-  > Reason: completed batch archive 2026-11-11
-  > Reason: completed 2026-11-24 (batch archive)
 - [x] **#176** 【RE レーン依頼・中優先】Main ページの Toggle "Eyes"（sEyes）が何を制御するか（V-610-A1 の決着）。#96 で「値リストを作らず行のみ」とした箇所の解消。既知: Main の Toggle ラベルは sEyes（v610 §1.2）。未確定: (1)このトグルの id（`GetTile(elem,page).user0` と比較される値）と HandleClick `0x5CC200` 内の該当分岐アドレス (2)クリック時に書く trait（user 番号）と値、および XML のどの `<visible>`/式に効くか (3)状態が chargen データ（顔/種族/性別）や TESNPC へ与える効果（見た目のみか）(4)生成直後の既定値。根拠: tmp/re/v610_racesexmenu_page_rows_ruling.md §1.2、v623 §3（HandleClick の buttonID チェーン）。対象 md5 cdd2f0c5eff198d4f26b7b5b54ce4930。 `#RE` `#chargen` `#oblivion` `#toggle` (2026-11-24)
   > 【2026-11-23 送信済み】RE セッション（ses_e55f5e1e1ffeqZJLiJKVdeB9rI）へ依頼を送信（opencode api post /api/session/<id>/prompt・returncode 0・メッセージ id msg_208322599001Wc64CfPfHcV9Yl）。#175/#176/#177 の3件を1プロンプトにまとめて送付（依頼A/B/C）。送信時の RE 状態: outcome succeeded / busy 11-23 20:36:04（稼働中）。受領は tmp/re の v635 以降を待つ。
   > v660 裁定: Main 'Eyes' トグル（id 204）専用の分岐は存在しない [確定(命令)(negative)]。FUN_005CC200 が arg1(ebx) と比較する即値は 0x5A(90)/0xA(10)/0x62(98) の 3 つのみ（全走査）。クリックは汎用経路 0x5CC8BA〜（[0xB38FF0] の tile の 0xFA8=id を読む）で処理される。→ 制御対象は id からは決まらず V-610-A1 は V-660-B1 として [未確定] 継続（次段: 汎用経路 0x5CC8BA〜 の解析）。成果物 tmp/re/v660_random_reset_eyes_race_ruling.md §B、probe D:\re\v660_probe.py（EXIT=0）、台帳 row658。
@@ -3699,6 +3715,14 @@
   > Reason: Completed-task cleanup (user request, 2026-11-10)
   > Reason: completed batch archive 2026-11-11
   > Reason: completed 2026-11-24 (batch archive)
+- [x] **#17** V188: opcode/GT 名前 第6束（+0x10 登録帯書手・base+0x58 bit7/bit22 名・slot[6] 値4）— 正本 tmp/re/TODO_re49.md serial 188。親セッションが inline 進行（証拠 v201_* 41点） `#completed` (2026-11-24)
+  > 同期（2026-11-02）: RE 正本 tmp/re/TODO_re49.md で serial 188 が [x] 完了 (2026-10-31) を確認（後続 V207 が同 serial の完了行から起票されている）。ローカル側が同期漏れだったため [x] 化。
+  > 2026-10-30: 子エージェント中断続きのため親セッションが inline 継続。証拠 %TEMP%/opencode/v201_*（41点）を走査済み。判明: ①+0x10 初回書手=FUN_004FF710@0x4FFB0C（[parser+0x410] が 0x14/0x1F → 0='f'、それ以外 → 1='s'）②bit22 読手13件=エフェクトリストチェッカ群（0x414EB0 系）+FUN_00419B30、直接クリアは 0x416854（FUN_004167E0）③slot[6]: SpellItem は [+0x1C] 動的返し（Enchant=6/Alchemy=7/Ingredient=8 済み）。残: v201 成果物への統合執筆。
+  > Reason: 2026-11-06 RE シリアルループ完了分を含む既存完了タスクを一括整理
+  > Reason: Completed-task cleanup (user request, 2026-11-10)
+  > Reason: Completed-task cleanup (user request, 2026-11-10)
+  > Reason: completed batch archive 2026-11-11
+  > Reason: completed 2026-11-24 (batch archive)
 
 ---
 
@@ -3725,4 +3749,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-24 11:37:39
+**ai-todo** | Last Updated: 2026-11-25 15:41:03
