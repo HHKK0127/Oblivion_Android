@@ -64,34 +64,57 @@ if [ "${FIXTURE_PARSE:-on}" != "off" ]; then
     fail=1
   fi
 
-  # 陰性対照: 壊した fixture で消費者が **落ちること** を確認する。
+  # 陰性対照: 壊した fixture で消費者が **落ちること** と、その **落ち方** を確認する。
   # これが無いと「ヘッダを読んで比較しているだけ」の消費者でも緑になり得る。
-  # 重要なのは「落ち方」: パーサが拒否した（`loaded:false`）のであって、
-  # リンク失敗・ファイル不在・クラッシュで落ちていないこと。
-  _negdir="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/fxneg.$$")"
-  mkdir -p "$_negdir"
   # 壊した fixture は **実行時に生成器の出力から派生**させる（別ファイルとして
   # コミットしない＝生成器と二重管理にしない）。
-  python3 - "$FIXDIR/minimal.dds" "$_negdir/broken.dds" <<'PY'
+  _negdir="$(mktemp -d 2>/dev/null || echo "${TMPDIR:-/tmp}/fxneg.$$")"
+  mkdir -p "$_negdir"
+
+  # 壊し方ごとの派生（runtime・コミットしない）。
+  python3 - "$FIXDIR" "$_negdir" <<'PY'
 import sys
-src, dst = sys.argv[1], sys.argv[2]
-data = bytearray(open(src, "rb").read())
-data[0] ^= 0xFF          # DDS マジックを潰す
-open(dst, "wb").write(bytes(data))
-print("wrote %s (%d bytes, magic smashed)" % (dst, len(data)))
+fix, neg = sys.argv[1], sys.argv[2]
+
+def load(name):
+    return bytearray(open("%s/%s" % (fix, name), "rb").read())
+
+def save(name, data):
+    open("%s/%s" % (neg, name), "wb").write(bytes(data))
+    print("wrote %s/%s (%d bytes)" % (neg, name, len(data)))
+
+d = load("minimal.dds"); d[0] ^= 0xFF; save("broken.dds", d)          # DDS magic
+n = load("minimal.nif"); n[0] ^= 0xFF; save("broken_magic.nif", n)    # NIF magic
+n2 = load("minimal.nif")                                              # NIF block type swap
+i = bytes(n2).find(b"NiTriShape")
+assert i >= 0, "NiTriShape not found in the fixture"
+n2[i + 1] = ord("X")                                                  # NiTriShape -> XiTriShape
+save("swapped_type.nif", n2)
+b = load("minimal.bsa"); b[0] ^= 0xFF; save("broken.bsa", b)          # BSA magic
 PY
-  _neg_rc=0
-  _neg_out="$(bash tools/host_tests/run_fixture_parse.sh "$_negdir/broken.dds" 2>&1)" || _neg_rc=$?
-  if [ "$_neg_rc" = 0 ]; then
-    echo "::error::陰性対照が落ちない（壊した fixture で消費者が成功した）＝検証器として不成立"
-    fail=1
-  elif printf '%s' "$_neg_out" | grep -q '"loaded":false'; then
-    echo "OK: 陰性対照（マジックを潰した fixture）で消費者がパーサ拒否（loaded:false）で落ちた"
-  else
-    echo "::error::陰性対照が「パーサ拒否」以外で落ちた（リンク失敗・ファイル不在・クラッシュの疑い）"
-    printf '%s\n' "$_neg_out" | tail -20
-    fail=1
-  fi
+
+  # expect_fail <label> <出力に含むべき文字列> <run_fixture_parse.sh への引数...>
+  expect_fail() {
+    _label="$1"; _marker="$2"; shift 2
+    _neg_rc=0
+    _neg_out="$(bash tools/host_tests/run_fixture_parse.sh "$@" 2>&1)" || _neg_rc=$?
+    if [ "$_neg_rc" = 0 ]; then
+      echo "::error::陰性対照[$_label] が落ちない（壊した fixture で成功した）＝検証器として不成立"
+      fail=1
+    elif printf '%s' "$_neg_out" | grep -qF "$_marker"; then
+      echo "OK: 陰性対照[$_label] が期待どおり落ちた（出力に '$_marker'）"
+    else
+      echo "::error::陰性対照[$_label] が期待の落ち方をしない（'$_marker' が出力に無い）"
+      printf '%s\n' "$_neg_out" | tail -20
+      fail=1
+    fi
+  }
+
+  expect_fail "dds-magic" '"loaded":false' "$_negdir/broken.dds" "$FIXDIR/minimal.nif" "$FIXDIR/minimal.bsa"
+  expect_fail "nif-magic" '"loaded":false' "$FIXDIR/minimal.dds" "$_negdir/broken_magic.nif" "$FIXDIR/minimal.bsa"
+  expect_fail "nif-type-swap" '"hasNiTriShape":0' "$FIXDIR/minimal.dds" "$_negdir/swapped_type.nif" "$FIXDIR/minimal.bsa"
+  expect_fail "bsa-magic" '"opened":false' "$FIXDIR/minimal.dds" "$FIXDIR/minimal.nif" "$_negdir/broken.bsa"
+
   rm -rf "$_negdir"
 fi
 

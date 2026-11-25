@@ -28,6 +28,9 @@ CURATED=(
   tools/host_tests/host_stub_syms.cpp
   tools/host_tests/host_gl_stubs.cpp
   app/src/main/cpp/assets/dds_loader.cpp
+  app/src/main/cpp/assets/nif_parser.cpp
+  app/src/main/cpp/assets/nif_block_type_map.cpp
+  app/src/main/cpp/assets/bsa_reader.cpp
   tools/host_tests/fixture_parse_main.cpp
 )
 

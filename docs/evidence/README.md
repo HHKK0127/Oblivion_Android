@@ -55,13 +55,21 @@ golden の JSON には撮影条件を埋める（PNG はアセットで未コミ
 コミットしてパーサの挙動を固定する。`tools/host_tests/make_fixture_*.py` が生成器で、
 再実行しても同一バイト列になる（時刻・乱数・絶対パスを使わない）。
 
-- 形式の出所は**リポジトリのパーサと受理済みテスト**（例: `minimal.dds` は
-  `app/src/main/cpp/tests/dds_upload_tests.cpp:27-57` の受理バイト列を逐語踏襲）。推測では書かない。
+| フィクスチャ | 生成器 | 形式の出所（逐語） |
+|---|---|---|
+| `minimal.dds`（256B） | `make_fixture_dds.py` | `app/src/main/cpp/tests/dds_upload_tests.cpp:27-57` の受理バイト列 |
+| `minimal.esm`（578B） | `make_fixture_esm.py` | Panel レーンの newgame smoke 用（RE v664 実測のレイアウト） |
+| `minimal.nif`（400B） | `make_fixture_nif.py` | `rust/crates/nif-core/src/lib.rs` の受理テスト `shape_data_decodes_vertices_colors_uvs_and_triangles`（Gamebryo 20.0.0.5 / NiTriShape + NiTriShapeData） |
+| `minimal.bsa`（485B） | `make_fixture_bsa.py` | `rust/crates/bsa-core` の `{format.rs,hash.rs}` と `tests/parse.rs` の `build()`。中身は `meshes\test.nif`（＝`minimal.nif`）で **BSA→NIF の連鎖**を通す |
+
+- 形式の出所は**リポジトリのパーサと受理済みテスト**。推測では書かない。生成器は
+  `nif-core`/`bsa-core` のテストと **SHA256 一致**を確認してある（NIF: `7EE12A60…`）。
 - ゲートは `scripts/run_fixture_gates.sh`（CI: `.github/workflows/real-data-gates.yml`）。
   - 生成器を再実行して **バイト一致**（drift）を確認。
   - フィクスチャ **0 件は失敗**（欠如を黙って通さない）。
-  - `tools/host_tests/fixture_parse_main.cpp` を**実パーサ**に通し期待値を assert。
-  - **陰性対照**: 壊したフィクスチャで消費者が落ちることも確認（「ヘッダを読むだけ」の消費者を排除）。
+  - `tools/host_tests/fixture_parse_main.cpp` を**実パーサ**に通し期待値を assert（DDS/NIF/BSA→NIF）。
+  - **陰性対照 4 件**: DDS/NIF の magic 破壊、NIF のブロック型差し替え、BSA の magic 破壊。
+    消費者が**期待の落ち方**（`"loaded":false` / `"hasNiTriShape":0` / `"opened":false`）で落ちることを確認。
 - **限界（混同しない）**: 合成フィクスチャは **パーサ挙動の固定のみ**で、**実データ互換は証明しない**。
   実コーパス（`tmp/*_oracle`）のオラクルは別ラベル（ローカル／リリース前ゲート）で扱う。
 
