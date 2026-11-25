@@ -1,25 +1,36 @@
-# docs/evidence/golden — 画面ゴールデン（数値グリッド）
+# docs/evidence/golden — ゴールデン（数値グリッド / ホスト smoke JSON）
 
 `scripts/compare_golden.py` が比較する基準。**生の PNG は置かない**（Bethesda の
-アセットが写るため再配布不可）。基準は 32x18 の輝度グリッドを JSON で保存した
-派生物（既定 `newgame-no-esm.json`）。
+アセットが写るため再配布不可）。
+
+このディレクトリには用途の異なる **2 つのゴールデン**がある。混同しないこと。
+
+| ファイル | 何の基準か | 比較方法 | 使うジョブ | 状態 |
+|---|---|---|---|---|
+| `newgame-no-esm.json` | host smoke の**状態 JSON** | 完全一致 | `smoke-host`（**blocking**） | 採取済み |
+| `newgame-no-esm-prefix.json` | エミュレータ画面の **32x18 輝度グリッド** | グリッド差 | `smoke`（emulator・warn-only） | 未検証のピン（V688a park） |
+
+`compare_golden.py` の**既定**（`--golden` 省略時）は PNG 経路用の
+`newgame-no-esm-prefix.json`。host smoke は `--golden docs/evidence/golden/newgame-no-esm.json`
+を**明示**して使う（既定ではない）。
 
 ## 採取（人がレビューしてからコミットする）
 
 ```
+# エミュレータ画面（PNG）→ newgame-no-esm-prefix.json（compare_golden.py の既定）
 python scripts/compare_golden.py artifacts/smoke-newgame.png --update
 ```
 
 ## 現状（V688）
 
-**エミュレータの PNG ゴールデン（`compare_golden.py` の既定 `newgame-no-esm-prefix.json`）は
-未採取のまま**。V688a park（hosted runner に hypervisor 無し）で emulator が起動しないため、
-Android CI の `smoke` ジョブは `continue-on-error: true`（warn-only）かつ
-`if: github.event_name != 'push'`（workflow_dispatch / pull_request のみ）で残す。self-hosted
-runner（KVM/HVF あり）が用意できたら採取して blocking に戻す（`--require` は**外さない**:
-外すと golden を入れても落ちなくなる）。
+**エミュレータの PNG ゴールデン `newgame-no-esm-prefix.json` は現状のピンであり、正解基準
+ではない**（`docs/evidence/README.md` 参照）。V688a park（hosted runner に hypervisor 無し）で
+emulator が起動しないため、Android CI の `smoke` ジョブは `continue-on-error: true`（warn-only）
+かつ `if: github.event_name != 'push'`（workflow_dispatch / pull_request のみ）で残す。
+self-hosted runner（KVM/HVF あり）が用意できたら検証して blocking に戻す（`--require` は
+**外さない**: 外すと golden を入れても落ちなくなる）。
 
-**既定経路の blocking ゲートは host smoke の JSON ゴールデン（`newgame-no-esm.json`）が担う**
+**既定経路の blocking ゲートは host smoke の JSON ゴールデン `newgame-no-esm.json` が担う**
 （次節。採取済み）。
 
 ## ホスト smoke の JSON ゴールデン（`newgame-no-esm.json`）
