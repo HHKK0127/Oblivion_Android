@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#184** 【作製・中優先】(c) ローカルの .a 再ビルド経路: scripts/build_host_rust.sh の再ビルド（staleness 発動時）が E0463 (can't find crate for `core`/`std`; x86_64-pc-windows-gnu) で落ちる。clean 後に --target x86_64-pc-windows-gnu 付きでビルドする経路。ただし **同じコマンドを手で実行すると成功する**（RUSTC/RUSTUP_TOOLCHAIN/HOME の差を要特定）。.a が既存のときは staleness 判定で回避されるため気づきにくい。回避策: 手動で RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu + RUSTC=<gnu rustc> + CARGO_TARGET_DIR=target/gnu + --target x86_64-pc-windows-gnu の 6 -p ビルドを実行して .a を復元。実測 2026-11-25。 `#build` `#fixture` `#rust` `#tooling`
+
 - [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
 
 - [ ] **#182** 【作製・中優先】Panel の race 名が描画されない: パネル Main で Player/Race/Face/Hair のラベルは出るが、種族名（ESM 由来）がプレースホルダのまま描画されない。BSA とは無関係（run 2 でも直らない）。実機スクショ artifacts/161-with-panel.png で確認。独立した描画欠陥。 `#chargen` `#fix` `#render` `#ui`
@@ -3728,11 +3730,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3756,4 +3753,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-25 16:36:46
+**ai-todo** | Last Updated: 2026-11-25 16:55:24
