@@ -34,6 +34,37 @@
 
 ファイル名の `-no-esm-prefix` は、この 2 つの前提（ESM 不在・プレースホルダ）を忘れないため。
 
+### 来歴（meta）— 画素差と環境差を混同しないため
+
+golden の JSON には撮影条件を埋める（PNG はアセットで未コミットなので、JSON から実行を辿れる必要がある）:
+
+```json
+{"meta": {"taken_at", "commit", "app_version",
+          "wm_size", "density", "rotation", "source_png_sha256"},
+ "grid_w": 32, "grid_h": 18, "cells": [...]}
+```
+
+- `docs/smoke-tests/newgame.sh` が `artifacts/smoke-newgame.env` に `wm_size`/`density`/`rotation` を書く。
+- `compare_golden.py` は 引数 → サイドカー の順で現環境を決め、golden の meta と比べる。
+- **`wm_size`/`density`/`rotation` が違えば「環境不一致」として、画素差とは別のメッセージで落とす**
+  （密度が変わっただけの赤を延々と追わないため）。`--allow-env-mismatch` で画素比較へ進める。
+
+## 合成フィクスチャ（`docs/evidence/fixtures/`）
+
+実データ（`Oblivion.esm`・`Oblivion - *.bsa`）は再配布できないので、**自作の最小バイト列**を
+コミットしてパーサの挙動を固定する。`tools/host_tests/make_fixture_*.py` が生成器で、
+再実行しても同一バイト列になる（時刻・乱数・絶対パスを使わない）。
+
+- 形式の出所は**リポジトリのパーサと受理済みテスト**（例: `minimal.dds` は
+  `app/src/main/cpp/tests/dds_upload_tests.cpp:27-57` の受理バイト列を逐語踏襲）。推測では書かない。
+- ゲートは `scripts/run_fixture_gates.sh`（CI: `.github/workflows/real-data-gates.yml`）。
+  - 生成器を再実行して **バイト一致**（drift）を確認。
+  - フィクスチャ **0 件は失敗**（欠如を黙って通さない）。
+  - `tools/host_tests/fixture_parse_main.cpp` を**実パーサ**に通し期待値を assert。
+  - **陰性対照**: 壊したフィクスチャで消費者が落ちることも確認（「ヘッダを読むだけ」の消費者を排除）。
+- **限界（混同しない）**: 合成フィクスチャは **パーサ挙動の固定のみ**で、**実データ互換は証明しない**。
+  実コーパス（`tmp/*_oracle`）のオラクルは別ラベル（ローカル／リリース前ゲート）で扱う。
+
 ## ファイル
 
 | パス | 内容 |

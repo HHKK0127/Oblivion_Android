@@ -1,0 +1,38 @@
+name: Real-data gates (synthetic fixtures)
+
+# 合成フィクスチャのゲート。実データ（Bethesda のアセット）はリポジトリに入らないので、
+# 自作バイト列の最小フィクスチャでパーサの回帰を機械判定する（scripts/run_fixture_gates.sh）。
+#
+# 別ワークフローにしてある理由: 既存の android.yml（Panel レーンが smoke-host を追加済み）を
+# 触らずに済ませるため（同一ツリー同時編集を避ける）。
+#
+# 位置づけ: 合成フィクスチャはパーサ挙動を固定するだけで、**実データ互換は証明しない**。
+# 実コーパスのオラクルはローカル／リリース前ゲートとして別に残す。
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fixtures:
+    name: Synthetic fixture gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # 生成器を再実行してコミット済みフィクスチャとバイト一致することを見る。
+      # 生成器が壊れればフィクスチャも壊れるので二重に守れる。フィクスチャ欠如は失敗。
+      - name: Regenerate fixtures and check for drift
+        run: bash scripts/run_fixture_gates.sh

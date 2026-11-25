@@ -7,22 +7,22 @@
 **人間の注意とマージ帯域**で、そこは 1 本のまま。
 
 2026-11 の実例: chargen を 2 レーン（手書き21ページ／widget 化）で別々に実装し、片方は 21 コミット
-滞留した。直接原因は「どのセッションがどのファイルを触るか」の宣言が無かったこと。
+滞留した。さらに 2026-11-24 には、当方が作った修正が**渡す前に**並行レーンへ landing 済みだった
+（同一作業ツリーの同時編集）。
 
 ## ルール
 
-1. **着手前に宣言する。** 新しい作業を始める前に、下の表へ 1 行足す（lane / owner / paths / branch）。
-2. **WIP 上限**: 未マージブランチは **レーンあたり 1 本、全体で 3 本**まで。
-3. **新しい作業はマージ後にしか始めない。** 上限に達しているときは、まずマージかクローズを決める。
-4. **同じ paths を 2 レーンが宣言しない。** 重複が必要なら、先に統合順を決めて片方を閉じる。
-5. **完了の定義**は「ホスト緑＋verifier 承認」ではなく「**実機で確認済み＋master にマージ済み**」。
+1. **作業を始める前に `git log --oneline -20` と `git status` で master を確認する。**
+   これで「作ってから気づく」が「見てから決める」になる。
+2. **着手前に宣言する。** 新しい作業を始める前に、下の表へ 1 行足す（lane / owner / paths / branch）。
+3. **WIP 上限**: 未マージブランチは **レーンあたり 1 本、全体で 3 本**まで。
+4. **新しい作業はマージ後にしか始めない。** 上限に達しているときは、まずマージかクローズを決める。
+5. **同じ paths を 2 レーンが宣言しない。** 重複が必要なら、先に統合順を決めて片方を閉じる。
+6. **完了の定義**は「ホスト緑＋verifier 承認」ではなく「**実機で確認済み＋master にマージ済み**」。
    ホストテストは完了条件の一部であって、完了そのものではない。
-6. **CI の `wip-limit` は当面 warn-only**（`continue-on-error: true`、`check_wip_limit.py` は既定で exit 0）。
-   未マージ 33 本に対して上限 3 なので、初回から必ず超過する。33 本を 3 本に減らすのは 30 回の
-   マージで、ゴールデン採取とは時間軸が違う。加えて `release.yml` は「緑の CI」を要求するため、
-   ここを blocking にするとリリースも止まる。
-   **滞留が上限内（3 本以下）に収まった時点で `continue-on-error` を外し、`--strict` を付けて
-   blocking に切り替える。** それまでは `::warning::` の注釈だけを残す。
+7. **claim には開いている項目だけを書く。** 済んだ項目を残すと初日で嘘の文書になる。
+8. **CI の `wip-limit` は当面 warn-only**（`continue-on-error: true`、`check_wip_limit.py` は既定で exit 0）。
+   滞留が上限内（3 本以下）に収まった時点で `continue-on-error` を外し `--strict` で blocking にする。
 
 機械チェック: `python scripts/check_wip_limit.py --overlap`
 （未マージ本数が上限を超えたら警告。`--strict` で終了コード 1。CI は
@@ -34,48 +34,49 @@
 |---|---|---|---|---|
 | （機能名） | （セッション） | （触るパス） | （ブランチ） | active / blocked / superseded / merged |
 
-## 現在の占有（2026-11-23 時点）
+## 現在の占有
 
 | lane | owner | paths（glob） | branch | status |
 |---|---|---|---|---|
-| chargen-panel | 並行セッション | `app/src/main/cpp/ui/race_sex_panel*`, `app/src/main/cpp/tests/race_sex_panel_tests.cpp`, `docs/chargen_ui_spec.md` | master 済み | merged（既定 `ChargenUi::Panel`・実験的） |
-| chargen-handwritten | 本セッション | `app/src/main/cpp/ui/ui_character_creation.*` | `feat-chargen-21-pages` | **superseded（chargen-panel に置換。閉じる）** |
-| loading | 本セッション | `app/src/main/cpp/ui/loading_screen.*` | `feat-loading-canon`, `feat-loading-menu` | 未マージ（滞留） |
-| title-intro | 本セッション | `app/src/main/cpp/ui/title_screen.*`, `app/src/main/java/com/example/oblivion/GameRenderer.kt`, `AssetExtractor.kt` | `fix-title-video-166`, `fix-chargen-intro-movie`, `fix-title-video-assets-fallback`, `fix-title-touch-preload` | 未マージ（滞留） |
-| chargen-ime | 本セッション | `app/src/main/jni_bridge.cpp`, `CharacterNameBridge.kt` | `fix-chargen-ime-inset` | 未マージ（滞留） |
+| chargen-panel | 並行セッション | `app/src/main/cpp/ui/race_sex_panel*`, `app/src/main/cpp/ui/ui_toggle*`, `app/src/main/cpp/game/chargen_commit*`, `renderer.cpp` の chargen 配線 | master 済み | active（下記の残のみ） |
+| ci-gates / golden | 本セッション→並行レーンが landing | `scripts/**`, `docs/evidence/**`, `docs/smoke-tests/**`, `.github/workflows/**`, `docs/claims.md` | master 済み | merged |
 | re | RE セッション | `tmp/re/**`, `D:\re\**` | —（成果は master へ `re vXXX:` コミット） | active |
-| process | 本セッション | `scripts/**`, `docs/claims.md`, `docs/CI_PORT_FROM_BYROREDUX.md`, `docs/smoke-tests/**`, `.github/workflows/**` | 未コミット | active |
+| real-data-gates | 本セッション | `scripts/run_fixture_gates.sh`, `.github/workflows/real-data-gates.yml`, `tools/host_tests/{make_fixture_dds.py,fixture_parse_main.cpp,run_fixture_parse.sh}`, `docs/evidence/fixtures/minimal.dds`（BSA/NIF はこれから） | 着手中 | active。**DDS はローカル検証済み**（陽性: 16x16/mips1/DXT1/128B 一致、陰性: マジックを潰すと消費者が落ちる。検証者 = Git Bash＋GNU ツールチェーン）。**BSA/NIF は未着手**。**Panel レーンの `make_fixture_esm.py` / `newgame_smoke.cpp` / `run_smoke.sh` / `android.yml` は触らない**（同レーンが landing 済み）。`run_host_tests.sh` には本レーンが 2 行（`build_host_rust.sh` 呼出＋`-lsynchronization`）を入れた（Panel 非干渉） |
 
-## 引き渡し（2026-11-24・Panel レーン）→ **同日 landing 済み**
+### Panel レーンに残っている項目（当方は `race_sex_panel*` / `ui_toggle*` / `renderer.cpp` を触らない）
 
-`initialize()` の無描画修正と chargen の確定経路を **1 つの引き渡しに束ねて** Panel レーンへ渡した。**同日中に master へ landing した**（当方の作業ツリーの差分がそのまま取り込まれた）。
+| 区分 | 項目 |
+|---|---|
+| **残** | `V-664-2` / `V-664-3`: `on_commit_`（共有 `game/chargen_commit.cpp`）で Legacy と同順に **HP/Magicka/Stamina/level/8 属性/21 スキル**を適用し、最後に **`startGame()`**。完了条件は実機でセル侵入まで到達し、その画面で golden #2 を採取（golden #1 は V-664 完了後に再採取して `newgame-no-esm.json` へ改名） |
+| **残** | **`UIToggle` にクリック処理が無い**（`ui_toggle.cpp` は 31 行で `render()` のみ）。影響は race_sex_panel の **5 トグル全部**（Eyes 204 / Gender 210 / Race 211 / Style 214 / Hair Color 215。race_sex_panel 以外の消費者は 0）。**2 種に分けること**: (1) **bool 反転** = 204, 210（widget 内で `checked` をトグル）(2) **index 巡回** = 211, 214, 215（左右半分で ±1、既存 `cycleRaceFromTap` と同経路。**widget 内で反転しない**）。汎用の反転を足すと 211 で反転と巡回が二重に走る（値が bool でなく、`handleClick` が 211 を先に消費するため順序次第で握り潰し）。完了条件: 実機で Eyes(122,379) と Gender を押して画素変化が出ること／211・214・215 が二重処理にならないこと（Race 押下で index が 2 進まない） |
+| **済** | `initialize()` の無描画修正（landed 済み・`2e550a68`） |
+| **済** | `bad_weak_ptr` クラッシュ（`shared_ptr` 所有・landed 済み・`0e9b8aef`） |
 
-当初の引き渡し文:
+## 環境の罠（再発防止・2026-11-25 実測）
 
-```
-claim: Panel レーン
-対象: race_sex_panel.cpp の initialize()（無描画修正）＋ renderer.cpp の setOnCommit
-内容: (a) initialize() で描画が成立すること (b) on_commit_ で Legacy と同順に
-      HP/Magicka/Stamina/level/8属性/21スキルを適用し、最後に startGame() を呼ぶ
-完了条件: 実機で New Game → chargen → Done → Yes → セル侵入まで到達し、その画面で golden #2 を採取
-```
+**症状**: ホスト Rust を GNU で組むと
+`error[E0786]: found invalid metadata files for crate 'thiserror_impl'`（`invalid metadata version found: ...\build\thiserror-impl\<hash>\thiserror_impl-<hash>.dll`）。
+**原因**: 共有 `target/` に**別ツールチェーン**（scoop=MSVC）の proc-macro 成果物が残っていた。
+アーティファクトの種類ではなく **target ディレクトリの混在**が原因。`--target` を付けても
+proc-macro は `target/<dir>/release` 側に出るため、同じ dir を共有すると再発する。
 
-landing 後の実態（`git show HEAD:…` で確認）:
-- (a) **済**: `renderer.cpp` の `setChargenUi` が `raceSexPanel->initialize();` → `init();` の順で呼ぶ。`instantiate()` も各 widget に `initialize()`。
-- (b) **一部**: 共有 `app/src/main/cpp/game/chargen_commit.{h,cpp}` が追加され、`player.raceFormID` と `NpcManager::applyRaceToPlayer` まで実装。**ATTR ボーナスと health は未配線**（`V-664-2`/`V-664-3`・RE 待ち）で、**`startGame()` 到達の完了条件は未達**。
-- 当方の未コミット差分（claims.md の本節・`docs/evidence/README.md`・`docs/reviews/2026-11-23-handoff.md` §9・`docs/smoke-tests/newgame.sh` の追加タップ・`docs/evidence/golden/newgame-no-esm-prefix.json`）は、landing 済み分を壊さない追補として別途コミットする。
+**対処**: `scripts/build_host_rust.sh` に集約（toolchain/RUSTC を rustup の GNU 実体へ固定・
+`--target x86_64-pc-windows-gnu`・`CARGO_TARGET_DIR=target/gnu`・ビルド前にその dir だけ clean）。
+既に `lib*_ffi.a` があれば作り直さない。
 
-根拠（当方の実測・2026-11-24）:
-- `UIComponent::render()` は `if (!visible || !initialized) return;`（`ui_component.cpp:35`）で、`initialized` の既定は false（`ui_component.h:230`）。`RaceSexPanel` は `initialize()` を呼んでおらず、**chargen が 1 ピクセルも描かれない**（マーカーは出るので気づきにくい）。
-- `UIComponent::initialize()` は `UIDrawHelper::initialize()`（GL）を呼ぶため、**`init()` ではなく renderer 側**（`setChargenUi`）で呼ぶこと。`init()` はホストテストが多数回呼ぶ（`race_sex_panel_tests.cpp:119` ほか）。
-- 2026-11-24 09:53 のコミットが当方のビルド中に `renderer.cpp` を動かし、**同一ツリー同時編集**が実際に起きた。以後、当方は `race_sex_panel*` / `renderer.cpp` の chargen 配線を触らない。
+**規則**: 既定の `target/` を GNU ホストビルドに使わない（MSVC と同じ dir を共有しない）。
+
+**症状 2（MinGW のリンク）**: ホストのリンクが
+`undefined reference to 'WaitOnAddress' / 'WakeByAddressSingle'`（約 50 件）で落ちる。
+**原因**: Rust std の Windows 同期プリミティブは MinGW では `libkernel32.a` ではなく
+**`libsynchronization.a`** にある。`run_host_tests.sh` の `EXTRA_LIBS` に入っていなかった。
+**対処**: MinGW の `EXTRA_LIBS` に **`-lsynchronization`** を追加（実測 2026-11-25:
+追加前 308 undefined → 追加後 0、`dds-ffi 0.1.0` が起動）。
+
+**配線（本レーンが実装・Panel 非干渉）**: `tools/host_tests/run_host_tests.sh` に
+(1) アーカイブ探索の前に `bash scripts/build_host_rust.sh >&2`（`OBLIVION_RUST_SKIP_BUILD` で無効化可）、
+(2) `EXTRA_LIBS` へ `-lsynchronization`。`run_fixture_parse.sh` からも同スクリプトを呼ぶ。
 
 ## 滞留の棚卸し（この表を縮めるのが最優先の仕事）
-上表の「未マージ（滞留）」は 7 ブランチ・21 コミット。上限 3 本に対して超過している。
-推奨する処理順:
 
-1. `chargen-handwritten` を**閉じる**（superseded。残す価値がある差分だけ cherry-pick）。
-2. `title-intro` の 4 ブランチを 1 本にまとめてマージ（同一ファイル群）。
-3. `loading` の 2 ブランチを 1 本にまとめてマージ。
-4. `chargen-ime` をマージ。
-5. 以後は「マージしてから次を始める」を守る。
+未マージブランチの棚卸しは `python scripts/check_wip_limit.py --overlap` が列挙する。

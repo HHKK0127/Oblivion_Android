@@ -25,6 +25,14 @@ Launcher/
 *.lip
 *.egm
 *.scc
+
+# Synthetic fixture exception (same reasoning as the *.esm rule above): these are
+# self-authored byte sequences produced by tools/host_tests/make_fixture_*.py and
+# contain no Bethesda data, so they are safe to commit. Must stay after the
+# data-extension rules.
+!docs/evidence/fixtures/*.dds
+!docs/evidence/fixtures/*.nif
+!docs/evidence/fixtures/*.bsa
 *.lod
 textures_extracted/
 meshes_extracted/
