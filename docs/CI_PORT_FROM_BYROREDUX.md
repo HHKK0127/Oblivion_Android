@@ -117,6 +117,7 @@ ByroRedux の `docs/smoke-tests/<gate>.sh` に相当。**既定経路が成立�
 - `newgame.sh` が撮るスクリーンショットを、原版スクショとの差分比較に置き換える。
 - 項目ごとの RE 目視ではなく、**画像差分**をゲートにする（スケールするのはこちら）。
 - **暫定（V688 → 解決 2026-11-24）**: エミュレータの PNG ゴールデンは **V688a park**（hosted runner に hypervisor 無し＝ubuntu は KVM 無し / macOS arm64 は HVF 無し / TCG は adb に登録されず）のため未採取のまま。代替として **host smoke（`smoke-host` ジョブ・A 案）** を追加し、その golden `docs/evidence/golden/newgame-no-esm.json` を CI linux-gnu で採取して blocking 化した（`compare_golden.py` に JSON 完全一致モードを追加）。エミュレータの `smoke` ジョブは self-hosted runner（KVM/HVF あり）が用意できるまで `continue-on-error: true` ＋ `if: github.event_name != 'push'` で残す。`--require` は**外さない**。
+- **実機での確認**（#178 の修正・既定 `Panel` の表示/タップ）は `docs/smoke-tests/manual-device.md` の**手動チェックリスト**で行う（emulator が hosted runner で動かないため唯一の実機経路。リリース前に必須）。
 
 ---
 

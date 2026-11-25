@@ -4746,4 +4746,5 @@ ace_sex_menu.xml")` の戻り（XML から読み込んだ root tile）。`ecx=eb
 - **blocking 後の緑確認**: run `45341704577`（`1b191371`）で `smoke-host` の `Compare against the golden` が ✓（`compare_golden --require` 緑）。`build`/`host-tests` も ✓。`smoke-host` には `if:` を付けていない＝push で実行。
 - **台帳更新**: `tmp/re/TODO_re49.md` row665 を **V688a = superseded by host smoke**／**V688b = close** に更新、row666（**V689**）を追加（host smoke A 案・golden 採取）。row665 は emulator ログ引用の `|` が 3 個あり **pipes=10 で round_verify FAIL（HEAD 時点で既存の不整合）**だったため全角 `｜` へ正規化（pipes=7）。`round_verify --allow-row-delta` **ALL OK（rows 31..666 / total 552 / done 545 / open 7）**。`TOTAL_BASELINE` 551→552 は別コミット。
 - **docs**: `docs/evidence/golden/README.md` に**更新手順**（想定内確認→artifact 取得→golden だけのコミット→差分目視のチェック項目）と現状更新。`docs/CI_PORT_FROM_BYROREDUX.md §4.4` を解決済みに。emulator `smoke` ジョブは self-hosted runner 用に残置。
+- **手動チェックリスト（B 案）**: `docs/smoke-tests/manual-device.md` を新規作成。実機で New Game→21 ページ遷移→Random/Reset→名前検証（空/空白/現名/有効）→Done→Yes を通し、**#178 と既定 `Panel` の実機確認を兼ねる**。判定＝**P が 1 つでも欠けたら既定を `Legacy` に戻す**。記録欄（端末/OS・ビルド hash・実施者・日時・`smoke.log`）をリリースごとに追記する。
 
