@@ -1,7 +1,7 @@
 # Oblivion Android - In-progress Native Port
 
 ![Status](https://img.shields.io/badge/status-Phase%2065%2B%20in%20progress-brightgreen)
-![Version](https://img.shields.io/badge/version-0.9.10-blue)
+![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![Android](https://img.shields.io/badge/android-10%2B-green)
 
 ---
@@ -10,7 +10,7 @@
 
 An in-progress native Android port of The Elder Scrolls IV: Oblivion, built in C++17 with OpenGL ES 3.0 and the Android NDK, with the pure-logic asset and plugin layers implemented in Rust behind a C ABI.
 
-**v0.9.10 (versionCode 910) — Phase 64 complete (all 20 missing ESM record types decoded and verified against the real Oblivion.esm). Phase 65 (full world rendering) is in progress, Phase 68 (ESM-driven game systems and GUI) is complete, and the pure-logic asset and plugin layers are being migrated to Rust (Phases 1-3 done).**
+**0.1.0 — Phase 64 complete (all 20 missing ESM record types decoded and verified against the real Oblivion.esm). Phase 65 (full world rendering) is in progress, Phase 68 (ESM-driven game systems and GUI) is complete, and the pure-logic asset and plugin layers are being migrated to Rust (Phases 1-3 done).**
 
 The app version is defined in exactly one place: `app/build.gradle` (`versionName` / `versionCode`).
 Version labels that appear next to phase numbers in the Development Phases table below are historical
@@ -444,22 +444,22 @@ oblivion-android/
 | Phase 29 | NAVM Pathfinding + DIAL/INFO Dialogue | [x] Complete | NAVM runtime integration with CombatManager A* pathfinding, DIAL/INFO record parsing with faction-based dialogue branching, REFR-based world object placement (8 types), 4 spell effects (PARALYZE, INVISIBILITY, FORTIFY_ATTR, SUMMON), new game systems (Alchemy, Book Reader, Clothing Converter, Faction Manager, Loot Generator, NavMesh Manager) |
 | Phase 30 | NIF Skeleton/Skinning + Collision + Animation | [~] Core complete | Skeleton/skinning, collision, NiControllerManager/Sequence parsing, AnimationPlayer runtime, and integration tests are complete. NiKeyframeController/NiKeyframeData/NiTransformController readers and controller-reference resolution remain pending the Rust/RE contract; they are intentionally inert rather than guessed. |
 | Phase 31 | PlayerController Integration + World Loading | [x] Complete | Steps 1-10: WorldEntity struct with NIFCache, WorldLoader (loadStatic/loadDynamic/loadActor), PlayerController extended (Skeleton+AnimationPlayer+CharacterController integration, hysteresis animation state machine, fixed/variable timestep separation, combat stance+attack), WorldEntity rendering with skinning shader, PlayerController wired to actor skeleton/animation |
-| Phase 32 (v0.9.8) | Animation & Audio Integration | [x] Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
-| Phase 33 (v0.9.9) | Combat Sound Assets + NPC Spatial Audio | [x] Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
-| Phase 34 (v0.9.10) | Weapon-Type Sounds + Quick-Slot Spells | [x] Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
-| Phase 35 (v1.0.0) | Radiant AI System | [x] Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
-| Phase 36 (v1.1.0) | Jolt Physics Integration | [x] Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
-| Phase 50 (v2.5.0) | Distant LOD System | [x] Complete | DistantLodManager, LOD mesh generation, 6-plane frustum culling, distance fade, HorizonRing mountain presets |
-| Phase 51 (v2.5.0) | SpeedTree Vegetation | [x] Complete | SpeedTreeManager, 4-stage LOD, instanced rendering, billboard fallback, Perlin wind field, ESM LAND-based tree placement |
-| Phase 52 (v2.5.0) | FaceGen System | [x] Complete | FaceGenManager, race morph targets, expression morphs, hair/beard system, LOD levels, texture atlas |
-| Phase 53 (v2.5.0) | Bink Video Player | [x] Complete | BinkVideoPlayer, MediaCodec JNI bridge, video clip manager, OpenGL ES texture renderer |
-| Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] Complete | 15-phase pipeline, ImperialWeaveConfig, ServiceLocator, 12 event types, frame budget (16.6ms) |
-| Phase 55 (v3.1.0) | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
-| Phase 56 (v3.2.0) | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
-| Phase 58 (v1.1.0) | Asset Optimization | [x] Complete | AssetExtractor, TextureCompressor (ASTC/ETC2), AudioCompressor (WAV→OGG/MP3), LODSystem |
-| Phase 59 (v1.2.0) | Performance Optimization | [x] Complete | OcclusionCuller (hierarchical Z-buffer), ShaderCache (LRU caching), MemoryPool (object pooling) |
-| Phase 60 (v1.3.0) | Final Testing & Release | [x] Complete | Build verification, APK analysis, compression tools |
-| Phase 61 (v1.4.0) | SpeedTree Renderer Verification | [x] Complete | SpeedTree renderer verification (see plan.md) |
+| Phase 32 | Animation & Audio Integration | [x] Complete | AnimationSubscriber (EventBus→AnimationPlayer bridge), AudioSubscriber (EventBus→AudioManager bridge), SpellSelectionPanel UI, AnimationPlayer.findSequenceByName(), WorldLoader entity storage + NPC→Entity mapping, Imperial Weave Event.targetId field |
+| Phase 33 | Combat Sound Assets + NPC Spatial Audio | [x] Complete | Dedicated combat sounds (hit_blade/blunt/axe/unarmed, block, parry, dodge, death), NPC spatial audio callback, AudioSubscriber event→sound mappings |
+| Phase 34 | Weapon-Type Sounds + Quick-Slot Spells | [x] Complete | Weapon-type hit sound routing (CombatManager→AudioSubscriber), SpellSelectionPanel school colors, Quick-slot spells (F1-F4) |
+| Phase 35 | Radiant AI System | [x] Complete | AI Package System (15 types), Priority-based PackageStack, AIScheduler (24h time-based), NavMesh pathfinding, Stuck detection, Default daily schedule, Combat/Flee override |
+| Phase 36 | Jolt Physics Integration | [x] Complete | PhysicsManager singleton, CharacterVirtual player/NPC, HeightFieldShape terrain, Fixed timestep (1/60s), Raycast API, ImperialWeave phase integration |
+| Phase 50 | Distant LOD System | [x] Complete | DistantLodManager, LOD mesh generation, 6-plane frustum culling, distance fade, HorizonRing mountain presets |
+| Phase 51 | SpeedTree Vegetation | [x] Complete | SpeedTreeManager, 4-stage LOD, instanced rendering, billboard fallback, Perlin wind field, ESM LAND-based tree placement |
+| Phase 52 | FaceGen System | [x] Complete | FaceGenManager, race morph targets, expression morphs, hair/beard system, LOD levels, texture atlas |
+| Phase 53 | Bink Video Player | [x] Complete | BinkVideoPlayer, MediaCodec JNI bridge, video clip manager, OpenGL ES texture renderer |
+| Phase 54 | Imperial Weave v4.0 | [x] Complete | 15-phase pipeline, ImperialWeaveConfig, ServiceLocator, 12 event types, frame budget (16.6ms) |
+| Phase 55 | Engine Polish & Optimization | [x] Complete | FrameBudgetManager, MemoryDefrag, ShaderCache, OcclusionCuller, BatchRenderer, FaceGen brush-up, Jolt Physics extension |
+| Phase 56 | Gamebryo Complete | [x] Complete | ParticleSystem (7 presets), PostProcessPipeline (8 effects), WaterRenderer (Gerstner waves, 6 types), SkyWeatherSystem (8 weathers, day/night), SceneGraph (hierarchy, AABB), MaterialSystem (8 texture slots, 8 defaults) |
+| Phase 58 | Asset Optimization | [x] Complete | AssetExtractor, TextureCompressor (ASTC/ETC2), AudioCompressor (WAV→OGG/MP3), LODSystem |
+| Phase 59 | Performance Optimization | [x] Complete | OcclusionCuller (hierarchical Z-buffer), ShaderCache (LRU caching), MemoryPool (object pooling) |
+| Phase 60 | Final Testing & Release | [x] Complete | Build verification, APK analysis, compression tools |
+| Phase 61 | SpeedTree Renderer Verification | [x] Complete | SpeedTree renderer verification (see plan.md) |
 | Phase 62 | Foundation | [x] Complete | Unify Gradle definitions, version consistency (single source of truth in build.gradle), remove Kotlin DSL conflicts, connect test suites, legal audit |
 | Phase 63 | Performance Foundation | [x] Complete | Batch TextRenderer (glyph atlas + instancing), remove per-frame LOGI, cache glGetProgramiv, merge draw calls |
 | Phase 64 | Real Data Pipeline | [x] Complete | Decode all 20 missing ESM record types (ACHR, ACRE, PGRD, GMST, LTEX, WATR, AMMO, GLOB, FURN, IDLE, LSCR, SGST, EFSH, SLGM, CSTY, ...), fix BSA v103 folder table, verified on emulator against real Oblivion.esm, build success on 4 ABIs |
@@ -469,23 +469,23 @@ oblivion-android/
 | Phase 68 | Game Systems and GUI | [x] Complete | ESM-driven inventory, weapons, enchantments and factions with real FormIDs; merchant shops from `NPC_` `CNTO`, `UIShop` barter screen, single shared player inventory |
 | Phase 69 | Persistence | [~] In Progress | Save format v5 - container contents, quest state, script globals, merchant `MERC` block, loading-screen progress bar |
 | Phase 70 | Mods and Load Order | [~] In Progress | `plugins.txt` parse/serialise/order, FormID index remapping, `Oblivion.ini` settings layer, Data Files launcher screen |
-| Phase 37 (v1.2.0) | Script VM | [x] Complete | Oblivion VM bytecode interpreter (47 opcodes), 118 game functions (Tier 1+2), ScriptManager, ExecutionContext, disassembler |
-| Phase 38 (v1.3.0) | Script VM Testing | [x] Complete | 20 unit tests (ExecutionContext, ScriptVM, Opcodes, ScriptFunctions, ScriptManager), build verification |
-| Phase 39 (v1.4.0) | Quest Flow System | [x] Complete | QuestFlowController, QuestStageManager, QuestObjectiveTracker, QuestRewards, QuestRecord parsing |
-| Phase 40 (v1.5.0) | NPC Dialogue Tree | [x] Complete | DialogueTree, DialogueRunner, DialogueFilterEngine, DialogueHistory, DialogueRecord, DialogueIntegration |
-| Phase 41 (v1.6.0) | Binary Save System | [x] Complete | SaveManager (binary format), SaveSlotManager, AutoSave, Serializable interface, system registration |
-| Phase 42 (v2.0.0) | Game Loop Integration | [x] Complete | StateManager, InputRouter, GameLoopCoordinator, SceneRenderer, DebugConsole, PerformanceProfiler |
-| Phase 43 (v2.1.0) | UI/UX System | [x] Complete | TouchGestureHandler, MenuTransitionManager, HudLayout, ControlSchemeManager, AccessibilityManager |
-| Phase 44 (v2.2.0) | Performance Optimization | [x] Complete | MemoryPool, RenderOptimizer, AsyncTaskManager, CacheManager, ProfilerDashboard |
-| Phase 45 (v2.3.0) | Unit Testing | [x] Complete | 37 test cases, +1,089 lines |
-| Phase 46 (v2.4.0) | Asset Pipeline | [x] Complete | TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers (+2,487 lines) |
-| Phase 47 (v2.4.0) | Audio System | [x] Complete | AudioDecoder, BgmManager, SoundEffectManager (+2,176 lines) |
-| Phase 48 (v2.4.0) | Integration Tests | [x] Complete | 12 integration test cases (+1,159 lines) |
-| Phase 49 (v2.4.0) | Controls & Input | [x] Complete | GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer (+1,812 lines) |
+| Phase 37 | Script VM | [x] Complete | Oblivion VM bytecode interpreter (47 opcodes), 118 game functions (Tier 1+2), ScriptManager, ExecutionContext, disassembler |
+| Phase 38 | Script VM Testing | [x] Complete | 20 unit tests (ExecutionContext, ScriptVM, Opcodes, ScriptFunctions, ScriptManager), build verification |
+| Phase 39 | Quest Flow System | [x] Complete | QuestFlowController, QuestStageManager, QuestObjectiveTracker, QuestRewards, QuestRecord parsing |
+| Phase 40 | NPC Dialogue Tree | [x] Complete | DialogueTree, DialogueRunner, DialogueFilterEngine, DialogueHistory, DialogueRecord, DialogueIntegration |
+| Phase 41 | Binary Save System | [x] Complete | SaveManager (binary format), SaveSlotManager, AutoSave, Serializable interface, system registration |
+| Phase 42 | Game Loop Integration | [x] Complete | StateManager, InputRouter, GameLoopCoordinator, SceneRenderer, DebugConsole, PerformanceProfiler |
+| Phase 43 | UI/UX System | [x] Complete | TouchGestureHandler, MenuTransitionManager, HudLayout, ControlSchemeManager, AccessibilityManager |
+| Phase 44 | Performance Optimization | [x] Complete | MemoryPool, RenderOptimizer, AsyncTaskManager, CacheManager, ProfilerDashboard |
+| Phase 45 | Unit Testing | [x] Complete | 37 test cases, +1,089 lines |
+| Phase 46 | Asset Pipeline | [x] Complete | TextureManager, MeshLoader, WorldDataLoader, BSA/ESM/NIF readers (+2,487 lines) |
+| Phase 47 | Audio System | [x] Complete | AudioDecoder, BgmManager, SoundEffectManager (+2,176 lines) |
+| Phase 48 | Integration Tests | [x] Complete | 12 integration test cases (+1,159 lines) |
+| Phase 49 | Controls & Input | [x] Complete | GamepadMapper, TouchCalibration, InputVisualizer, HudCustomizer (+1,812 lines) |
 
 ---
 
-### [METRIC] Code Metrics (Phase 56 / v3.2.0)
+### [METRIC] Code Metrics (Phase 56)
 
 - **C++ Source (.cpp)**: 70,000+ lines (219 files)
 - **C++ Headers (.h)**: 46,000+ lines (280 files)
@@ -712,9 +712,9 @@ Proprietary - Experimental Port
 
 ---
 
-**Status**: Phase 65 in progress, Phase 68 complete (v0.9.10) — ESM-driven game systems and merchant trade landed; pure-logic asset/plugin layers migrating to Rust (Phases 1-3 done)
+**Status**: Phase 65 in progress, Phase 68 complete — ESM-driven game systems and merchant trade landed; pure-logic asset/plugin layers migrating to Rust (Phases 1-3 done)
 **Last Updated**: 2026-11-01
-**Version**: 0.9.10 (versionCode 910)
+**Version**: 0.1.0
 **Features**: Graphical UI, Textured Panels & Buttons, Sound Effects, SaveLoadUI, OpenAL 3D Audio, RetroFilter Effects, Enhanced DebugHUD, ESM Data Integration (40 record types), NpcManager ESM, Container ESM, Player RACE/CLAS/BSGN, Status Effects, NAVM Pathfinding, DIAL/INFO Dialogue, REFR Placement, Spell Effects (8 types), Alchemy, Book Reader, Faction Manager, Loot Generator, NIF Skeleton/Skinning, Animation System, Collision Detection, Integration Tests (Phase 30), WorldEntity + WorldLoader + PlayerController Integration (Phase 31), Imperial Weave EventBus + 12-phase coordinator, AnimationSubscriber, AudioSubscriber, SpellSelectionPanel (Phase 32), Dedicated Combat Sounds, NPC Spatial Audio (Phase 33), Weapon-Type Sound Routing, Quick-Slot Spells (Phase 34), Radiant AI System (Phase 35), Jolt Physics Integration (Phase 36), Distant LOD (Phase 50), SpeedTree Vegetation (Phase 51), FaceGen (Phase 52), Bink Video (Phase 53), Imperial Weave v4.0 (Phase 54), Engine Polish (Phase 55), Gamebryo Complete: Particle/PostProcess/Water/SkyWeather/SceneGraph/Material (Phase 56), UI Bug Fixes & Comment Translation (Phase 57), Gradle Unification & Version Consistency (Phase 62), TextRenderer Glyph Batching (Phase 63), ESM Real Data Pipeline - all 20 secondary record types decoded (Phase 64), Landscape LOD from shipped BSAs (Phase 65), ESM Game Systems Integration & Merchant Trade (Phase 68), Save Format v5 - containers, quest state, script globals, merchants (Phase 69), plugins.txt Load Order & FormID Remapping (Phase 70), Rust Pure-Logic Layers (BSA/NIF/DDS readers, FormID index, plugin list, asset paths, mesh builder)
 
 **Next**: Phase 65 remainder (object LOD `.lod`/`.cmp` loader + on-device verification), Phase 66 (characters and AI), Phase 70 (mods and load order)
@@ -729,7 +729,7 @@ Proprietary - Experimental Port
 
 The Elder Scrolls IV: Oblivion の進行中のネイティブ Android 移植版です。C++17 と OpenGL ES 3.0、Android NDK で構築され、純粋ロジックのアセット/プラグイン層は Rust で C ABI 経由に実装しています。
 
-**v0.9.10 (versionCode 910) — Phase 64 完了（20種の不足していたESMレコードタイプをすべてデコードし、実機のOblivion.esmで検証済み）。Phase 65 (フルワールドレンダリング) は進行中、Phase 68 (ESMデータ駆動のゲームシステムとGUI) は完了、純粋ロジック層のRust移行が進行中（Phase 1-3 完了）です。**
+**0.1.0 — Phase 64 完了（20種の不足していたESMレコードタイプをすべてデコードし、実機のOblivion.esmで検証済み）。Phase 65 (フルワールドレンダリング) は進行中、Phase 68 (ESMデータ駆動のゲームシステムとGUI) は完了、純粋ロジック層のRust移行が進行中（Phase 1-3 完了）です。**
 
 アプリのバージョンは `app/build.gradle`（`versionName` / `versionCode`）の 1 箇所のみで定義します。
 以下の開発フェーズ表でフェーズ番号の隣に付いているバージョン表記は開発時の履歴タグであり、リリース版数ではありません。
@@ -1028,18 +1028,18 @@ oblivion-android/
 | Phase 29 | NAVMパスファインディング＋DIAL/INFO会話 | [x] 完了 | NAVMランタイム統合（A*経路探索）、派閥分岐付きDIAL/INFOレコード解析、REFRワールドオブジェクト配置（8種）、4つの呪文エフェクト、新ゲームシステム追加 |
 | Phase 30 | NIFスケルトン/スキニング＋衝突＋アニメーション | [~] コア完了 | スケルトン/スキニング、衝突、NiControllerManager/Sequence解析、AnimationPlayerランタイム、統合テストは完了。NiKeyframeController/NiKeyframeData/NiTransformControllerのリーダーとコントローラー参照解決は、Rust/RE契約確定待ちのため未実装（推測実装を避けて明示的に停止） |
 | Phase 31 | PlayerController統合＋ワールドロード | [x] 完了 | Step 1-10: WorldEntity構造体（NIFCache付き）、WorldLoader（loadStatic/loadDynamic/loadActor）、PlayerController拡張（Skeleton＋AnimationPlayer＋CharacterController統合、ヒステリシス付きアニメーション状態マシン、固定/可変タイムステップ分離、戦闘構え＋攻撃）、WorldEntityスキニングシェーダー描画、PlayerControllerスケルトン/アニメーション統合 |
-| Phase 32 (v0.9.8) | アニメーション＆オーディオ統合 | [x] 完了 | AnimationSubscriber（EventBus→AnimationPlayerブリッジ）、AudioSubscriber（EventBus→AudioManagerブリッジ）、SpellSelectionPanel UI、AnimationPlayer.findSequenceByName()、WorldLoaderエンティティストレージ＋NPC→Entityマッピング、Imperial Weave Event.targetIdフィールド |
-| Phase 33 (v0.9.9) | コンバットサウンド＋NPC空間オーディオ | [x] 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
-| Phase 34 (v0.9.10) | 武器タイプサウンド＋クイックスロット呪文 | [x] 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
-| Phase 35 (v1.0.0) | Radiant AIシステム | [x] 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
-| Phase 36 (v1.1.0) | Jolt Physics統合 | [x] 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
-| Phase 50 (v2.5.0) | Distant LODシステム | [x] 完了 | DistantLodManager、LODメッシュ生成、6平面視錐台カリング、距離フェード、HorizonRing山岳プリセット |
-| Phase 51 (v2.5.0) | SpeedTree植生 | [x] 完了 | SpeedTreeManager、4段階LOD、インスタンス描画、ビルボードフォールバック、パーリン風場、ESM LANDベース樹木配置 |
-| Phase 52 (v2.5.0) | FaceGenシステム | [x] 完了 | FaceGenManager、種族モーフターゲット、表情モーフ、髪/髭システム、LODレベル、テクスチャアトラス |
-| Phase 53 (v2.5.0) | Binkビデオプレイヤー | [x] 完了 | BinkVideoPlayer、MediaCodec JNIブリッジ、ビデオクリップマネージャー、OpenGL ESテクスチャレンダラー |
-| Phase 54 (v3.0.0) | Imperial Weave v4.0 | [x] 完了 | 15フェーズパイプライン、ImperialWeaveConfig、ServiceLocator、12イベントタイプ、フレームバジェット（16.6ms） |
-| Phase 55 (v3.1.0) | エンジンポリッシュ＆最適化 | [x] 完了 | FrameBudgetManager、MemoryDefrag、ShaderCache、OcclusionCuller、BatchRenderer、FaceGenブラッシュアップ、Jolt Physics拡張 |
-| Phase 56 (v3.2.0) | Gamebryo完成 | [x] 完了 | ParticleSystem（7プリセット）、PostProcessPipeline（8エフェクト）、WaterRenderer（Gerstner波、6種）、SkyWeatherSystem（8天候、昼夜）、SceneGraph（階層、AABB）、MaterialSystem（8テクスチャスロット、8デフォルト） |
+| Phase 32 | アニメーション＆オーディオ統合 | [x] 完了 | AnimationSubscriber（EventBus→AnimationPlayerブリッジ）、AudioSubscriber（EventBus→AudioManagerブリッジ）、SpellSelectionPanel UI、AnimationPlayer.findSequenceByName()、WorldLoaderエンティティストレージ＋NPC→Entityマッピング、Imperial Weave Event.targetIdフィールド |
+| Phase 33 | コンバットサウンド＋NPC空間オーディオ | [x] 完了 | 専用コンバットサウンド（hit_blade/blunt/axe/unarmed、block、parry、dodge、death）、NPC空間オーディオコールバック、AudioSubscriberイベント→サウンドマッピング |
+| Phase 34 | 武器タイプサウンド＋クイックスロット呪文 | [x] 完了 | 武器タイプヒットサウンドルーティング（CombatManager→AudioSubscriber）、SpellSelectionPanel学校カラー、クイックスロット呪文（F1-F4） |
+| Phase 35 | Radiant AIシステム | [x] 完了 | AIパッケージシステム（15種）、優先度ベースPackageStack、AIScheduler（24h時間ベース）、NavMeshパスファインディング、スタック検出、デフォルト日課、コンバット/フリーオーバーライド |
+| Phase 36 | Jolt Physics統合 | [x] 完了 | PhysicsManagerシングルトン、CharacterVirtual player/NPC、HeightFieldShape地形、固定タイムステップ（1/60s）、Raycast API、ImperialWeaveフェーズ統合 |
+| Phase 50 | Distant LODシステム | [x] 完了 | DistantLodManager、LODメッシュ生成、6平面視錐台カリング、距離フェード、HorizonRing山岳プリセット |
+| Phase 51 | SpeedTree植生 | [x] 完了 | SpeedTreeManager、4段階LOD、インスタンス描画、ビルボードフォールバック、パーリン風場、ESM LANDベース樹木配置 |
+| Phase 52 | FaceGenシステム | [x] 完了 | FaceGenManager、種族モーフターゲット、表情モーフ、髪/髭システム、LODレベル、テクスチャアトラス |
+| Phase 53 | Binkビデオプレイヤー | [x] 完了 | BinkVideoPlayer、MediaCodec JNIブリッジ、ビデオクリップマネージャー、OpenGL ESテクスチャレンダラー |
+| Phase 54 | Imperial Weave v4.0 | [x] 完了 | 15フェーズパイプライン、ImperialWeaveConfig、ServiceLocator、12イベントタイプ、フレームバジェット（16.6ms） |
+| Phase 55 | エンジンポリッシュ＆最適化 | [x] 完了 | FrameBudgetManager、MemoryDefrag、ShaderCache、OcclusionCuller、BatchRenderer、FaceGenブラッシュアップ、Jolt Physics拡張 |
+| Phase 56 | Gamebryo完成 | [x] 完了 | ParticleSystem（7プリセット）、PostProcessPipeline（8エフェクト）、WaterRenderer（Gerstner波、6種）、SkyWeatherSystem（8天候、昼夜）、SceneGraph（階層、AABB）、MaterialSystem（8テクスチャスロット、8デフォルト） |
 | Phase 62 | Foundation | [x] 完了 | Gradle定義の統合、バージョン一貫性（build.gradleを唯一の情報源に）、Kotlin DSL競合の除去、テストスイート接続、法的監査 |
 | Phase 63 | Performance Foundation | [x] 完了 | TextRendererのバッチ処理（グリフアトラス＋インスタンシング）、毎フレームのLOGI削除、glGetProgramivキャッシュ、描画コール結合 |
 | Phase 64 | 実データパイプライン | [x] 完了 | 20種の不足ESMレコードタイプを全デコード（ACHR、ACRE、PGRD、GMST、LTEX、WATR、AMMO、GLOB、FURN、IDLE、LSCR、SGST、EFSH、SLGM、CSTY他）、BSA v103フォルダテーブル修正、エミュレータで実Oblivion.esm検証、4 ABIでビルド成功 |
@@ -1049,11 +1049,11 @@ oblivion-android/
 | Phase 68 | ESMデータ駆動ゲームシステム | [x] 完了 | ゲームの状態の唯一の実装はESMデータ。インベントリ（`InventoryManager::loadItemsFromESM`）、武器（`CombatManager::loadWeaponsFromESM`）、エンチャント（`EnchantingSystem::loadEnchantmentsFromESM`）、派閥（FACTレコードから解決）。ハードコードFormIDはすべて置換済み。商店は元の `NPC_` `CNTO` リストから構築され、`UIShop` 取引画面、`merchants` / `useshop` コンソールコマンド、単一インベントリ |
 | Phase 69 | セーブフォーマットv5 | [~] 進行中 | コンテナ内容、クエスト状態、スクリプトグローバル、商店の所持金/在庫（`MERC` ブロック）を永続化。`tests/merchant_persistence_tests.cpp`（39チェック） |
 | Phase 70 | モッドとロード順 | [~] 進行中 | `plugins.txt` の解析/保存/整列、FormIDインデックス再マッピング、`Oblivion.ini` 設定レイヤー（settings.txt > Oblivion.ini > 既定値）、データファイルランチャー画面 |
-| Phase 37 (v1.2.0) | スクリプトVM | [x] 完了 | Oblivion VMバイトコードインタプリタ（47オプコード）、118ゲーム関数（Tier 1+2）、ScriptManager、ExecutionContext、逆アセンブラ |
+| Phase 37 | スクリプトVM | [x] 完了 | Oblivion VMバイトコードインタプリタ（47オプコード）、118ゲーム関数（Tier 1+2）、ScriptManager、ExecutionContext、逆アセンブラ |
 
 ---
 
-### [METRIC] コード指標 (Phase 56 / v3.2.0)
+### [METRIC] コード指標 (Phase 56)
 
 - **C++ソース (.cpp)**: 70,000行以上（219ファイル）
 - **C++ヘッダ (.h)**: 46,000行以上（280ファイル）
@@ -1279,10 +1279,10 @@ oblivion-android/
 
 ---
 
-**状態**: Phase 65 進行中、Phase 68 完了 (v0.9.10) - ESMデータ駆動のゲームシステムと商店取引が完了。純粋ロジックのアセット/プラグイン層はRust移行中（Phase 1-3 完了）
+**状態**: Phase 65 進行中、Phase 68 完了 - ESMデータ駆動のゲームシステムと商店取引が完了。純粋ロジックのアセット/プラグイン層はRust移行中（Phase 1-3 完了）
 
 **最終更新**: 2026-11-01
-**バージョン**: 0.9.10 (versionCode 910)
+**バージョン**: 0.1.0
 
 **機能**: グラフィカルUI、テクスチャパネル＆ボタン、効果音、セーブ/ロードUI、OpenAL 3Dオーディオ、レトロフィルター効果、強化デバッグHUD、ESMデータ統合（40種レコード）、NPCマネージャーESM、コンテナESM、プレイヤーRACE/CLAS/BSGN、ステータス効果、NAVMパスファインディング、DIAL/INFO会話、REFR配置、呪文エフェクト（8種）、錬金術、書籍リーダー、派閥マネージャー、ルートジェネレーター、NIFスケルトン/スキニング、アニメーションシステム、衝突判定、統合テスト（Phase 30）、WorldEntity＋WorldLoader＋PlayerController統合（Phase 31）、Imperial Weave EventBus＋12フェーズコーディネーター、AnimationSubscriber、AudioSubscriber、SpellSelectionPanel（Phase 32）、専用コンバットサウンド、NPC空間オーディオ（Phase 33）、武器タイプサウンドルーティング、クイックスロット呪文（Phase 34）、Radiant AIシステム（Phase 35）、Jolt Physics統合（Phase 36）、Distant LOD（Phase 50）、SpeedTree植生（Phase 51）、FaceGen（Phase 52）、Binkビデオ（Phase 53）、Imperial Weave v4.0（Phase 54）、エンジンポリッシュ（Phase 55）、Gamebryo完成：パーティクル/ポストプロセス/水/天候/シーングラフ/マテリアル（Phase 56）、UIバグ修正＆コメント翻訳（Phase 57）、Gradle統合＆バージョン一貫性（Phase 62）、TextRendererグリフバッチ処理（Phase 63）、ESM実データパイプライン - 20種の不足レコードタイプを全デコード（Phase 64）、フルワールドレンダリング - LTEX/VTXT地形・水・空・ドア遷移・屋内ジオメトリ・LOD（Phase 65）、ESMゲームシステム統合＆商店取引（Phase 68）、セーブフォーマットv5 - コンテナ・クエスト・スクリプトグローバル・商店（Phase 69）、plugins.txtロード順＆FormID再マッピング（Phase 70）、Rust純粋ロジック層 - BSA/NIF/DDSリーダー・FormIDインデックス・プラグインリスト・アセットパス・メッシュビルダー
 

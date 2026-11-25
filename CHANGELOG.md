@@ -5,13 +5,17 @@ All notable changes to the Oblivion Android project are documented here.
 ## Version numbering
 
 The app version is defined in exactly one place: `app/build.gradle` (`versionName` / `versionCode`).
-The current version is **0.9.10 (versionCode 910)**.
+The current version is **0.1.0 (versionCode 1000)**.
 
 > Note: the `[1.0.0]` and `[1.3.0]` sections below were written during development and do not
 > correspond to any shipped build. Their version numbers were never applied to `app/build.gradle`.
 > They are retained as historical notes only.
 
 ---
+
+## 0.1.0 — 最初の公開版数
+
+以前の 0.9.8〜0.9.10 は未公開の内部表記で、配布物は存在しない。
 
 ## [Unreleased]
 

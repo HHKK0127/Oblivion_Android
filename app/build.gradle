@@ -17,10 +17,12 @@ android {
         minSdk 25
         targetSdk 34
         // Single source of truth for the app version.
-        // versionCode is derived from versionName: major * 10000 + minor * 100 + patch.
-        // 0.9.10 -> 0 * 10000 + 9 * 100 + 10 = 910
-        versionCode 910
-        versionName '0.9.10'
+        // versionName changes only when a Release tag is cut; internal work does
+        // not bump it. versionCode must increase monotonically and never decrease,
+        // so it is no longer derived from versionName: 1000 is a floor kept above
+        // the previous internal 910. Do not lower it.
+        versionCode 1000
+        versionName '0.1.0'
 
         externalNativeBuild {
             cmake {

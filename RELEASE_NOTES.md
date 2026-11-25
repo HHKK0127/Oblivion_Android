@@ -1,7 +1,7 @@
 # Oblivion Android - Development Build
 
 ## Current Version
-0.9.10 (Phase 63 - Development Build)
+0.1.0 (Phase 63 - Development Build)
 
 ## Status
 App is not yet launchable. Version will remain at 0.x until the app can successfully start and run.

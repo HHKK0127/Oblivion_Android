@@ -92,11 +92,18 @@ jobs:
           set -euo pipefail
           VERSION_NAME=$(grep -oP "versionName\s+'\K[^']+" app/build.gradle)
           VERSION_CODE=$(grep -oP "versionCode\s+\K[0-9]+" app/build.gradle)
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
-          EXPECTED=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
-          echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE expected=$EXPECTED"
-          if [ "$VERSION_CODE" != "$EXPECTED" ]; then
-            echo "::error::versionCode $VERSION_CODE does not match versionName $VERSION_NAME (expected $EXPECTED)"
+          # versionName is decoupled from versionCode: versionName changes only
+          # when a Release tag is cut, while versionCode must increase
+          # monotonically. Enforce a floor instead of a derived equality, so an
+          # install never regresses below the internal baseline (was 910).
+          FLOOR=1000
+          echo "versionName=$VERSION_NAME versionCode=$VERSION_CODE floor=$FLOOR"
+          if [ "$VERSION_CODE" -lt "$FLOOR" ]; then
+            echo "::error::versionCode $VERSION_CODE is below the floor $FLOOR"
+            exit 1
+          fi
+          if ! printf '%s' "$VERSION_NAME" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::versionName '$VERSION_NAME' is not MAJOR.MINOR.PATCH"
             exit 1
           fi
 
