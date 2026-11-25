@@ -2,6 +2,10 @@
 
 ## Tasks
 
+- [ ] **#186** 【作製・高優先】AssetManager::extractEsmFromArchive の loose-file 読みが書き込み完了を待たない。1 Hz の maybeRetryGameDataLoad が cp 途中のファイルを開くと tellg() の部分サイズで read 成功→gameDataLoaded_=true で固定され、二度と読み直さない。実測 2026-11-25 (emulator-5554): push 277,504,985B の Oblivion.esm を後置き→ [OK] Extracted Oblivion.esm (148,828,160 bytes)（部分）→ Loading 1855 cells (0 worldspaces, main=0x00000000)。対策案: サイズ安定待ち（連続同サイズ）／一時ファイル+.tmp→rename／期待サイズ照合。app/src/main/cpp/assets/asset_manager.cpp:196-212。 `#161` `#assets` `#bug` `#esm`
+
+- [ ] **#185** 【作製・中優先】NIF オラクルを 100 件・NiNode 以外へ拡張。現状 tmp/nif_oracle は LOD 100 件（NiTriStrips / NiTriStripsData の 2 型のみ）をバイト検証。実コーパスは 119 型（meshes_extracted 118 ∪ tools/BSAFileExtractor 119）。`scripts/nif_coverage.py --oracle tmp/nif_oracle --corpus meshes_extracted` で oracle_verified=2 / unverified=117（98.3%）。未検証を頻度順に出せる（NiNode 7896 / NiMaterialProperty 7871 / NiSourceTexture 7850 / NiTriStripsData 7038 / bhkCollisionObject 6401 …）。オラクルの入力 NIF を meshes_extracted・tools/BSAFileExtractor の NiNode/bhk 系へ広げ、型カバレッジを上げる。RE/解析タスク。実測 2026-11-25。 `#RE` `#coverage` `#nif` `#oracle`
+
 - [ ] **#184** 【作製・中優先】(c) ローカルの .a 再ビルド経路: scripts/build_host_rust.sh の再ビルド（staleness 発動時）が E0463 (can't find crate for `core`/`std`; x86_64-pc-windows-gnu) で落ちる。clean 後に --target x86_64-pc-windows-gnu 付きでビルドする経路。ただし **同じコマンドを手で実行すると成功する**（RUSTC/RUSTUP_TOOLCHAIN/HOME の差を要特定）。.a が既存のときは staleness 判定で回避されるため気づきにくい。回避策: 手動で RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu + RUSTC=<gnu rustc> + CARGO_TARGET_DIR=target/gnu + --target x86_64-pc-windows-gnu の 6 -p ビルドを実行して .a を復元。実測 2026-11-25。 `#build` `#fixture` `#rust` `#tooling`
 
 - [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
@@ -3753,4 +3757,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-25 16:55:24
+**ai-todo** | Last Updated: 2026-11-25 18:07:31
