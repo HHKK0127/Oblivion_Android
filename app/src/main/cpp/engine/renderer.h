@@ -352,12 +352,34 @@ private:
     // which returns to the launcher exactly like the in-game back key used to.
     bool quitFromPauseMenu = false;
     bool initialized = false;  // Track if initialization succeeded
-    bool scenarioBuilt = false;  // True once the world scenario has been built (ESM or fallback)
+    std::atomic<bool> scenarioBuilt{false};  // True once the world scenario has been built (ESM or fallback)
     // Written by the async ESM parse worker, read by the render thread each frame.
     std::atomic<bool> gameDataLoadAttempted{false};  // True once BSA/ESM loading has been attempted
-    bool archivesLoaded = false;  // True once loadBSAArchives() has run
+    // loadBSAArchives() is reachable from init() and from nativeSetDataPath(),
+    // both of which run on the GL thread (onSurfaceCreated); these are atomic as
+    // cheap insurance against a future caller from another thread.
+    // True once the BSA scan has run, even when it found no archive, so a retry
+    // does not re-open all 22 archives.
+    std::atomic<bool> archivesLoaded{false};
+    // True only once Oblivion.esm has been extracted (the data that matters).
+    // maybeRetryGameDataLoad() gates on this, so an empty data dir keeps retrying.
+    std::atomic<bool> gameDataLoaded_{false};
+    // True while loadBSAArchives() is running. Both callers (init() and
+    // nativeSetDataPath()) run on the GL thread via onSurfaceCreated, so this is
+    // not concurrent in practice; it is cheap insurance against a future caller
+    // from another thread and keeps a re-entrant call from loading twice (#161).
+    std::atomic<bool> archivesLoading_{false};
     bool asyncTasksReady = false;  // True once asyncTaskMgr_ has live worker threads
     bool scenarioBuildDeferred = false;  // True while the world build waits on game data
+    // Set when loadBSAArchives() cannot find the game data (no archive / no
+    // Oblivion.esm), so the chargen path can say the race list is empty for a
+    // reason instead of silently writing raceFormID=0 (#161).
+    std::atomic<bool> gameDataMissing_{false};
+    // Throttles maybeRetryGameDataLoad() so a frame cannot spin on it.
+    std::chrono::steady_clock::time_point lastGameDataRetry_{};
+    // Bounds the retry so a machine with no game data does not log/IO at 1 Hz
+    // forever. Reset when a load finally succeeds.
+    int gameDataRetryCount_ = 0;
     // Declared after assetManager so that its destructor (which joins the workers)
     // runs before the AssetManager the ESM parse writes into.
     AsyncTaskManager asyncTaskMgr_;
@@ -638,7 +660,15 @@ private:
 public:
     void loadBSAArchives();
     void onGameDataLoaded();
+    // render() calls this each frame: it retries loadBSAArchives() at most once
+    // per second while a data path is registered but the archives are not loaded
+    // (the background extraction can finish after the first nativeSetDataPath).
+    void maybeRetryGameDataLoad();
 private:
+    // (Re)seed the panel's race list from the current ESM data. Shared by
+    // setChargenUi(Panel) and the late-load path so a fallback list is replaced
+    // once the real ESM arrives.
+    void seedChargenRaces();
     bool initGameSystems();
     void createTestScenario();
     void ensureScenarioBuilt();

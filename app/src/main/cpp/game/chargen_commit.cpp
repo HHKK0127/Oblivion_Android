@@ -26,6 +26,13 @@ CommitResult commit(NpcManager* npcMgr, Player& player, const CommitInput& in) {
         player.name = in.name;
         r.nameApplied = true;
     }
+    // #161 device evidence: applyRaceToPlayer() only reports the skill path, so
+    // log the race id plus HP/attributes here to show what the commit actually
+    // applied. Attribute bonuses and health are not wired yet (V-664-2/V-664-3),
+    // so str/end stay at the chargen base and hp is unchanged.
+    LOGI("chargen commit applied: race=0x%08X hp=%.0f/%.0f str=%d end=%d",
+         player.raceFormID, player.health, player.maxHealth,
+         player.attributes.Strength, player.attributes.Endurance);
     return r;
 }
 

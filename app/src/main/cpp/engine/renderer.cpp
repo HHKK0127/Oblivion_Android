@@ -3196,13 +3196,30 @@ void Renderer::loadBSAArchives() {
         return;
     }
 
-    if (archivesLoaded) {
+    if (gameDataLoaded_) {
         LOGI("loadBSAArchives: game data already loaded, skipping");
         return;
     }
-    archivesLoaded = true;
-
-    LOGI("Loading BSA archives (dataPath: %s)...", assetManager->getDataPath().c_str());
+    // NOTE: gameDataLoaded_ is set only after the ESM has actually been read. A
+    // fresh install (`pm clear`) leaves files/data empty, and the Java side can
+    // reach this before extraction finishes; marking the load complete up front
+    // made that early call permanent and every later one a no-op (#161).
+    //
+    // init() and nativeSetDataPath() both run on the GL thread (onSurfaceCreated),
+    // so this is not concurrent in practice; archivesLoading_ is cheap insurance
+    // against a future caller from another thread. gameDataLoaded_ means "the ESM
+    // is in"; archivesLoading_ means "a load is running right now".
+    bool expected = false;
+    if (!archivesLoading_.compare_exchange_strong(expected, true)) {
+        LOGI("loadBSAArchives: a load is already in progress, skipping");
+        return;
+    }
+    // Clear the in-progress flag on every exit (there are several early returns
+    // below), while leaving gameDataLoaded_ false on failure so a later call retries.
+    struct LoadingGuard {
+        std::atomic<bool>* flag;
+        ~LoadingGuard() { flag->store(false, std::memory_order_release); }
+    } loadingGuard{&archivesLoading_};
 
     const char* bsaArchives[] = {
         "Oblivion - Meshes.bsa",
@@ -3229,18 +3246,32 @@ void Renderer::loadBSAArchives() {
         "DLCVileLair.bsa"
     };
 
-    int loadedCount = 0;
-    for (const auto& bsa : bsaArchives) {
-        if (assetManager->loadArchive(bsa)) {
-            loadedCount++;
-            LOGI("  [OK] Loaded BSA: %s", bsa);
-        } else {
-            LOGW("  [--] BSA not found (optional): %s", bsa);
+    // Scan the archives only once: a retry (ESM not here yet) must not re-open
+    // all 22 BSAs every second. `archivesLoaded` means "the scan ran" (true even
+    // when it found none); gameDataLoaded_ means "the ESM is in".
+    if (!archivesLoaded) {
+        LOGI("Loading BSA archives (dataPath: %s)...", assetManager->getDataPath().c_str());
+        int loadedCount = 0;
+        for (const auto& bsa : bsaArchives) {
+            if (assetManager->loadArchive(bsa)) {
+                loadedCount++;
+                LOGI("  [OK] Loaded BSA: %s", bsa);
+            } else {
+                LOGW("  [--] BSA not found (optional): %s", bsa);
+            }
         }
+        LOGI("Loaded %d / %zu BSA archives", loadedCount,
+             sizeof(bsaArchives) / sizeof(bsaArchives[0]));
+        archivesLoaded = true;
+    } else {
+        LOGI("loadBSAArchives: BSA scan already done, retrying the ESM load");
     }
 
-    LOGI("Loaded %d / %zu BSA archives", loadedCount,
-         sizeof(bsaArchives) / sizeof(bsaArchives[0]));
+    // BSAs are optional: the data that matters is Oblivion.esm, and a data dir
+    // holding only the ESM (the emulator's layout) must still load. The load is
+    // therefore NOT gated on loadedCount; the ESM extraction below decides
+    // success and sets gameDataLoaded_. When it fails, gameDataLoaded_ stays
+    // false so maybeRetryGameDataLoad() retries once the data arrives (#161).
 
         // Try loading plugins from plugins.txt for proper mod load order.
         // When plugins.txt exists, it defines the full plugin list including Oblivion.esm
@@ -3255,6 +3286,8 @@ void Renderer::loadBSAArchives() {
                 if (loaded > 0) {
                     LOGI("Loaded %d plugins from plugins.txt", loaded);
                 }
+                gameDataLoaded_ = true;
+                gameDataRetryCount_ = 0;
                 gameDataLoadAttempted.store(true, std::memory_order_release);
                                 onGameDataLoaded();
                                 ensureScenarioBuilt();
@@ -3272,11 +3305,26 @@ void Renderer::loadBSAArchives() {
         LOGI("Loading ESM game data (fallback, no plugins.txt)...");
     std::vector<uint8_t> esmBytes;
     if (!assetManager->extractEsmFromArchive("Oblivion.esm", esmBytes)) {
-        LOGW("  [--] Oblivion.esm not found (will test without ESM data)");
+        // No ESM: the data dir is empty or still being populated. Fall back and
+        // keep going rather than blocking the GL thread; gameDataLoaded_ stays
+        // false so maybeRetryGameDataLoad() retries once the ESM arrives (#161).
+        LOGE("Oblivion.esm not found - chargen will have NO races");
+        gameDataMissing_ = true;
         gameDataLoadAttempted.store(true, std::memory_order_release);
                 onGameDataLoaded();
                 ensureScenarioBuilt();
         return;
+    }
+    gameDataLoaded_ = true;
+    gameDataRetryCount_ = 0;
+    if (gameDataMissing_) {
+        // The world was built from the fallback before the real data arrived.
+        // Re-arm the defer gate so the render thread rebuilds the world - and
+        // onGameDataLoaded() refills the panel's race list - only once the ESM
+        // parse below has actually completed (it sets gameDataLoadAttempted).
+        gameDataMissing_ = false;
+        scenarioBuilt = false;
+        gameDataLoadAttempted.store(false, std::memory_order_release);
     }
 
     LOGI("  [OK] Extracted Oblivion.esm (%zu bytes)", esmBytes.size());
@@ -3329,6 +3377,65 @@ void Renderer::loadBSAArchives() {
             ensureScenarioBuilt();
         }
 
+void Renderer::maybeRetryGameDataLoad() {
+    // render() calls this every frame. A data path can be registered before the
+    // background extraction (MainActivity) has populated files/data, and nothing
+    // re-calls nativeSetDataPath afterwards, so without this the first (empty)
+    // attempt would be final. Retry at most once a second, on the render thread,
+    // so the BSA reader (not thread safe) is only ever touched from one thread.
+    if (gameDataLoaded_ || g_pendingDataPath.empty()) {
+        return;
+    }
+    // Bounded: a machine that never gets game data must not retry forever.
+    constexpr int kMaxGameDataRetries = 300;   // ~5 min at 1 Hz
+    if (gameDataRetryCount_ >= kMaxGameDataRetries) {
+        return;
+    }
+    const auto now = std::chrono::steady_clock::now();
+    if (now - lastGameDataRetry_ < std::chrono::milliseconds(1000)) {
+        return;
+    }
+    lastGameDataRetry_ = now;
+    ++gameDataRetryCount_;
+    LOGI("Retrying game data load (%d/%d; data path present, archives not loaded)",
+         gameDataRetryCount_, kMaxGameDataRetries);
+    loadBSAArchives();
+}
+
+void Renderer::seedChargenRaces() {
+    // spec §10.4: the panel's race selector lists the playable races. Shared by
+    // setChargenUi(Panel) and the late game-data load so a fallback (empty) list
+    // is replaced once the real ESM arrives.
+    if (!assetManager || !raceSexPanel) {
+        return;
+    }
+    const auto& all = assetManager->getEsmManager().getAllRaces();
+    std::vector<RaceSexPanel::RaceEntry> playable;
+    playable.reserve(all.size());
+    for (const auto& race : all) {
+        // Playable bit, the same test the original's race list walk uses
+        // (DATA byte32 bit0, RE v369).
+        if ((race.flags & 1u) == 0) continue;
+        if (race.fullName.empty() && race.editorID.empty()) continue;
+        playable.push_back({race.formID,
+                            race.fullName.empty() ? race.editorID : race.fullName,
+                            race.description});
+    }
+    if (playable.empty()) {
+        LOGE("chargen: 0 playable races seeded (ESM missing or unparsed) - "
+             "commit would write raceFormID=0 (#161)");
+        if (gameDataMissing_) {
+            showMessage("Game data was not found. Character creation has no "
+                        "races to choose from.",
+                        {"OK"}, nullptr);
+        }
+    }
+    // NOTE: setAvailableRaces() resets selected_race_index_ to 0, so a re-seed
+    // (game data arriving while the panel is open) drops the current selection.
+    // Acceptable: the list was empty before the re-seed, so nothing is lost.
+    raceSexPanel->setAvailableRaces(std::move(playable));
+}
+
 void Renderer::onGameDataLoaded() {
     // Load game systems from ESM data (called after ESM parse completes)
     if (inventoryManager && assetManager) {
@@ -3345,6 +3452,15 @@ void Renderer::onGameDataLoaded() {
             game::CrimeReputationSystem::getInstance().loadFactionsFromESM(
                 &assetManager->getEsmManager());
         }
+    // If the panel is already open (a late game-data load), refill its race list
+    // now that the ESM has been parsed; it was empty when the panel opened. Skip
+    // while the data is still missing: this runs on every 1 Hz retry, and
+    // seedChargenRaces() opens a modal when the list is empty, which would
+    // re-open the dialog every second (soft-lock). setChargenUi() shows it once
+    // when the panel opens instead.
+    if (isPanelChargenActive() && !gameDataMissing_) {
+        seedChargenRaces();
+    }
 }
 
 void Renderer::ensureScenarioBuilt() {
@@ -4678,6 +4794,10 @@ void Renderer::loadQuestsFromESM() {
 }
 
 void Renderer::render(float deltaTime) {
+    // The background extraction can finish after the first (empty) load attempt,
+    // and nothing re-calls nativeSetDataPath afterwards, so retry here.
+    maybeRetryGameDataLoad();
+
     // Safety net: the world must exist before anything is drawn. Normally the
     // scenario is built from game data at the end of loadBSAArchives().
     ensureScenarioBuilt();
@@ -8966,6 +9086,16 @@ void Renderer::setChargenUi(ChargenUi ui) {
                             [done](int value) { done(value == 0); });
             });
             raceSexPanel->setOnCommit([this]() {
+                // #161: with no playable race (game data never arrived) the commit
+                // would silently write raceFormID=0 and drop the player into the
+                // world. Block it and keep the panel open instead.
+                if (raceSexPanel->selectedRaceFormID() == 0) {
+                    LOGE("chargen commit blocked: no race selected (game data missing)");
+                    showMessage("Game data was not found, so there are no races to "
+                                "choose from.",
+                                {"OK"}, nullptr);
+                    return;
+                }
                 if (playerController && playerController->getPlayer()) {
                     Player* player = playerController->getPlayer().get();
                     // §10.2/§10.4: the race/name application lives in
@@ -8979,6 +9109,10 @@ void Renderer::setChargenUi(ChargenUi ui) {
                     chargen::commit(npcManager.get(), *player, in);
                 }
                 setChargenUi(ChargenUi::None);
+                // startGame() was never called on this path, so the player used to
+                // land in the world with the joystick and the combat buttons still
+                // hidden (only Legacy's onConfirm reached it) (#161).
+                startGame();
             });
         }
         // hitTestScreen() maps device pixels through this size (spec §9.5), so
@@ -8987,26 +9121,21 @@ void Renderer::setChargenUi(ChargenUi ui) {
                                     static_cast<int>(screenHeight));
         // spec §10.4: the race selector lists the playable races; seed it and the
         // player's current race/name.
-        if (assetManager) {
-            const auto& all = assetManager->getEsmManager().getAllRaces();
-            std::vector<RaceSexPanel::RaceEntry> playable;
-            playable.reserve(all.size());
-            for (const auto& race : all) {
-                // Playable bit, the same test the original's race list walk uses
-                // (DATA byte32 bit0, RE v369).
-                if ((race.flags & 1u) == 0) continue;
-                if (race.fullName.empty() && race.editorID.empty()) continue;
-                playable.push_back({race.formID,
-                                    race.fullName.empty() ? race.editorID : race.fullName,
-                                    race.description});
-            }
-            raceSexPanel->setAvailableRaces(std::move(playable));
-        }
+        seedChargenRaces();
         if (playerController && playerController->getPlayer()) {
             Player* player = playerController->getPlayer().get();
             // spec §10.1: race_name shows the player's current name.
-            raceSexPanel->setPlayerName(player->name);
-            raceSexPanel->setCurrentName(player->name);
+            //
+            // The original compares the entered name against the saved name
+            // [0xB39440] (spec §10.3; V-653-1 still unresolved). Using the
+            // player's current name as the stand-in made Done always read as
+            // "unchanged" on New Game (and the panel has no name input to change
+            // it), so Done could never commit. Seed only the display name and
+            // leave the comparison target empty; an empty player_name_ would be
+            // rejected as Empty, so default it to a placeholder.
+            raceSexPanel->setPlayerName(player->name.empty() ? std::string("Adventurer")
+                                                             : player->name);
+            raceSexPanel->setCurrentName(std::string());
             raceSexPanel->setCurrentRaceFormID(player->raceFormID);
         }
         if (textRenderer) {
