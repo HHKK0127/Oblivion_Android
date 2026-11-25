@@ -19,8 +19,8 @@
   python scripts/precheck.py --all           # git 追跡下の全文書を検査（baseline 比較）
   python scripts/precheck.py --strict        # レーン WARN を FAIL に昇格
 
-終了コード: 0 = OK（WARN 含む）/ 1 = テキスト検出 / 2 = 構造検査の失敗
-（--all は baseline からの増加のみ 1）。
+終了コード: 0 = OK（WARN 含む）/ 2 = FAIL（テキスト検出・構造検査・
+--all の baseline 増加）。失敗の種類は 2 に統一し、出力の FAIL: / WARN: で区別する。
 """
 import fnmatch
 import os
@@ -261,7 +261,7 @@ def main(argv):
         if total > ALL_BASELINE:
             print("precheck: FAIL --all (%d > baseline %d; increase detected)"
                   % (total, ALL_BASELINE))
-            return 1
+            return 2
         print("precheck: OK --all (%d hit(s) <= baseline %d; pre-existing)"
               % (total, ALL_BASELINE))
         return 0
@@ -285,7 +285,7 @@ def main(argv):
         return 2
     if total:
         print("precheck: FAIL (%d hit(s))" % total)
-        return 1
+        return 2
     if warns:
         print("precheck: OK (%d warning(s))" % warns)
         return 0

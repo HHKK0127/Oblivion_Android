@@ -89,7 +89,7 @@ Safety と Loop Mode は §0 より優先する。この節の規則は、以降
 
 ## precheck（コミット前検査）
 
-- コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可、`--strict`＝レーン WARN を FAIL に昇格）。**テキスト検出は終了コード 1、構造検査は 2 で失敗**。
+- コミット前に **`python scripts/precheck.py`** を実行する（引数なし＝git 変更ファイル、`--all`＝追跡下全体、ファイル列指定も可、`--strict`＝レーン WARN を FAIL に昇格）。**FAIL（テキスト検出・構造検査・`--all` の baseline 増加）は終了コード 2**。WARN は exit 0。
 - テキスト検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（**MSVC RTTI 名の `?` 落ち検出**。`\.\?AV<name>@@` は許可し、`?` が落ちた `\.AV<name>` を FAIL。2026-11-23 実測 `.?AV…`=1473 / `.AV…`=23）。
 - 構造検査 3 種: **中間ファイル**（`.bak`/`.orig`/`.rej`/`*~`。追跡下＋未追跡の両方）/ **versionCode 単調増加**（変更された `build.gradle` を HEAD と比較。未変更は skip）/ **レーン**（`race_sex_panel*`・`ui_toggle*`・`chargen_commit*`・`engine/renderer.cpp` の変更を WARN。`--strict` で FAIL）。
 - 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動検査は行わない。
