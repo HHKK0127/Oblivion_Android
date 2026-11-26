@@ -18,6 +18,7 @@
   python scripts/precheck.py FILE [FILE...]  # 指定ファイルを全文検査（テキストのみ）
   python scripts/precheck.py --all           # git 追跡下の全文書を検査（baseline 比較）
   python scripts/precheck.py --strict        # レーン WARN を FAIL に昇格
+  python scripts/precheck.py --audit         # CN_CHARS ∩ 常用漢字（誤検出候補）を一覧
 
 終了コード: 0 = OK（WARN 含む）/ 2 = FAIL（テキスト検出・構造検査・
 --all の baseline 増加）。失敗の種類は 2 に統一し、出力の FAIL: / WARN: で区別する。
@@ -33,8 +34,9 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 簡体字専用字（日本語では使わない字のみ）。拡張はこの集合へ追加する。
 # 「所以」等の日本語複合語・「使用/可能/点」等の日本語語彙は誤検出のため除外済み。
 # 注意: 日本語漢字（降/都/防/述/除/追/学/系/件/片/査/声/宝/没 等）は入れない。
+# 据（U+636E）は常用漢字（据える/据え置き）のため 2026-11-26 に除外した（--audit で検出）。
 CN_CHARS = set(
-    "这么话见对说们过还进运动认问题张应该简单电脑网络软关图据错误检测试让给别"
+    "这么话见对说们过还进运动认问题张应该简单电脑网络软关图错误检测试让给别"
     "东乐书买卖车马鸟鱼龙岁处备变头实审导层师带帮广庆义议记讨训论设访证评识诉"
     "词译语请读谁课调谈谢贝负财责贤败货质购贯贴贵贷费贸资赋赏赔赞赠红绿蓝黑边"
     "达远连"
@@ -68,10 +70,24 @@ TEXT_EXT = {
     ".gradle", ".cfg", ".ini", ".csv",
 }
 
-# --all の既知ヒット数 baseline（回帰防止）。2026-11-23 実測:
-#   CN=228（日本語文書への簡体字混入。実在）/ FFFD=3（文字化け実在）/ dotAV=0（RTTI の ? 落ちは現状なし）
+# --all の既知ヒット数 baseline（回帰防止）。2026-11-26 実測:
+#   CN=163 / FFFD=3 / dotAV=0 = 166。据（U+636E）を CN_CHARS から外した効果が
+#   -51（旧 228 から。据 は tmp/re の RE 裁定文書に多用されていた）。
 # --all はこの数を超えたときのみ FAIL する（既存分は許容・増加を検出）。
-ALL_BASELINE = 231
+ALL_BASELINE = 166
+
+# 常用漢字 2136 字（scripts/data/joyo_kanji.txt）。CN_CHARS は「日本語では使わない
+# 字」だけを持つべきなので、--audit で交差（＝誤検出候補）を一覧にする。手書き
+# リストの根本対策: 除外判断のたびに --audit を 1 回回す。
+JOYO_PATH = os.path.join(REPO, "scripts", "data", "joyo_kanji.txt")
+
+
+def load_joyo():
+    try:
+        with open(JOYO_PATH, encoding="utf-8") as f:
+            return set(f.read().split())
+    except OSError:
+        return set()
 
 
 def is_text(path):
@@ -220,6 +236,22 @@ def check_file(path):
 
 
 def main(argv):
+    if "--audit" in argv:
+        joyo = load_joyo()
+        inter = sorted(CN_CHARS & joyo)
+        print("--audit: CN_CHARS=%d / 常用漢字=%d / 交差=%d"
+              % (len(CN_CHARS), len(joyo), len(inter)))
+        if not joyo:
+            print("  警告: %s を読めませんでした（常用漢字リスト未取得）" % JOYO_PATH)
+            return 0
+        if not inter:
+            print("  交差なし（CN_CHARS は簡体字専用字のみ）")
+            return 0
+        for ch in inter:
+            print("  誤検出候補（日本語で使う字）: %s  U+%04X" % (ch, ord(ch)))
+        print("  → これらは CN_CHARS から外す（『日本語では使わない字』の定義に反する）。")
+        return 0
+
     all_mode = "--all" in argv
     strict = "--strict" in argv
     if all_mode:

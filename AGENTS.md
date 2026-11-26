@@ -93,6 +93,7 @@ Safety と Loop Mode は §0 より優先する。この節の規則は、以降
 - テキスト検査 3 種: **CN**（簡体字専用字の明示リスト。`所以`・`使用`/`可能`/`点` 等の日本語語彙は除外）/ **U+FFFD**（置換文字）/ **dotAV**（**MSVC RTTI 名の `?` 落ち検出**。`\.\?AV<name>@@` は許可し、`?` が落ちた `\.AV<name>` を FAIL。2026-11-23 実測 `.?AV…`=1473 / `.AV…`=23）。
 - 構造検査 3 種: **中間ファイル**（`.bak`/`.orig`/`.rej`/`*~`。追跡下＋未追跡の両方）/ **versionCode 単調増加**（変更された `build.gradle` を HEAD と比較。未変更は skip）/ **レーン**（`race_sex_panel*`・`ui_toggle*`・`chargen_commit*`・`engine/renderer.cpp` の変更を WARN。`--strict` で FAIL）。
 - 旧 precheck は `%TEMP%` にあり 2026-11-22 の掃除で消失した。以後は **`scripts/precheck.py` を正**とし、手動検査は行わない。
+- **CN リストの保守**: 手書きの簡体字リストは誤検出しやすい。除外判断のたびに **`python scripts/precheck.py --audit`**（`CN_CHARS ∩ 常用漢字`）を 1 回回し、交差があればその字を外す（例: 据 U+636E は常用漢字のため 2026-11-26 に除外）。常用漢字は `scripts/data/joyo_kanji.txt`（2136 字）。
 - `scripts/precheck.py` 自身は CN リスト（簡体字）を含むため、スクリプトは自分自身を検査対象から除外する。
 
 ## 版番号（version）
