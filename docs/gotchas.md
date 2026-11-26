@@ -91,3 +91,14 @@ AGENTS.md の Learnings（振る舞い）とは別。ここは**ドメイン知�
   `app/build/intermediates/{cmake,cxx}` を消してから `assembleDebug`）。
 - **確認方法**: ビルド開始時刻より新しい `libnative-lib.so` が 3 本（ABI 数）以上あること。
   `scripts/build_apk.sh` がこれを検査し、3 未満なら exit 1。
+
+## 8. ダンプの float は `%a` でなく生ビットで出す
+
+- **症状**: legacy NetImmerse の空ジオメトリ（例 `marker_divine` / `marker_temple` /
+  `marker_travel`）で、ダンプの float が Linux と Windows で食い違う（`-0x1.f8p-144` /
+  `scale=nan`）。CI の `nif-oracle` が 27 中 3 本だけ赤になる。
+- **原因**: `%a` の非正規化・NaN の表記が CRT 依存（glibc と MSVC ランタイム）。値は同一で、
+  テキストだけ違う。
+- **正しい手順**: float は IEEE-754 の生ビット（`%08x`）で出す（`tools/nif_oracle/dump.cpp`
+  の `f32()`）。
+- **確認方法**: Linux CI（`nif-oracle` ジョブ）で 27/27。

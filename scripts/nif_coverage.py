@@ -194,17 +194,22 @@ def load_types(args):
 
 
 def load_oracle_types(oracle_dir):
-    """差分オラクル（out_orig）がバイト検証した型集合。"""
+    """差分オラクルがバイト検証した型集合。
+
+    `<dir>/out_orig/*.nif.txt`（ローカルの tmp/nif_oracle）と `<dir>/*.nif.txt`
+    （コミット済み fixture の期待値、docs/evidence/fixtures/nif/oracle）の両方を見る。
+    """
     types = set()
-    out_orig = os.path.join(oracle_dir, "out_orig")
-    if not os.path.isdir(out_orig):
-        return types
-    for name in sorted(os.listdir(out_orig)):
-        if not name.endswith(".nif.txt"):
+    for sub in ("out_orig", ""):
+        d = os.path.join(oracle_dir, sub) if sub else oracle_dir
+        if not os.path.isdir(d):
             continue
-        with open(os.path.join(out_orig, name), encoding="utf-8", errors="replace") as f:
-            for m in ORACLE_BT.finditer(f.read()):
-                types.add(m.group(1))
+        for name in sorted(os.listdir(d)):
+            if not name.endswith(".nif.txt"):
+                continue
+            with open(os.path.join(d, name), encoding="utf-8", errors="replace") as f:
+                for m in ORACLE_BT.finditer(f.read()):
+                    types.add(m.group(1))
     return types
 
 
