@@ -2,9 +2,11 @@
 
 ## Tasks
 
-- [ ] **#191** 【判断待ち・低優先】precheck の CN リストが日本語字 U+636E（「すえる」「すえおき」等で使う字）を誤検出する。CN_CHARS に U+636E が入っており（scripts/precheck.py:37 付近）、日本語文書で正当に使うと既定モードが FAIL、--all の baseline も押し上げる。STATE.md の該当行は allow-cn マーカーで回避済み。候補: (a) U+636E を CN_CHARS から除外し --all baseline を再測（日本語でも使う字のため『簡体字専用』の定義に反する） (b) 現状維持で都度 allow マーカー／言い換え。実測 2026-11-26: この誤検出で #189/#190 の文面を言い換えた。 `#approval` `#precheck` `#tooling`
+- [x] **#191** 【判断待ち・低優先】precheck の CN リストが日本語字 U+636E（「すえる」「すえおき」等で使う字）を誤検出する。CN_CHARS に U+636E が入っており（scripts/precheck.py:37 付近）、日本語文書で正当に使うと既定モードが FAIL、--all の baseline も押し上げる。STATE.md の該当行は allow-cn マーカーで回避済み。候補: (a) U+636E を CN_CHARS から除外し --all baseline を再測（日本語でも使う字のため『簡体字専用』の定義に反する） (b) 現状維持で都度 allow マーカー／言い換え。実測 2026-11-26: この誤検出で #189/#190 の文面を言い換えた。 `#approval` `#precheck` `#tooling` (2026-11-26)
+  > 完了 2026-11-26: ユーザー裁定『除外』。CN_CHARS から U+636E を除去（88945c0f）。--audit を追加（CN_CHARS ∩ 常用漢字 を一覧。常用漢字は scripts/data/joyo_kanji.txt 2136 字、hiroshi-manabe/Joyo-Kanji-List 由来）。--all baseline を再測し 231→166（CN=163/FFFD=3/dotAV=0。U+636E の寄与は -51、tmp/re の RE 裁定文書に多用）。AGENTS に『除外判断のたびに --audit』を追記。
 
-- [ ] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip`
+- [x] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip` (2026-11-26)
+  > 完了 2026-11-26: ユーザー裁定『5 を待たずに二段構え』。check_wip_limit.py に --block-limit（既定 10）を追加し、active > block で exit 1（常時）・active > warn(5) で警告（既定 exit 0、--strict で exit 1）。android.yml から continue-on-error を外し --block-limit 10 を付与（3754a78e）。実測: active 9 → warn exit 0 / --strict exit 1 / --block-limit 8 exit 1 / 緑 exit 0。active が 5 以下に落ちたら block を 5 へ下げるラチェットが残。
 
 - [x] **#189** 【判断待ち・中優先】WIP 上限警告（scripts/check_wip_limit.py / android.yml wip-limit ジョブ）の扱いを決める。実測 2026-11-26: 未マージブランチ=33（CI 注記は 18）・open PR=0・上限=3 で warn-only が常時鳴る。候補: (a) 指標を open PR 数へ変更（ただし現在 0 で常に緑＝死んだゲート） (b) 上限を 33 前後へ上げる（実質 no-op） (c) 未マージ枝の棚卸し（close/merge）を先に行い上限を変えずに維持する。policy 値のため人間が決定。 `#approval` `#gate` `#tooling` (2026-11-26)
   > 完了 2026-11-26: ユーザー裁定は「active/stale 分離」。check_wip_limit.py に --active-days（既定 7）/ --stale-days（既定 30）を追加し、判定を active のみ・上限 5 へ。stale は常に一覧表示。open PR は併記のみ（gh があれば）。android.yml も --limit 5 へ（d200f94a）。実測ローカル: 未マージ 33 / active 9 / 中間 1 / stale 23 / open PR 0。--strict で exit 1、--limit 20 で exit 0。CI は fresh clone で origin 枝のみ＝active 9 本（全てローカル専用）は見えない。当面は warn-only で維持。
@@ -12,6 +14,7 @@
 - [ ] **#186** 【作製・高優先】AssetManager::extractEsmFromArchive の loose-file 読みが書き込み完了を待たない。1 Hz の maybeRetryGameDataLoad が cp 途中のファイルを開くと tellg() の部分サイズで read 成功→gameDataLoaded_=true で固定され、二度と読み直さない。実測 2026-11-25 (emulator-5554): push 277,504,985B の Oblivion.esm を後置き→ [OK] Extracted Oblivion.esm (148,828,160 bytes)（部分）→ Loading 1855 cells (0 worldspaces, main=0x00000000)。対策案: サイズ安定待ち（連続同サイズ）／一時ファイル+.tmp→rename／期待サイズ照合。app/src/main/cpp/assets/asset_manager.cpp:196-212。 `#161` `#assets` `#bug` `#esm`
 
 - [ ] **#185** 【作製・中優先】NIF オラクルを 100 件・NiNode 以外へ拡張。現状 tmp/nif_oracle は LOD 100 件（NiTriStrips / NiTriStripsData の 2 型のみ）をバイト検証。実コーパスは 119 型（meshes_extracted 118 ∪ tools/BSAFileExtractor 119）。`scripts/nif_coverage.py --oracle tmp/nif_oracle --corpus meshes_extracted` で oracle_verified=2 / unverified=117（98.3%）。未検証を頻度順に出せる（NiNode 7896 / NiMaterialProperty 7871 / NiSourceTexture 7850 / NiTriStripsData 7038 / bhkCollisionObject 6401 …）。オラクルの入力 NIF を meshes_extracted・tools/BSAFileExtractor の NiNode/bhk 系へ広げ、型カバレッジを上げる。RE/解析タスク。実測 2026-11-25。 `#RE` `#coverage` `#nif` `#oracle`
+  > 実測 2026-11-26（分母の集計。scripts/nif_coverage.block_types を再利用）: ①.nif 数 = meshes_extracted/meshes 8005 / tools/BSAFileExtractor/extracted/meshes 8032。②相対パス集合 = A ⊂ B（A にしか無い 0 本 / B にしか無い 27 本）。27 本は全て editor/marker 系（editorlandplane, furnituremarker01-04/11-14, marker_arrow/creature/divine/error/horse/light/map/north/prison/radius/sound/temple/travel, markerteleport, markerx, markerxheading, target, targetsafezone）。case-only 差 0。他拡張子は完全一致（.kf 1843/.egm 141/.tri 85/.egt 20/.kfm 2/.fim 1/.txt 1）。③型集合 = A ⊆ B（A 118 / B 119）。B にしか無い型は NiWireframeProperty（8 本、marker 群由来）のみ。④型ごと件数は両コーパスで大半一致（差は marker 27 本に由来）。→ 読み方表の『bsa_types ⊃ meshes_types』に該当し **分母は |B|=119**。27 本は 961B〜27024B の有効 NIF で、意図的フィルタか抽出漏れかは未確認（meshes_extracted の生成方法が未特定）。
 
 - [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
   > 2026-11-25 時点で blocked: 並行レーンが docs/evidence/golden/newgame-no-esm-prefix.json / docs/smoke-tests/newgame.sh / scripts/compare_golden.py を未コミットで編集中。--update すると相手の WIP を上書きするため、相手の landing 待ち。再開時は事前に差分画像を目視（赤は正常）。
@@ -3750,6 +3753,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3773,4 +3781,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-26 09:34:14
+**ai-todo** | Last Updated: 2026-11-26 11:17:04
