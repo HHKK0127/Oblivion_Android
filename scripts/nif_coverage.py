@@ -26,8 +26,8 @@ check_imports.py（ttom795）と同じ発想で、対象が import ではなく�
 
 使い方:
   python scripts/nif_coverage.py --corpus meshes_extracted --oracle tmp/nif_oracle
-  python scripts/nif_coverage.py --corpus meshes_extracted --oracle tmp/nif_oracle \
-      --min-impl 119 --max-stray 0 --min-oracle 2
+  python scripts/nif_coverage.py --corpus tools/BSAFileExtractor/extracted/meshes \
+      --oracle tmp/nif_oracle --min-impl 119 --max-missing 0 --max-stray 0 --min-oracle 20
   python scripts/nif_coverage.py --corpus meshes_extracted --show NiTriStrips
 """
 import argparse

@@ -27,8 +27,8 @@ geom[3] norms=431 hash=6eb44b6c43cfbb13
 geom[3] colors=0 hash=14650fb0739d0383
 geom[3] texcoords=0 hash=14650fb0739d0383
 geom[3] tris=656 hash=e7900697d57635f8
-geom[3] bbox_min=-0x1.4fa594p+4 -0x1.3cf772p+3 -0x1.7999p-1 bbox_max=0x1.48dc64p+4 0x1.072b8ap+4 0x1.f5bfd8p+6
-geom[3] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=-0x1.46e35p+1 -0x1.2bf4dp+1 0x0p+0 scale=0x1p+0
+geom[3] bbox_min=c1a7d2ca c11e7bb9 bf3ccc80 bbox_max=41a46e32 418395c5 42fadfec
+geom[3] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c02371a8 c015fa68 00000000 scale=3f800000
 node[4] name= type=NiMaterialProperty typeIdx=4 parent=-1 children=0 hasGeom=0
 node[5] name= type=NiAlphaProperty typeIdx=5 parent=-1 children=0 hasGeom=0
 node[6] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
@@ -40,8 +40,8 @@ geom[7] norms=66 hash=320def4e7591c443
 geom[7] colors=0 hash=14650fb0739d0383
 geom[7] texcoords=0 hash=14650fb0739d0383
 geom[7] tris=176 hash=8c32bbe428266b00
-geom[7] bbox_min=-0x1.dcffeap+4 -0x1.dcffeap+4 0x0p+0 bbox_max=0x1.dcffeap+4 0x1.dcffeap+4 0x1.08p+7
-geom[7] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+geom[7] bbox_min=c1ee7ff5 c1ee7ff5 00000000 bbox_max=41ee7ff5 41ee7ff5 43040000
+geom[7] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 node[8] name= type=NiMaterialProperty typeIdx=4 parent=-1 children=0 hasGeom=0
 node[9] name= type=NiWireframeProperty typeIdx=7 parent=-1 children=0 hasGeom=0
 node[10] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
@@ -53,8 +53,8 @@ geom[11] norms=24 hash=2e79982bc6a735c3
 geom[11] colors=0 hash=14650fb0739d0383
 geom[11] texcoords=0 hash=14650fb0739d0383
 geom[11] tris=32 hash=f7ccc1c2be8e4a1b
-geom[11] bbox_min=-0x1.07788p+4 -0x1.fc6358p+3 0x0p+0 bbox_max=0x1.07788p+4 0x1.fc6358p+3 0x1p+5
-geom[11] transform rot=[-0x1p+0 -0x1.4442d2p-23 0x0p+0 0x1.4442d2p-23 -0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.54p-4 0x1.b859ccp+5 0x0p+0 scale=0x1p+0
+geom[11] bbox_min=c183bc40 c17e31ac 00000000 bbox_max=4183bc40 417e31ac 42000000
+geom[11] transform rot=[bf800000 b4222169 00000000 34222169 bf800000 00000000 00000000 00000000 3f800000 ] trans=3daa0000 425c2ce6 00000000 scale=3f800000
 node[12] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
 node[13] name=MarkerTarget type=NiTriStrips typeIdx=3 parent=-1 children=0 hasGeom=1
 geom[13] name=MarkerTarget
@@ -64,8 +64,8 @@ geom[13] norms=455 hash=9ee2a34e66bf30cd
 geom[13] colors=0 hash=14650fb0739d0383
 geom[13] texcoords=0 hash=14650fb0739d0383
 geom[13] tris=696 hash=e58c6f49d2311b8c
-geom[13] bbox_min=-0x1.231b8cp+4 -0x1.6536b8p+2 0x1.cf2afep+4 bbox_max=0x1.854fe2p+4 0x1.56691ep+5 0x1.f47a44p+6
-geom[13] transform rot=[0x1p+0 -0x1.777a5cp-23 0x0p+0 0x1.777a5cp-23 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.e952p-3 0x1.b8976p+5 -0x1.cf2b02p+4 scale=0x1p+0
+geom[13] bbox_min=c1918dc6 c0b29b5c 41e7957f bbox_max=41c2a7f1 422b348f 42fa3d22
+geom[13] transform rot=[3f800000 b43bbd2e 00000000 343bbd2e 3f800000 00000000 00000000 00000000 3f800000 ] trans=3e74a900 425c4bb0 c1e79581 scale=3f800000
 node[14] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
 roots=15
   root[0]=0
@@ -92,8 +92,8 @@ allgeom[0] norms=431 hash=6eb44b6c43cfbb13
 allgeom[0] colors=0 hash=14650fb0739d0383
 allgeom[0] texcoords=0 hash=14650fb0739d0383
 allgeom[0] tris=656 hash=e7900697d57635f8
-allgeom[0] bbox_min=-0x1.4fa594p+4 -0x1.3cf772p+3 -0x1.7999p-1 bbox_max=0x1.48dc64p+4 0x1.072b8ap+4 0x1.f5bfd8p+6
-allgeom[0] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=-0x1.46e35p+1 -0x1.2bf4dp+1 0x0p+0 scale=0x1p+0
+allgeom[0] bbox_min=c1a7d2ca c11e7bb9 bf3ccc80 bbox_max=41a46e32 418395c5 42fadfec
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c02371a8 c015fa68 00000000 scale=3f800000
 allgeom[1] name=Capsule01
 allgeom[1] diffuse= normal=
 allgeom[1] verts=66 hash=082a7dbf7fc925aa
@@ -101,8 +101,8 @@ allgeom[1] norms=66 hash=320def4e7591c443
 allgeom[1] colors=0 hash=14650fb0739d0383
 allgeom[1] texcoords=0 hash=14650fb0739d0383
 allgeom[1] tris=176 hash=8c32bbe428266b00
-allgeom[1] bbox_min=-0x1.dcffeap+4 -0x1.dcffeap+4 0x0p+0 bbox_max=0x1.dcffeap+4 0x1.dcffeap+4 0x1.08p+7
-allgeom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+allgeom[1] bbox_min=c1ee7ff5 c1ee7ff5 00000000 bbox_max=41ee7ff5 41ee7ff5 43040000
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 allgeom[2] name=ChairBoundary
 allgeom[2] diffuse= normal=
 allgeom[2] verts=24 hash=187c7669c022c48b
@@ -110,8 +110,8 @@ allgeom[2] norms=24 hash=2e79982bc6a735c3
 allgeom[2] colors=0 hash=14650fb0739d0383
 allgeom[2] texcoords=0 hash=14650fb0739d0383
 allgeom[2] tris=32 hash=f7ccc1c2be8e4a1b
-allgeom[2] bbox_min=-0x1.07788p+4 -0x1.fc6358p+3 0x0p+0 bbox_max=0x1.07788p+4 0x1.fc6358p+3 0x1p+5
-allgeom[2] transform rot=[-0x1p+0 -0x1.4442d2p-23 0x0p+0 0x1.4442d2p-23 -0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.54p-4 0x1.b859ccp+5 0x0p+0 scale=0x1p+0
+allgeom[2] bbox_min=c183bc40 c17e31ac 00000000 bbox_max=4183bc40 417e31ac 42000000
+allgeom[2] transform rot=[bf800000 b4222169 00000000 34222169 bf800000 00000000 00000000 00000000 3f800000 ] trans=3daa0000 425c2ce6 00000000 scale=3f800000
 allgeom[3] name=MarkerTarget
 allgeom[3] diffuse= normal=
 allgeom[3] verts=455 hash=736ab0f49841d1e1
@@ -119,7 +119,7 @@ allgeom[3] norms=455 hash=9ee2a34e66bf30cd
 allgeom[3] colors=0 hash=14650fb0739d0383
 allgeom[3] texcoords=0 hash=14650fb0739d0383
 allgeom[3] tris=696 hash=e58c6f49d2311b8c
-allgeom[3] bbox_min=-0x1.231b8cp+4 -0x1.6536b8p+2 0x1.cf2afep+4 bbox_max=0x1.854fe2p+4 0x1.56691ep+5 0x1.f47a44p+6
-allgeom[3] transform rot=[0x1p+0 -0x1.777a5cp-23 0x0p+0 0x1.777a5cp-23 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.e952p-3 0x1.b8976p+5 -0x1.cf2b02p+4 scale=0x1p+0
+allgeom[3] bbox_min=c1918dc6 c0b29b5c 41e7957f bbox_max=41c2a7f1 422b348f 42fa3d22
+allgeom[3] transform rot=[3f800000 b43bbd2e 00000000 343bbd2e 3f800000 00000000 00000000 00000000 3f800000 ] trans=3e74a900 425c4bb0 c1e79581 scale=3f800000
 hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
 blockTypeName(0)=NiNode

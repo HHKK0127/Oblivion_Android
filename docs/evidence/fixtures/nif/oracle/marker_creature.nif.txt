@@ -21,8 +21,8 @@ geom[1] norms=80 hash=ca3778b8fb450b8f
 geom[1] colors=0 hash=14650fb0739d0383
 geom[1] texcoords=0 hash=14650fb0739d0383
 geom[1] tris=120 hash=9df3cdc584279a01
-geom[1] bbox_min=-0x1.4b3b76p+5 -0x1.95ada6p+4 -0x1.3d033ep-21 bbox_max=0x1.4b3b76p+5 0x1.218266p+6 0x1.074e8ap+6
-geom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+geom[1] bbox_min=c2259dbb c1cad6d3 b51e819f bbox_max=42259dbb 4290c133 4283a745
+geom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 node[2] name= type=NiMaterialProperty typeIdx=2 parent=-1 children=0 hasGeom=0
 node[3] name= type=NiTriStripsData typeIdx=3 parent=-1 children=0 hasGeom=0
 node[4] name=Creature_Marker:1 type=NiTriStrips typeIdx=1 parent=-1 children=0 hasGeom=1
@@ -33,8 +33,8 @@ geom[4] norms=82 hash=beafc50f69887c63
 geom[4] colors=0 hash=14650fb0739d0383
 geom[4] texcoords=0 hash=14650fb0739d0383
 geom[4] tris=128 hash=b0bd05cb7002ae7c
-geom[4] bbox_min=-0x1.4b3b76p+5 -0x1.a0a9ecp+3 -0x1.3d033ep-21 bbox_max=0x1.4b3b76p+5 0x1.b046fep+3 0x1.5a5ca8p+6
-geom[4] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+geom[4] bbox_min=c2259dbb c15054f6 b51e819f bbox_max=42259dbb 4158237f 42ad2e54
+geom[4] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 node[5] name= type=NiMaterialProperty typeIdx=2 parent=-1 children=0 hasGeom=0
 node[6] name= type=NiTriStripsData typeIdx=3 parent=-1 children=0 hasGeom=0
 roots=7
@@ -54,8 +54,8 @@ allgeom[0] norms=80 hash=ca3778b8fb450b8f
 allgeom[0] colors=0 hash=14650fb0739d0383
 allgeom[0] texcoords=0 hash=14650fb0739d0383
 allgeom[0] tris=120 hash=9df3cdc584279a01
-allgeom[0] bbox_min=-0x1.4b3b76p+5 -0x1.95ada6p+4 -0x1.3d033ep-21 bbox_max=0x1.4b3b76p+5 0x1.218266p+6 0x1.074e8ap+6
-allgeom[0] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+allgeom[0] bbox_min=c2259dbb c1cad6d3 b51e819f bbox_max=42259dbb 4290c133 4283a745
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 allgeom[1] name=Creature_Marker:1
 allgeom[1] diffuse= normal=
 allgeom[1] verts=82 hash=ff4f652b982b8b81
@@ -63,7 +63,7 @@ allgeom[1] norms=82 hash=beafc50f69887c63
 allgeom[1] colors=0 hash=14650fb0739d0383
 allgeom[1] texcoords=0 hash=14650fb0739d0383
 allgeom[1] tris=128 hash=b0bd05cb7002ae7c
-allgeom[1] bbox_min=-0x1.4b3b76p+5 -0x1.a0a9ecp+3 -0x1.3d033ep-21 bbox_max=0x1.4b3b76p+5 0x1.b046fep+3 0x1.5a5ca8p+6
-allgeom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+allgeom[1] bbox_min=c2259dbb c15054f6 b51e819f bbox_max=42259dbb 4158237f 42ad2e54
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
 blockTypeName(0)=NiNode

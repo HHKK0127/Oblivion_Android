@@ -27,8 +27,8 @@ geom[3] norms=426 hash=0a178b0d61d07348
 geom[3] colors=0 hash=14650fb0739d0383
 geom[3] texcoords=0 hash=14650fb0739d0383
 geom[3] tris=646 hash=c4f4d2b5540e923e
-geom[3] bbox_min=-0x1.0d9548p+4 -0x1.d28272p+5 0x1.dded78p+5 bbox_max=0x1.0482e2p+4 0x1.0eb5bap+6 0x1.38af28p+6
-geom[3] transform rot=[0x1.4p-22 -0x1p+0 0x0p+0 0x1p+0 0x1.4p-22 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.dbp-6 0x1.24b126p+6 -0x1.c3f7cep+5 scale=0x1p+0
+geom[3] bbox_min=c186caa4 c2694139 426ef6bc bbox_max=41824171 42875add 429c5794
+geom[3] transform rot=[34a00000 bf800000 00000000 3f800000 34a00000 00000000 00000000 00000000 3f800000 ] trans=3ced8000 42925893 c261fbe7 scale=3f800000
 node[4] name= type=NiMaterialProperty typeIdx=4 parent=-1 children=0 hasGeom=0
 node[5] name= type=NiAlphaProperty typeIdx=5 parent=-1 children=0 hasGeom=0
 node[6] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
@@ -40,8 +40,8 @@ geom[7] norms=431 hash=482b2d1f3bd3bbcd
 geom[7] colors=0 hash=14650fb0739d0383
 geom[7] texcoords=0 hash=14650fb0739d0383
 geom[7] tris=656 hash=e7900697d57635f8
-geom[7] bbox_min=-0x1.4fa592p+4 -0x1.3cf772p+3 -0x1.7999p-1 bbox_max=0x1.48dc62p+4 0x1.072b8ap+4 0x1.f5bfd8p+6
-geom[7] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=-0x1.46e4p+1 -0x1.2bf4dp+1 0x0p+0 scale=0x1p+0
+geom[7] bbox_min=c1a7d2c9 c11e7bb9 bf3ccc80 bbox_max=41a46e31 418395c5 42fadfec
+geom[7] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c0237200 c015fa68 00000000 scale=3f800000
 node[8] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
 node[9] name=Capsule01 type=NiTriStrips typeIdx=3 parent=-1 children=0 hasGeom=1
 geom[9] name=Capsule01
@@ -51,8 +51,8 @@ geom[9] norms=66 hash=320def4e7591c443
 geom[9] colors=0 hash=14650fb0739d0383
 geom[9] texcoords=0 hash=14650fb0739d0383
 geom[9] tris=176 hash=8c32bbe428266b00
-geom[9] bbox_min=-0x1.dcffeap+4 -0x1.dcffeap+4 0x0p+0 bbox_max=0x1.dcffeap+4 0x1.dcffeap+4 0x1.08p+7
-geom[9] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+geom[9] bbox_min=c1ee7ff5 c1ee7ff5 00000000 bbox_max=41ee7ff5 41ee7ff5 43040000
+geom[9] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 node[10] name= type=NiMaterialProperty typeIdx=4 parent=-1 children=0 hasGeom=0
 node[11] name= type=NiWireframeProperty typeIdx=7 parent=-1 children=0 hasGeom=0
 node[12] name= type=NiTriStripsData typeIdx=6 parent=-1 children=0 hasGeom=0
@@ -79,8 +79,8 @@ allgeom[0] norms=426 hash=0a178b0d61d07348
 allgeom[0] colors=0 hash=14650fb0739d0383
 allgeom[0] texcoords=0 hash=14650fb0739d0383
 allgeom[0] tris=646 hash=c4f4d2b5540e923e
-allgeom[0] bbox_min=-0x1.0d9548p+4 -0x1.d28272p+5 0x1.dded78p+5 bbox_max=0x1.0482e2p+4 0x1.0eb5bap+6 0x1.38af28p+6
-allgeom[0] transform rot=[0x1.4p-22 -0x1p+0 0x0p+0 0x1p+0 0x1.4p-22 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x1.dbp-6 0x1.24b126p+6 -0x1.c3f7cep+5 scale=0x1p+0
+allgeom[0] bbox_min=c186caa4 c2694139 426ef6bc bbox_max=41824171 42875add 429c5794
+allgeom[0] transform rot=[34a00000 bf800000 00000000 3f800000 34a00000 00000000 00000000 00000000 3f800000 ] trans=3ced8000 42925893 c261fbe7 scale=3f800000
 allgeom[1] name=MarkerSource
 allgeom[1] diffuse= normal=
 allgeom[1] verts=431 hash=70b43bf7b0e4f703
@@ -88,8 +88,8 @@ allgeom[1] norms=431 hash=482b2d1f3bd3bbcd
 allgeom[1] colors=0 hash=14650fb0739d0383
 allgeom[1] texcoords=0 hash=14650fb0739d0383
 allgeom[1] tris=656 hash=e7900697d57635f8
-allgeom[1] bbox_min=-0x1.4fa592p+4 -0x1.3cf772p+3 -0x1.7999p-1 bbox_max=0x1.48dc62p+4 0x1.072b8ap+4 0x1.f5bfd8p+6
-allgeom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=-0x1.46e4p+1 -0x1.2bf4dp+1 0x0p+0 scale=0x1p+0
+allgeom[1] bbox_min=c1a7d2c9 c11e7bb9 bf3ccc80 bbox_max=41a46e31 418395c5 42fadfec
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c0237200 c015fa68 00000000 scale=3f800000
 allgeom[2] name=Capsule01
 allgeom[2] diffuse= normal=
 allgeom[2] verts=66 hash=082a7dbf7fc925aa
@@ -97,7 +97,7 @@ allgeom[2] norms=66 hash=320def4e7591c443
 allgeom[2] colors=0 hash=14650fb0739d0383
 allgeom[2] texcoords=0 hash=14650fb0739d0383
 allgeom[2] tris=176 hash=8c32bbe428266b00
-allgeom[2] bbox_min=-0x1.dcffeap+4 -0x1.dcffeap+4 0x0p+0 bbox_max=0x1.dcffeap+4 0x1.dcffeap+4 0x1.08p+7
-allgeom[2] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+allgeom[2] bbox_min=c1ee7ff5 c1ee7ff5 00000000 bbox_max=41ee7ff5 41ee7ff5 43040000
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
 hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
 blockTypeName(0)=NiNode

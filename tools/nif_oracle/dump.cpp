@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -23,6 +24,15 @@ uint64_t fnv1a(const void* data, size_t size, uint64_t hash = 146959810393466560
 template <typename T>
 uint64_t hash_vec(const std::vector<T>& v) {
     return fnv1a(v.data(), v.size() * sizeof(T));
+}
+
+// Floats print as their raw IEEE-754 bits. %a renders denormals and NaN
+// differently under glibc and the MSVC runtime, so the text is not portable even
+// when the value is (found on the legacy 4.0.0.2 markers, 2026-11-26).
+void f32(float v) {
+    uint32_t bits;
+    memcpy(&bits, &v, sizeof(bits));
+    printf("%08x", bits);
 }
 
 void dump_geometry(const char* tag, const NIFGeometry& g) {
@@ -49,16 +59,26 @@ void dump_geometry(const char* tag, const NIFGeometry& g) {
             if (v.y > maxy) maxy = v.y;
             if (v.z > maxz) maxz = v.z;
         }
-        printf("%s bbox_min=%a %a %a bbox_max=%a %a %a\n", tag, minx, miny, minz, maxx, maxy, maxz);
+        printf("%s bbox_min=", tag);
+        f32(minx); printf(" "); f32(miny); printf(" "); f32(minz);
+        printf(" bbox_max=");
+        f32(maxx); printf(" "); f32(maxy); printf(" "); f32(maxz);
+        printf("\n");
     }
     printf("%s transform rot=[", tag);
     for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
-            printf("%a ", g.transform.rotation.m[i][j]);
+            f32(g.transform.rotation.m[i][j]);
+            printf(" ");
         }
     }
-    printf("] trans=%a %a %a scale=%a\n", g.transform.translation.x, g.transform.translation.y,
-           g.transform.translation.z, g.transform.scale);
+    printf("] trans=");
+    f32(g.transform.translation.x); printf(" ");
+    f32(g.transform.translation.y); printf(" ");
+    f32(g.transform.translation.z);
+    printf(" scale=");
+    f32(g.transform.scale);
+    printf("\n");
 }
 
 }  // namespace

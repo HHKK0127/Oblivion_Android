@@ -23,7 +23,7 @@ geom[2] norms=0 hash=14650fb0739d0383
 geom[2] colors=0 hash=14650fb0739d0383
 geom[2] texcoords=0 hash=14650fb0739d0383
 geom[2] tris=0 hash=14650fb0739d0383
-geom[2] transform rot=[0x1p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p-148 0x1p-149 0x1.8p-148 0x0p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p-147
+geom[2] transform rot=[3f800000 3f800000 00000000 00000000 00000000 00000002 00000001 00000003 00000000 ] trans=00000000 00000000 00000000 scale=00000004
 node[3] name= type=NiMaterialProperty typeIdx=3 parent=-1 children=0 hasGeom=0
 node[4] name= type=NiTriShapeData typeIdx=4 parent=-1 children=0 hasGeom=0
 roots=5
@@ -41,6 +41,6 @@ allgeom[0] norms=0 hash=14650fb0739d0383
 allgeom[0] colors=0 hash=14650fb0739d0383
 allgeom[0] texcoords=0 hash=14650fb0739d0383
 allgeom[0] tris=0 hash=14650fb0739d0383
-allgeom[0] transform rot=[0x1p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p-148 0x1p-149 0x1.8p-148 0x0p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p-147
+allgeom[0] transform rot=[3f800000 3f800000 00000000 00000000 00000000 00000002 00000001 00000003 00000000 ] trans=00000000 00000000 00000000 scale=00000004
 hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=0
 blockTypeName(0)=NiNode
