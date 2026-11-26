@@ -1,0 +1,161 @@
+parse=1
+magic=NetImmerse File Format, Version 10.0.1.0
+version=0x0A000100 endian=0 hasEndianByte=0 legacyNetImmerse=1 hasBlockTypeTable=1
+userVersion=0 numObjects=31 unknown=0 numGroups=0
+creator= processScript= exportScript=
+blockTypes=12
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiTriStripsData
+  bt[3]=bhkMeshShape
+  bt[4]=bhkMoppBvTreeShape
+  bt[5]=bhkRigidBodyT
+  bt[6]=bhkCollisionObject
+  bt[7]=NiTriStrips
+  bt[8]=NiBinaryExtraData
+  bt[9]=NiMaterialProperty
+  bt[10]=NiTexturingProperty
+  bt[11]=NiSourceTexture
+blockTypeIndices=31 hash=f31c5e29921ee12c
+blockDataOffset=335 fileSize=45506
+blockCount=31
+nodes=31
+node[0] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiTriStripsData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkMeshShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkMoppBvTreeShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkRigidBodyT typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkCollisionObject typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name=Ungrdtraphingedoor:2 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[7] name=Ungrdtraphingedoor:2
+geom[7] diffuse=textures/architecture/basementsections/Basestone01.dds normal=
+geom[7] verts=90 hash=72206dd19b61f6de
+geom[7] norms=90 hash=1c92257a5966faee
+geom[7] colors=90 hash=18f423d1d3ae1f2a
+geom[7] texcoords=90 hash=030535cca55e4605
+geom[7] tris=176 hash=d1565a5ba5bf4fdb
+geom[7] bbox_min=c28ac767 40a9c72b c2c77c90 bbox_max=42435d9f 42fcf907 429e8dcb
+geom[7] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+node[8] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiTriStripsData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[13] name=Ungrdtraphingedoor:3 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[13] name=Ungrdtraphingedoor:3
+geom[13] diffuse=textures/architecture/lowerclass/metalhinge.dds normal=
+geom[13] verts=250 hash=afcd3b74a3ae860f
+geom[13] norms=250 hash=7d637ccd05244419
+geom[13] colors=250 hash=7e4699ac296945c3
+geom[13] texcoords=250 hash=815e31a3038b2795
+geom[13] tris=359 hash=235d5b2e780ccc19
+geom[13] bbox_min=c292767b 41440aaa c2d0f68f bbox_max=c25c4ce1 41e47db8 429feaae
+geom[13] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+node[14] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiTriStripsData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[19] name=Ungrdtraphingedoor:13 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[19] name=Ungrdtraphingedoor:13
+geom[19] diffuse=textures/architecture/basementsections/rubble.dds normal=
+geom[19] verts=112 hash=3b9210056d41c907
+geom[19] norms=112 hash=fea5ca874a1b6a1d
+geom[19] colors=112 hash=915e7286e9ec0cfa
+geom[19] texcoords=112 hash=c2c1b9d2681f5a83
+geom[19] tris=164 hash=9c2d55b0fd93deeb
+geom[19] bbox_min=41e007b4 42d1db78 c2c77c8c bbox_max=42435d9f 42fcf907 429ce426
+geom[19] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+node[20] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTriStripsData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[25] name=Ungrdtraphingedoor:14 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[25] name=Ungrdtraphingedoor:14
+geom[25] diffuse=textures/architecture/basementsections/rubble02.dds normal=
+geom[25] verts=24 hash=58b1e76e844ba006
+geom[25] norms=24 hash=e90c9cff8c5b4963
+geom[25] colors=24 hash=6def41d43cb0a8fe
+geom[25] texcoords=24 hash=2f6ee85fbe41368c
+geom[25] tris=30 hash=7f89e85cfac2c3a4
+geom[25] bbox_min=c28ac767 40a9c72b c2c77c90 bbox_max=420dca06 42e1d782 429e8dcb
+geom[25] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+node[26] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiTriStripsData typeIdx=2 parent=-1 children=0 hasGeom=0
+roots=31
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+getNodeByName(first)=1
+extractAllGeometry=4
+allgeom[0] name=Ungrdtraphingedoor:2
+allgeom[0] diffuse=textures/architecture/basementsections/Basestone01.dds normal=
+allgeom[0] verts=90 hash=72206dd19b61f6de
+allgeom[0] norms=90 hash=1c92257a5966faee
+allgeom[0] colors=90 hash=18f423d1d3ae1f2a
+allgeom[0] texcoords=90 hash=030535cca55e4605
+allgeom[0] tris=176 hash=d1565a5ba5bf4fdb
+allgeom[0] bbox_min=c28ac767 40a9c72b c2c77c90 bbox_max=42435d9f 42fcf907 429e8dcb
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+allgeom[1] name=Ungrdtraphingedoor:3
+allgeom[1] diffuse=textures/architecture/lowerclass/metalhinge.dds normal=
+allgeom[1] verts=250 hash=afcd3b74a3ae860f
+allgeom[1] norms=250 hash=7d637ccd05244419
+allgeom[1] colors=250 hash=7e4699ac296945c3
+allgeom[1] texcoords=250 hash=815e31a3038b2795
+allgeom[1] tris=359 hash=235d5b2e780ccc19
+allgeom[1] bbox_min=c292767b 41440aaa c2d0f68f bbox_max=c25c4ce1 41e47db8 429feaae
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+allgeom[2] name=Ungrdtraphingedoor:13
+allgeom[2] diffuse=textures/architecture/basementsections/rubble.dds normal=
+allgeom[2] verts=112 hash=3b9210056d41c907
+allgeom[2] norms=112 hash=fea5ca874a1b6a1d
+allgeom[2] colors=112 hash=915e7286e9ec0cfa
+allgeom[2] texcoords=112 hash=c2c1b9d2681f5a83
+allgeom[2] tris=164 hash=9c2d55b0fd93deeb
+allgeom[2] bbox_min=41e007b4 42d1db78 c2c77c8c bbox_max=42435d9f 42fcf907 429ce426
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+allgeom[3] name=Ungrdtraphingedoor:14
+allgeom[3] diffuse=textures/architecture/basementsections/rubble02.dds normal=
+allgeom[3] verts=24 hash=58b1e76e844ba006
+allgeom[3] norms=24 hash=e90c9cff8c5b4963
+allgeom[3] colors=24 hash=6def41d43cb0a8fe
+allgeom[3] texcoords=24 hash=2f6ee85fbe41368c
+allgeom[3] tris=30 hash=7f89e85cfac2c3a4
+allgeom[3] bbox_min=c28ac767 40a9c72b c2c77c90 bbox_max=420dca06 42e1d782 429e8dcb
+allgeom[3] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4280d02f c1524ecc 41442f84 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

@@ -26,8 +26,9 @@ check_imports.py（ttom795）と同じ発想で、対象が import ではなく�
 
 使い方:
   python scripts/nif_coverage.py --corpus meshes_extracted --oracle tmp/nif_oracle
-  python scripts/nif_coverage.py --corpus tools/BSAFileExtractor/extracted/meshes \
-      --oracle tmp/nif_oracle --min-impl 119 --max-missing 0 --max-stray 0 --min-oracle 20
+  python scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
+      --oracle docs/evidence/fixtures/nif/oracle --min-impl 119 --max-missing 0 \
+      --max-stray 0 --min-oracle 119
   python scripts/nif_coverage.py --corpus meshes_extracted --show NiTriStrips
 """
 import argparse
@@ -196,18 +197,17 @@ def load_types(args):
 def load_oracle_types(oracle_dir):
     """差分オラクルがバイト検証した型集合。
 
-    `<dir>/out_orig/*.nif.txt`（ローカルの tmp/nif_oracle）と `<dir>/*.nif.txt`
-    （コミット済み fixture の期待値、docs/evidence/fixtures/nif/oracle）の両方を見る。
+    コミット済み fixture は `<dir>/{markers,cover}/…/*.nif.txt`（鏡写し）、ローカルの
+    `tmp/nif_oracle` は `<dir>/out_orig/*.nif.txt`。どちらも再帰で拾う。
     """
     types = set()
-    for sub in ("out_orig", ""):
-        d = os.path.join(oracle_dir, sub) if sub else oracle_dir
-        if not os.path.isdir(d):
-            continue
-        for name in sorted(os.listdir(d)):
+    if not os.path.isdir(oracle_dir):
+        return types
+    for dp, _dirs, names in os.walk(oracle_dir):
+        for name in sorted(names):
             if not name.endswith(".nif.txt"):
                 continue
-            with open(os.path.join(d, name), encoding="utf-8", errors="replace") as f:
+            with open(os.path.join(dp, name), encoding="utf-8", errors="replace") as f:
                 for m in ORACLE_BT.finditer(f.read()):
                     types.add(m.group(1))
     return types

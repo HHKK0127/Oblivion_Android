@@ -1,0 +1,1839 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=351 unknown=11 numGroups=0
+creator=ccafasso processScript=TriStrip Process Script exportScript=Anim Export Script
+blockTypes=42
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=NiControllerManager
+  bt[4]=NiMultiTargetTransformController
+  bt[5]=NiControllerSequence
+  bt[6]=NiTransformInterpolator
+  bt[7]=NiTransformData
+  bt[8]=NiStringPalette
+  bt[9]=NiFloatInterpolator
+  bt[10]=NiPSysEmitterCtlr
+  bt[11]=NiPSysUpdateCtlr
+  bt[12]=NiBlendFloatInterpolator
+  bt[13]=NiBlendBoolInterpolator
+  bt[14]=NiBoolInterpolator
+  bt[15]=NiTextKeyExtraData
+  bt[16]=NiBoolData
+  bt[17]=NiDefaultAVObjectPalette
+  bt[18]=bhkConvexVerticesShape
+  bt[19]=bhkRigidBody
+  bt[20]=bhkCollisionObject
+  bt[21]=NiTriStrips
+  bt[22]=NiBinaryExtraData
+  bt[23]=NiStencilProperty
+  bt[24]=NiMaterialProperty
+  bt[25]=NiTexturingProperty
+  bt[26]=NiSourceTexture
+  bt[27]=NiTriStripsData
+  bt[28]=NiAlphaProperty
+  bt[29]=NiSpecularProperty
+  bt[30]=NiZBufferProperty
+  bt[31]=NiParticleSystem
+  bt[32]=NiPSysResetOnLoopCtlr
+  bt[33]=NiPSysData
+  bt[34]=NiPSysAgeDeathModifier
+  bt[35]=NiPSysBoxEmitter
+  bt[36]=NiPSysSpawnModifier
+  bt[37]=NiPSysGrowFadeModifier
+  bt[38]=NiPSysRotationModifier
+  bt[39]=NiPSysPositionModifier
+  bt[40]=NiPSysBoundUpdateModifier
+  bt[41]=NiVertexColorProperty
+blockTypeIndices=351 hash=6c91c51a5e79f150
+blockDataOffset=1741 fileSize=505076
+blockCount=351
+nodes=351
+node[0] name=BlackwoodPump01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiControllerManager typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiMultiTargetTransformController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiControllerSequence typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiStringPalette typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiFloatInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiPSysEmitterCtlr typeIdx=10 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiPSysUpdateCtlr typeIdx=11 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiBlendFloatInterpolator typeIdx=12 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiBlendBoolInterpolator typeIdx=13 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiBoolInterpolator typeIdx=14 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiTextKeyExtraData typeIdx=15 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiControllerSequence typeIdx=5 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[38] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[42] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[43] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[44] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[45] name= type=NiFloatInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[46] name= type=NiBoolInterpolator typeIdx=14 parent=-1 children=0 hasGeom=0
+node[47] name= type=NiBoolData typeIdx=16 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[51] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[52] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[53] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[54] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[55] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[56] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[59] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[60] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[61] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiTextKeyExtraData typeIdx=15 parent=-1 children=0 hasGeom=0
+node[63] name= type=NiDefaultAVObjectPalette typeIdx=17 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[66] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[67] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[68] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[69] name=Wheel_spike01 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[69] name=Wheel_spike01
+geom[69] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[69] verts=12 hash=a75c2bde3775539f
+geom[69] norms=12 hash=ee58545154459710
+geom[69] colors=0 hash=14650fb0739d0383
+geom[69] texcoords=12 hash=e6cecede1d259c03
+geom[69] tris=19 hash=499db15a79507e8f
+geom[69] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[69] transform rot=[3471430c 34e6b1e7 3f800000 340f95b7 3f7fffff b4b244ee bf800000 34221c1a 3490becc ] trans=428e4074 3ec211f8 40d2140c scale=3f800000
+node[70] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[71] name= type=NiStencilProperty typeIdx=23 parent=-1 children=0 hasGeom=0
+node[72] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[73] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[74] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[75] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[76] name=Wheel_spike02 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[76] name=Wheel_spike02
+geom[76] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[76] verts=12 hash=a75c2bde3775539f
+geom[76] norms=12 hash=ee58545154459710
+geom[76] colors=0 hash=14650fb0739d0383
+geom[76] texcoords=12 hash=e6cecede1d259c03
+geom[76] tris=19 hash=499db15a79507e8f
+geom[76] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[76] transform rot=[34937024 3f248dc4 3f441b7a b3dec502 3f441b78 bf248dc4 bf800000 33f57be4 34acdb59 ] trans=425957f5 c2379817 40d21414 scale=3f800000
+node[77] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[78] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[79] name=Wheel_spike03 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[79] name=Wheel_spike03
+geom[79] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[79] verts=12 hash=a75c2bde3775539f
+geom[79] norms=12 hash=ee58545154459710
+geom[79] colors=0 hash=14650fb0739d0383
+geom[79] texcoords=12 hash=e6cecede1d259c03
+geom[79] tris=19 hash=499db15a79507e8f
+geom[79] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[79] transform rot=[34955b32 3f7c1c5c 3e31d0c1 b4ae651a 3e31d0ba bf7c1c5d bf800000 347c21f5 34ddcb96 ] trans=413ba35a c28d1d11 40cbf021 scale=3f800000
+node[80] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[81] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[82] name=Wheel_spike04 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[82] name=Wheel_spike04
+geom[82] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[82] verts=12 hash=a75c2bde3775539f
+geom[82] norms=12 hash=ee58545154459710
+geom[82] colors=0 hash=14650fb0739d0383
+geom[82] texcoords=12 hash=e6cecede1d259c03
+geom[82] tris=19 hash=499db15a79507e8f
+geom[82] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[82] transform rot=[00000000 3f5db3d6 bf000001 b4e5993f bf000001 bf5db3d8 bf800000 347c21f4 34ddcb98 ] trans=c2130cf2 c2783b43 40dea421 scale=3f800000
+node[83] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[84] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[85] name=Wheel_spike05 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[85] name=Wheel_spike05
+geom[85] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[85] verts=12 hash=a75c2bde3775539f
+geom[85] norms=12 hash=ee58545154459710
+geom[85] colors=0 hash=14650fb0739d0383
+geom[85] texcoords=12 hash=e6cecede1d259c03
+geom[85] tris=19 hash=499db15a79507e8f
+geom[85] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[85] transform rot=[b491cf5e 3eaf1d40 bf708fb2 b4b15ede bf708fb2 beaf1d44 bf800000 347c21f3 34ddcb97 ] trans=c288e3f1 c1c30748 40d21421 scale=3f800000
+node[86] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[87] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[88] name=Wheel_spike06 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[88] name=Wheel_spike06
+geom[88] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[88] verts=12 hash=a75c2bde3775539f
+geom[88] norms=12 hash=ee58545154459710
+geom[88] colors=0 hash=14650fb0739d0383
+geom[88] texcoords=12 hash=e6cecede1d259c03
+geom[88] tris=19 hash=499db15a79507e8f
+geom[88] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[88] transform rot=[b4984a70 beaf1d41 bf708fb3 b4930019 bf708fb2 3eaf1d3e bf800000 34c77bee 3469e33d ] trans=c288fdc5 41c6ce14 40d21404 scale=3f800000
+node[89] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[90] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[91] name=Wheel_spike07 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[91] name=Wheel_spike07
+geom[91] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[91] verts=12 hash=a75c2bde3775539f
+geom[91] norms=12 hash=ee58545154459710
+geom[91] colors=0 hash=14650fb0739d0383
+geom[91] texcoords=12 hash=e6cecede1d259c03
+geom[91] tris=19 hash=499db15a79507e8f
+geom[91] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[91] transform rot=[b4e3f7fa bf5db3d7 bf000003 b3f01b73 bf000001 3f5db3d7 bf800000 34ecb3d5 342c3a5e ] trans=c2138fbe 427a6115 40d213fb scale=3f800000
+node[92] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[93] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[94] name=Wheel_spike08 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[94] name=Wheel_spike08
+geom[94] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[94] verts=12 hash=a75c2bde3775539f
+geom[94] norms=12 hash=ee58545154459710
+geom[94] colors=0 hash=14650fb0739d0383
+geom[94] texcoords=12 hash=e6cecede1d259c03
+geom[94] tris=19 hash=499db15a79507e8f
+geom[94] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[94] transform rot=[b4c356c4 bf7c1c60 3e31d0bb 346cdd20 3e31d0b8 3f7c1c5f bf800000 34de32fc 3415a756 ] trans=41395074 428e62d6 40d21401 scale=3f800000
+node[95] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[96] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[97] name=Wheel_spike09 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[97] name=Wheel_spike09
+geom[97] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[97] verts=12 hash=a75c2bde3775539f
+geom[97] norms=12 hash=ee58545154459710
+geom[97] colors=0 hash=14650fb0739d0383
+geom[97] texcoords=12 hash=e6cecede1d259c03
+geom[97] tris=19 hash=499db15a79507e8f
+geom[97] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+geom[97] transform rot=[b31bf100 bf248dbf 3f441b79 34dd02f9 3f441b79 3f248dc1 bf800000 34bf18c4 34973ee7 ] trans=4258f6e2 423a7d15 40d2140e scale=3f800000
+node[98] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[99] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[100] name=wheel_spoke01 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[100] name=wheel_spoke01
+geom[100] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[100] verts=80 hash=70b3ff76ba409784
+geom[100] norms=80 hash=60f248e974b67642
+geom[100] colors=0 hash=14650fb0739d0383
+geom[100] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[100] tris=131 hash=afbaa07407f44d0b
+geom[100] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[100] transform rot=[3f248dbc 3f441b7c 34100153 bf441b7c 3f248dbc b3fe93a8 b43e12c5 b2e3f5ad 3f800000 ] trans=41cdedb4 41b783ac 4099b3f5 scale=3f800000
+node[101] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[102] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[103] name=wheel_spoke02 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[103] name=wheel_spoke02
+geom[103] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[103] verts=80 hash=70b3ff76ba409784
+geom[103] norms=80 hash=60f248e974b67642
+geom[103] colors=0 hash=14650fb0739d0383
+geom[103] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[103] tris=131 hash=afbaa07407f44d0b
+geom[103] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[103] transform rot=[b5405542 3f800000 b3d08360 bf800000 b5405542 b3654971 b3654982 33d0835a 3f800000 ] trans=4208483f 3f0e716e 4099b3fe scale=3f7fffff
+node[104] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[105] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[106] name=wheel_spoke03 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[106] name=wheel_spoke03
+geom[106] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[106] verts=80 hash=70b3ff76ba409784
+geom[106] norms=80 hash=60f248e974b67642
+geom[106] colors=0 hash=14650fb0739d0383
+geom[106] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[106] tris=131 hash=afbaa07407f44d0b
+geom[106] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[106] transform rot=[bf248dc2 3f441b76 b4144749 bf441b76 bf248dc2 32a2bc8d b39f7519 33fd53b1 3f800000 ] trans=41d082d2 c1af8d25 4099b3ff scale=3f800000
+node[107] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[108] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[109] name=wheel_spoke04 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[109] name=wheel_spoke04
+geom[109] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[109] verts=80 hash=70b3ff76ba409784
+geom[109] norms=80 hash=60f248e974b67642
+geom[109] colors=0 hash=14650fb0739d0383
+geom[109] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[109] tris=131 hash=afbaa07407f44d0b
+geom[109] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[109] transform rot=[bf7c1c5d 3e31d0ba b44331a7 be31d0ba bf7c1c5d 343130fc b42175aa 345064f8 3f800000 ] trans=40aef594 c2082264 4099b405 scale=3f800000
+node[110] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[111] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[112] name=wheel_spoke05 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[112] name=wheel_spoke05
+geom[112] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[112] verts=80 hash=70b3ff76ba409784
+geom[112] norms=80 hash=60f248e974b67642
+geom[112] colors=0 hash=14650fb0739d0383
+geom[112] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[112] tris=131 hash=afbaa07407f44d0b
+geom[112] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[112] transform rot=[bf5db3d5 bf00000a b355946d 3f00000a bf5db3d5 34a3c034 b451fe08 348076ab 3f800000 ] trans=c190a6ae c1f07213 4099b408 scale=3f7fffff
+node[113] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[114] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[115] name=wheel_spoke06 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[115] name=wheel_spoke06
+geom[115] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[115] verts=80 hash=70b3ff76ba409784
+geom[115] norms=80 hash=60f248e974b67642
+geom[115] colors=0 hash=14650fb0739d0383
+geom[115] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[115] tris=131 hash=afbaa07407f44d0b
+geom[115] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[115] transform rot=[beaf1d38 bf708fb3 349ba664 3f708fb3 beaf1d38 34b77875 b46e5753 34d10382 3f800000 ] trans=c2064172 c13df1e0 4099b413 scale=3f800000
+node[116] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[117] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[118] name=wheel_spoke07 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[118] name=wheel_spoke07
+geom[118] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[118] verts=80 hash=70b3ff76ba409784
+geom[118] norms=80 hash=60f248e974b67642
+geom[118] colors=0 hash=14650fb0739d0383
+geom[118] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[118] tris=131 hash=afbaa07407f44d0b
+geom[118] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[118] transform rot=[3eaf1d46 bf708fb2 34062134 3f708fb2 3eaf1d46 344cd171 b46e5755 335ff475 3f800000 ] trans=c206f154 41402a22 4099b3fb scale=3f7fffff
+node[119] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[120] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[121] name=wheel_spoke08 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[121] name=wheel_spoke08
+geom[121] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[121] verts=80 hash=70b3ff76ba409784
+geom[121] norms=80 hash=60f248e974b67642
+geom[121] colors=0 hash=14650fb0739d0383
+geom[121] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[121] tris=131 hash=afbaa07407f44d0b
+geom[121] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[121] transform rot=[3f5db3d7 befffffe 346a6762 3efffffe 3f5db3d7 338d5da4 b46e5753 335ff474 3f800000 ] trans=c1942164 41f35271 4099b3fb scale=3f800000
+node[122] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[123] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[124] name=wheel_spoke09 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[124] name=wheel_spoke09
+geom[124] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[124] verts=80 hash=70b3ff76ba409784
+geom[124] norms=80 hash=60f248e974b67642
+geom[124] colors=0 hash=14650fb0739d0383
+geom[124] texcoords=80 hash=ab4d7ff346b2c2ce
+geom[124] tris=131 hash=afbaa07407f44d0b
+geom[124] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+geom[124] transform rot=[3f7c1c5c 3e31d0cb 3274b817 be31d0cb 3f7c1c5c b4735c77 b365497e 346d020f 3f800000 ] trans=409f21eb 420aed03 4099b407 scale=3f7fffff
+node[125] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[126] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[127] name=Wheel:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[127] name=Wheel:4
+geom[127] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnTrim02int.dds normal=
+geom[127] verts=76 hash=c905aec063855ecb
+geom[127] norms=76 hash=b911fa92acc7ffa3
+geom[127] colors=0 hash=14650fb0739d0383
+geom[127] texcoords=76 hash=5bb9113853a0afb2
+geom[127] tris=91 hash=a4ff20611e9b4447
+geom[127] bbox_min=c28ea12c c290d472 00000000 bbox_max=428ea12c 4290d472 4154cccd
+geom[127] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[128] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[129] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[130] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[131] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[132] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[133] name=Wheel:14 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[133] name=Wheel:14
+geom[133] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnTrim01int.dds normal=
+geom[133] verts=76 hash=1f7fdbd5091ee97b
+geom[133] norms=76 hash=702c4147d38e820e
+geom[133] colors=0 hash=14650fb0739d0383
+geom[133] texcoords=76 hash=a6ad137c8a3bf016
+geom[133] tris=91 hash=a4ff20611e9b4447
+geom[133] bbox_min=c28ea12c c290d472 00000000 bbox_max=428ea12c 4290d472 4154cccd
+geom[133] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[134] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[135] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[136] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[137] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[138] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[139] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[140] name=handle:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[140] name=handle:0
+geom[140] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[140] verts=168 hash=a3e700e3f7106673
+geom[140] norms=168 hash=ebb79ae4f10b133d
+geom[140] colors=0 hash=14650fb0739d0383
+geom[140] texcoords=168 hash=1d17139d539646b8
+geom[140] tris=326 hash=b2331d5450bb24f6
+geom[140] bbox_min=c1dbf4df c1bc5c14 b4a03f65 bbox_max=41e09c51 41cd3710 40e00001
+geom[140] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c19e9b60 c1a1e113 368a0fa0 scale=3f800000
+node[141] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[142] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[143] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[144] name=Wheel_axel:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[144] name=Wheel_axel:0
+geom[144] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[144] verts=112 hash=75aea8c238d30bfc
+geom[144] norms=112 hash=c5856033e5be293c
+geom[144] colors=0 hash=14650fb0739d0383
+geom[144] texcoords=112 hash=b35366b285f7ceb5
+geom[144] tris=132 hash=7375255195a6a2ea
+geom[144] bbox_min=c1000000 c1000000 c1731f64 bbox_max=41000000 41000000 41a02d5e
+geom[144] transform rot=[b4000000 34400000 bf800000 bf3504f6 3f3504f1 34400000 3f3504f2 3f3504f6 33800000 ] trans=c2884520 3fff1a00 c0fbd830 scale=3f7ffffe
+node[145] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[146] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[147] name=Wheel_axel:1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[147] name=Wheel_axel:1
+geom[147] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+geom[147] verts=16 hash=a43233c3d397d183
+geom[147] norms=16 hash=65d1d06c3dbfe103
+geom[147] colors=0 hash=14650fb0739d0383
+geom[147] texcoords=16 hash=b8717b3aac6305e2
+geom[147] tris=16 hash=d8599e4ba201c783
+geom[147] bbox_min=c1000000 c1000000 bfbaad0e bbox_max=41000000 40ffffff bfbaad0e
+geom[147] transform rot=[b4000000 34400000 bf800000 bf3504f6 3f3504f1 34400000 3f3504f2 3f3504f6 33800000 ] trans=c2884520 3fff1a00 c0fbd830 scale=3f7ffffe
+node[148] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[149] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[150] name= type=NiAlphaProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[151] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[152] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[153] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[154] name=Cylinder04:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[154] name=Cylinder04:0
+geom[154] diffuse=textures/architecture/leyawiin/interior/LeyawiinWindowtrimInt01.dds normal=
+geom[154] verts=9 hash=7738be2d59dedc1c
+geom[154] norms=9 hash=80270b5ee3a9a03a
+geom[154] colors=0 hash=14650fb0739d0383
+geom[154] texcoords=9 hash=a40d32db28ff470c
+geom[154] tris=11 hash=187b51466e0ba2e2
+geom[154] bbox_min=c032e236 c02a20e2 c1d33334 bbox_max=4010b84c 402a20e1 c1d33334
+geom[154] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+node[155] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[156] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[157] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[158] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[159] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[160] name=Cylinder04:1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[160] name=Cylinder04:1
+geom[160] diffuse= normal=
+geom[160] verts=7 hash=d68a6965e2737a0a
+geom[160] norms=7 hash=d75bbae734ad7d6a
+geom[160] colors=0 hash=14650fb0739d0383
+geom[160] texcoords=0 hash=14650fb0739d0383
+geom[160] tris=7 hash=9a04119b2f1c81c8
+geom[160] bbox_min=c032e236 c02a20e2 00000000 bbox_max=4010b84c 402a20e1 00000000
+geom[160] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+node[161] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[162] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[163] name=Cylinder04:2 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[163] name=Cylinder04:2
+geom[163] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnMCint01.dds normal=
+geom[163] verts=20 hash=ae101abba132466b
+geom[163] norms=20 hash=309d616cbedda147
+geom[163] colors=0 hash=14650fb0739d0383
+geom[163] texcoords=20 hash=c1fe4b38ed64564f
+geom[163] tris=26 hash=6badca074f568ea0
+geom[163] bbox_min=c032e236 c02a20e2 c1d33334 bbox_max=4010b84c 402a20e1 00000000
+geom[163] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+node[164] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[165] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[166] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[167] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[168] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[169] name=Cylinder03:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[169] name=Cylinder03:0
+geom[169] diffuse=textures/architecture/leyawiin/interior/LeyawiinWindowtrimInt01.dds normal=
+geom[169] verts=9 hash=e3289e355595d798
+geom[169] norms=9 hash=d446d9f7d0a009ba
+geom[169] colors=0 hash=14650fb0739d0383
+geom[169] texcoords=9 hash=28ddd1d06a7d269c
+geom[169] tris=11 hash=187b51466e0ba2e2
+geom[169] bbox_min=c010b84c c02a20e1 41d33334 bbox_max=4032e236 402a20e2 41d33334
+geom[169] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+node[170] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[171] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[172] name=Cylinder03:1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[172] name=Cylinder03:1
+geom[172] diffuse= normal=
+geom[172] verts=7 hash=2a2c3715533c505a
+geom[172] norms=7 hash=0c59e2b8d5bf53ea
+geom[172] colors=0 hash=14650fb0739d0383
+geom[172] texcoords=0 hash=14650fb0739d0383
+geom[172] tris=7 hash=9a04119b2f1c81c8
+geom[172] bbox_min=c010b84c c02a20e1 00000000 bbox_max=4032e236 402a20e2 00000000
+geom[172] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+node[173] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[174] name=Cylinder03:2 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[174] name=Cylinder03:2
+geom[174] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnMCint01.dds normal=
+geom[174] verts=20 hash=62bbad3fc44a301f
+geom[174] norms=20 hash=9bf1671f371582b7
+geom[174] colors=0 hash=14650fb0739d0383
+geom[174] texcoords=20 hash=8971e1db93c08e0b
+geom[174] tris=26 hash=6badca074f568ea0
+geom[174] bbox_min=c010b84c c02a20e1 00000000 bbox_max=4032e236 402a20e2 41d33334
+geom[174] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+node[175] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[176] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[177] name=Line10:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[177] name=Line10:0
+geom[177] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[177] verts=80 hash=711f9d7db377d9ee
+geom[177] norms=80 hash=74f6fdbdf563e3d6
+geom[177] colors=0 hash=14650fb0739d0383
+geom[177] texcoords=80 hash=63d685d0e3994520
+geom[177] tris=136 hash=893d413c03dc4f13
+geom[177] bbox_min=c11615ed c1168b5d 4215dce1 bbox_max=41179a8d 4117251d 423b3840
+geom[177] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c2b7c100 bf0bd400 c263f230 scale=3f800000
+node[178] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[179] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[180] name=Line10:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[180] name=Line10:4
+geom[180] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+geom[180] verts=18 hash=353b26ecc99564d3
+geom[180] norms=18 hash=019c90974c1205a4
+geom[180] colors=0 hash=14650fb0739d0383
+geom[180] texcoords=18 hash=88317cf080829943
+geom[180] tris=16 hash=fed62bad72083893
+geom[180] bbox_min=c0a86ea5 c0a95a31 c33a7002 bbox_max=40ab7892 40aa8d40 4216bb0d
+geom[180] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c2b7c100 bf0bd400 c263f230 scale=3f800000
+node[181] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[182] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[183] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[184] name= type=NiSpecularProperty typeIdx=29 parent=-1 children=0 hasGeom=0
+node[185] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[186] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[187] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[188] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[189] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[190] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[191] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[192] name=Box01:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[192] name=Box01:0
+geom[192] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[192] verts=486 hash=92743c1234cb2905
+geom[192] norms=486 hash=4d45307876109d05
+geom[192] colors=0 hash=14650fb0739d0383
+geom[192] texcoords=486 hash=fa578b01f6494063
+geom[192] tris=883 hash=b95a84d8bb1fbd49
+geom[192] bbox_min=c20deb7e c236def2 bef86e38 bbox_max=425549b4 4236e4f1 43030000
+geom[192] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[193] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[194] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[195] name=Box01:6 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[195] name=Box01:6
+geom[195] diffuse=textures/architecture/castle/kvatch/geargatecase.dds normal=
+geom[195] verts=64 hash=192d936e869c2c0a
+geom[195] norms=64 hash=2c39dd294d631b7d
+geom[195] colors=0 hash=14650fb0739d0383
+geom[195] texcoords=64 hash=985db4eabb16c002
+geom[195] tris=99 hash=f3f29c3e47dce2bb
+geom[195] bbox_min=c1fef6ae c2286ecb bef86e38 bbox_max=4246d98c 422874c9 43000000
+geom[195] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[196] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[197] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[198] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[199] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[200] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[201] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[202] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[203] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[204] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[205] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[206] name=pump_little:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[206] name=pump_little:0
+geom[206] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[206] verts=316 hash=656e216137ee76e5
+geom[206] norms=316 hash=347f6827c296c4ba
+geom[206] colors=0 hash=14650fb0739d0383
+geom[206] texcoords=316 hash=fb86a061b9db53a1
+geom[206] tris=535 hash=96e9b25dc20bdddd
+geom[206] bbox_min=c1ac28f6 c1e2cfda c1a0b43a bbox_max=41ac28f6 41e158b5 42a12b80
+geom[206] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+node[207] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[208] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[209] name=pump_little:5 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[209] name=pump_little:5
+geom[209] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[209] verts=124 hash=7ff3f5947702ca1d
+geom[209] norms=124 hash=4205731239914617
+geom[209] colors=0 hash=14650fb0739d0383
+geom[209] texcoords=124 hash=fe6b3d434a8b761c
+geom[209] tris=200 hash=27116e141e0e3f83
+geom[209] bbox_min=c14c2b35 c145f127 42974cb5 bbox_max=4157e760 415d4a16 429c3fcd
+geom[209] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+node[210] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[211] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[212] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[213] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[214] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[215] name=pump_little:6 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[215] name=pump_little:6
+geom[215] diffuse=textures/architecture/castle/kvatch/geargatecase.dds normal=
+geom[215] verts=22 hash=55677c4ead867875
+geom[215] norms=22 hash=8b4200ff03631751
+geom[215] colors=0 hash=14650fb0739d0383
+geom[215] texcoords=22 hash=622a92c4d551cd5f
+geom[215] tris=26 hash=5ca938f3d61c07b0
+geom[215] bbox_min=c195c28f c1d073b6 408cc3bf bbox_max=4195c28f 41cefc8f 428c99f0
+geom[215] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+node[216] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[217] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[218] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[219] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[220] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[221] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[222] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[223] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[224] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[225] name= type=NiZBufferProperty typeIdx=30 parent=-1 children=0 hasGeom=0
+node[226] name= type=NiParticleSystem typeIdx=31 parent=-1 children=0 hasGeom=0
+node[227] name= type=NiPSysResetOnLoopCtlr typeIdx=32 parent=-1 children=0 hasGeom=0
+node[228] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[229] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[230] name= type=NiAlphaProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[231] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[232] name= type=NiPSysData typeIdx=33 parent=-1 children=0 hasGeom=0
+node[233] name= type=NiPSysAgeDeathModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[234] name= type=NiPSysBoxEmitter typeIdx=35 parent=-1 children=0 hasGeom=0
+node[235] name= type=NiPSysSpawnModifier typeIdx=36 parent=-1 children=0 hasGeom=0
+node[236] name= type=NiPSysGrowFadeModifier typeIdx=37 parent=-1 children=0 hasGeom=0
+node[237] name= type=NiPSysRotationModifier typeIdx=38 parent=-1 children=0 hasGeom=0
+node[238] name= type=NiPSysPositionModifier typeIdx=39 parent=-1 children=0 hasGeom=0
+node[239] name= type=NiPSysBoundUpdateModifier typeIdx=40 parent=-1 children=0 hasGeom=0
+node[240] name=pump_pipe:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[240] name=pump_pipe:4
+geom[240] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+geom[240] verts=290 hash=2499fc4a9d91bba8
+geom[240] norms=290 hash=fa1ec2acc9031d54
+geom[240] colors=290 hash=81cb7e6d7fee9caa
+geom[240] texcoords=290 hash=f11e341eedd91aa8
+geom[240] tris=484 hash=e2de7d0140d53e6e
+geom[240] bbox_min=c1ae7700 c103b0c1 c19fab01 bbox_max=41ae76b3 4103b0cb 42a00c8c
+geom[240] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[241] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[242] name= type=NiVertexColorProperty typeIdx=41 parent=-1 children=0 hasGeom=0
+node[243] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[244] name=Wheel_axel02 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[244] name=Wheel_axel02
+geom[244] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[244] verts=110 hash=3fb953e6328cbbae
+geom[244] norms=110 hash=e842ed67c3b6babb
+geom[244] colors=0 hash=14650fb0739d0383
+geom[244] texcoords=110 hash=ee1b7d2c422cb506
+geom[244] tris=168 hash=9b7b088b61538ce2
+geom[244] bbox_min=c0a86790 c0a86793 c1450816 bbox_max=40a86791 40a8678f 41a02d5e
+geom[244] transform rot=[3f3504f5 bf3504f1 b4200000 00000000 34400000 bf800000 3f3504f2 3f3504f6 34000000 ] trans=40a90000 c2434900 c0c6ded0 scale=3f7ffffe
+node[245] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[246] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[247] name=Wheel_axel01 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[247] name=Wheel_axel01
+geom[247] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[247] verts=138 hash=cc4ebb4e6a1b97f2
+geom[247] norms=138 hash=79ace70e98081fa7
+geom[247] colors=0 hash=14650fb0739d0383
+geom[247] texcoords=138 hash=6d17bc8551308052
+geom[247] tris=238 hash=a3df21d4cb128c3d
+geom[247] bbox_min=c0a86793 c0a8678e c1d550e7 bbox_max=40a8678f 40a86794 41a02d5e
+geom[247] transform rot=[3f3504f5 bf3504f1 b4200000 00000000 34400000 bf800000 3f3504f2 3f3504f6 34000000 ] trans=4255a040 c2434900 c2091740 scale=3f7ffffe
+node[248] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[249] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[250] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[251] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[252] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[253] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[254] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[255] name=gear02:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[255] name=gear02:0
+geom[255] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[255] verts=196 hash=3a2b45127d1811e7
+geom[255] norms=196 hash=f8f78eab9c799b56
+geom[255] colors=0 hash=14650fb0739d0383
+geom[255] texcoords=196 hash=26f5a1cad0499e1a
+geom[255] tris=334 hash=03cac6b5db2261a4
+geom[255] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+geom[255] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[256] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[257] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[258] name=gear02:5 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[258] name=gear02:5
+geom[258] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[258] verts=510 hash=f53d069611591c5c
+geom[258] norms=510 hash=d7db346f707fca81
+geom[258] colors=0 hash=14650fb0739d0383
+geom[258] texcoords=510 hash=2d8395ff8e1721bb
+geom[258] tris=946 hash=bf548476a27c0044
+geom[258] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+geom[258] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[259] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[260] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[261] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[262] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[263] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[264] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[265] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[266] name=gear02:0@#0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[266] name=gear02:0@#0
+geom[266] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[266] verts=196 hash=3a2b45127d1811e7
+geom[266] norms=196 hash=f8f78eab9c799b56
+geom[266] colors=0 hash=14650fb0739d0383
+geom[266] texcoords=196 hash=26f5a1cad0499e1a
+geom[266] tris=334 hash=03cac6b5db2261a4
+geom[266] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+geom[266] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[267] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[268] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[269] name=gear02:5@#1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[269] name=gear02:5@#1
+geom[269] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[269] verts=510 hash=f53d069611591c5c
+geom[269] norms=510 hash=d7db346f707fca81
+geom[269] colors=0 hash=14650fb0739d0383
+geom[269] texcoords=510 hash=2d8395ff8e1721bb
+geom[269] tris=946 hash=bf548476a27c0044
+geom[269] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+geom[269] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[270] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[271] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[272] name=Wheel_axel03 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[272] name=Wheel_axel03
+geom[272] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[272] verts=110 hash=47d212ab9f81c66b
+geom[272] norms=110 hash=ce6b33cc5eeb104b
+geom[272] colors=0 hash=14650fb0739d0383
+geom[272] texcoords=110 hash=52e086d3c99f99be
+geom[272] tris=173 hash=4deaee8901faf843
+geom[272] bbox_min=c0a8678f c0a8678d c1a02d5e bbox_max=40a8678e 40a86791 41450816
+geom[272] transform rot=[bf3504f4 3f3504f1 b4200000 00000000 b4800000 bf800000 bf3504f2 bf3504f6 34000000 ] trans=40a90000 423df3f0 c0c6ded0 scale=3f800000
+node[273] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[274] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[275] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[276] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[277] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[278] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[279] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[280] name=Gear04:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[280] name=Gear04:0
+geom[280] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[280] verts=196 hash=fd854fb43800db2f
+geom[280] norms=196 hash=88f168a46a7b3192
+geom[280] colors=0 hash=14650fb0739d0383
+geom[280] texcoords=196 hash=98e9979d6f8cdc6a
+geom[280] tris=335 hash=70d7166572851dff
+geom[280] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+geom[280] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[281] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[282] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[283] name=Gear04:5 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[283] name=Gear04:5
+geom[283] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[283] verts=510 hash=50ed911baadef6ac
+geom[283] norms=510 hash=4c4f5010afc99501
+geom[283] colors=0 hash=14650fb0739d0383
+geom[283] texcoords=510 hash=77522a0a6a84e503
+geom[283] tris=946 hash=bf548476a27c0044
+geom[283] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+geom[283] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[284] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[285] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[286] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[287] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[288] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[289] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[290] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[291] name=Gear04:0@#2 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[291] name=Gear04:0@#2
+geom[291] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[291] verts=196 hash=fd854fb43800db2f
+geom[291] norms=196 hash=88f168a46a7b3192
+geom[291] colors=0 hash=14650fb0739d0383
+geom[291] texcoords=196 hash=98e9979d6f8cdc6a
+geom[291] tris=335 hash=70d7166572851dff
+geom[291] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+geom[291] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[292] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[293] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[294] name=Gear04:5@#3 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[294] name=Gear04:5@#3
+geom[294] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[294] verts=510 hash=50ed911baadef6ac
+geom[294] norms=510 hash=4c4f5010afc99501
+geom[294] colors=0 hash=14650fb0739d0383
+geom[294] texcoords=510 hash=77522a0a6a84e503
+geom[294] tris=946 hash=bf548476a27c0044
+geom[294] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+geom[294] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[295] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[296] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[297] name=Wheel_axel04 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[297] name=Wheel_axel04
+geom[297] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[297] verts=138 hash=3c0a090cf8164e4c
+geom[297] norms=138 hash=d82bbbd526353f3f
+geom[297] colors=0 hash=14650fb0739d0383
+geom[297] texcoords=138 hash=e59dffe234ac5f9a
+geom[297] tris=241 hash=e17a9cb9fbd9ef3b
+geom[297] bbox_min=c0a8678d c0a86792 c1a02d5e bbox_max=40a86791 40a8678c 41d550e7
+geom[297] transform rot=[bf3504f4 3f3504f1 b4200000 00000000 b4800000 bf800000 bf3504f2 bf3504f6 34000000 ] trans=4255a040 423df3f0 c2091740 scale=3f800000
+node[298] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[299] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[300] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[301] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[302] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[303] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[304] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[305] name=Line07:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[305] name=Line07:0
+geom[305] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[305] verts=207 hash=817bdf371baec7d5
+geom[305] norms=207 hash=c35fcfa624983d30
+geom[305] colors=0 hash=14650fb0739d0383
+geom[305] texcoords=207 hash=1d093018c167fa2b
+geom[305] tris=324 hash=110a7602d490ff6f
+geom[305] bbox_min=c110ef07 c110ef6a 426e31cb bbox_max=4110efda 4110ef77 42b3b997
+geom[305] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[306] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[307] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[308] name=Line07:1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[308] name=Line07:1
+geom[308] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+geom[308] verts=16 hash=cc18f4a532f098e7
+geom[308] norms=16 hash=042f1ce345d98083
+geom[308] colors=0 hash=14650fb0739d0383
+geom[308] texcoords=16 hash=26433ef8ff4536cb
+geom[308] tris=20 hash=1cc6c360f314b1eb
+geom[308] bbox_min=c09443fe c08cbd07 42881cc3 bbox_max=40825c36 4085a631 429bcfd0
+geom[308] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[309] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[310] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[311] name=Line07:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[311] name=Line07:4
+geom[311] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+geom[311] verts=27 hash=e3289d314fba40d9
+geom[311] norms=27 hash=ce2ded1f06ce838f
+geom[311] colors=0 hash=14650fb0739d0383
+geom[311] texcoords=27 hash=73ecda619f689758
+geom[311] tris=36 hash=e1c3f57357d60241
+geom[311] bbox_min=c0acbe14 c0acbedb c2b3b99a bbox_max=40acbfbb 40acbef4 426e31cb
+geom[311] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[312] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[313] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[314] name=Line07:7 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[314] name=Line07:7
+geom[314] diffuse=textures/clutter/IronRivets01.dds normal=
+geom[314] verts=18 hash=fed00575e56de691
+geom[314] norms=18 hash=e4be06c6fb432c91
+geom[314] colors=0 hash=14650fb0739d0383
+geom[314] texcoords=18 hash=e5db047f28fb6233
+geom[314] tris=16 hash=fed62bad72083893
+geom[314] bbox_min=c110ef07 c110ef6a 42772342 bbox_max=4110efda 4110ef77 42886016
+geom[314] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[315] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[316] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[317] name= type=NiTexturingProperty typeIdx=25 parent=-1 children=0 hasGeom=0
+node[318] name= type=NiSourceTexture typeIdx=26 parent=-1 children=0 hasGeom=0
+node[319] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[320] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[321] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[322] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[323] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[324] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[325] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[326] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[327] name= type=bhkConvexVerticesShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[328] name= type=bhkRigidBody typeIdx=19 parent=-1 children=0 hasGeom=0
+node[329] name= type=bhkCollisionObject typeIdx=20 parent=-1 children=0 hasGeom=0
+node[330] name=Line09:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[330] name=Line09:0
+geom[330] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[330] verts=184 hash=d56386e2cdad3f0e
+geom[330] norms=184 hash=c233c064e9dc5f7f
+geom[330] colors=0 hash=14650fb0739d0383
+geom[330] texcoords=184 hash=9931ab37c28c9f37
+geom[330] tris=304 hash=3aad4f78862d8233
+geom[330] bbox_min=c1e401c8 c1ed9eab 42499bc8 bbox_max=41ea7efb 41f6f93a 429b4ca4
+geom[330] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[331] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[332] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[333] name=Line09:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[333] name=Line09:4
+geom[333] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+geom[333] verts=16 hash=d10014fc442ceacb
+geom[333] norms=16 hash=07bffdb2c9ceadb3
+geom[333] colors=0 hash=14650fb0739d0383
+geom[333] texcoords=16 hash=0292c7ef3b311eca
+geom[333] tris=20 hash=1cc6c360f314b1eb
+geom[333] bbox_min=c1e401c8 c1ed9eb2 c25b9f66 bbox_max=41ea7f00 41f6f93a 42499bca
+geom[333] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[334] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[335] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[336] name=Line09:5 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[336] name=Line09:5
+geom[336] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+geom[336] verts=126 hash=716c873fac6e6009
+geom[336] norms=126 hash=7549f5fa7e16aaef
+geom[336] colors=0 hash=14650fb0739d0383
+geom[336] texcoords=126 hash=21b000d2d87bde37
+geom[336] tris=206 hash=0adac6834e89ea84
+geom[336] bbox_min=c1bc0654 c1b4ee93 4289488c bbox_max=41c2bd7b 41c91104 428fd031
+geom[336] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[337] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[338] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[339] name=Line08:0 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[339] name=Line08:0
+geom[339] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+geom[339] verts=213 hash=f06d89252d3b285e
+geom[339] norms=213 hash=37b8edd0acad8ee0
+geom[339] colors=0 hash=14650fb0739d0383
+geom[339] texcoords=213 hash=310920c3f1c070a8
+geom[339] tris=330 hash=be7541f2537bda5b
+geom[339] bbox_min=c1414102 c141b6c6 c30f847d bbox_max=4142c62c 41425068 42c7b637
+geom[339] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[340] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[341] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[342] name=Line08:1 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[342] name=Line08:1
+geom[342] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+geom[342] verts=16 hash=4f627db9c8fe9fa7
+geom[342] norms=16 hash=042f1ce345d98083
+geom[342] colors=0 hash=14650fb0739d0383
+geom[342] texcoords=16 hash=26433ef8ff4536cb
+geom[342] tris=20 hash=1cc6c360f314b1eb
+geom[342] bbox_min=c0c4f4c6 c0bbcbca 428d54b2 bbox_max=40b004f0 40b38189 42a7b373
+geom[342] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[343] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[344] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[345] name=Line08:4 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[345] name=Line08:4
+geom[345] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+geom[345] verts=27 hash=4186fb99ac5b835f
+geom[345] norms=27 hash=db9cd8f5ea571f12
+geom[345] colors=0 hash=14650fb0739d0383
+geom[345] texcoords=27 hash=73ecda619f689758
+geom[345] tris=36 hash=e1c3f57357d60241
+geom[345] bbox_min=c0e5b8b7 c0e6a440 c30cba7c bbox_max=40e8c30e 40e7d784 426d1ba7
+geom[345] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[346] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[347] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+node[348] name=Line08:7 type=NiTriStrips typeIdx=21 parent=-1 children=0 hasGeom=1
+geom[348] name=Line08:7
+geom[348] diffuse=textures/clutter/IronRivets01.dds normal=
+geom[348] verts=18 hash=bba086abe576561f
+geom[348] norms=18 hash=6665e579be138e23
+geom[348] colors=0 hash=14650fb0739d0383
+geom[348] texcoords=18 hash=e5db047f28fb6233
+geom[348] tris=16 hash=fed62bad72083893
+geom[348] bbox_min=c1414102 c141b6c6 42791463 bbox_max=4142c62c 41425068 428daed2
+geom[348] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[349] name= type=NiBinaryExtraData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[350] name= type=NiTriStripsData typeIdx=27 parent=-1 children=0 hasGeom=0
+roots=351
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+  root[89]=89
+  root[90]=90
+  root[91]=91
+  root[92]=92
+  root[93]=93
+  root[94]=94
+  root[95]=95
+  root[96]=96
+  root[97]=97
+  root[98]=98
+  root[99]=99
+  root[100]=100
+  root[101]=101
+  root[102]=102
+  root[103]=103
+  root[104]=104
+  root[105]=105
+  root[106]=106
+  root[107]=107
+  root[108]=108
+  root[109]=109
+  root[110]=110
+  root[111]=111
+  root[112]=112
+  root[113]=113
+  root[114]=114
+  root[115]=115
+  root[116]=116
+  root[117]=117
+  root[118]=118
+  root[119]=119
+  root[120]=120
+  root[121]=121
+  root[122]=122
+  root[123]=123
+  root[124]=124
+  root[125]=125
+  root[126]=126
+  root[127]=127
+  root[128]=128
+  root[129]=129
+  root[130]=130
+  root[131]=131
+  root[132]=132
+  root[133]=133
+  root[134]=134
+  root[135]=135
+  root[136]=136
+  root[137]=137
+  root[138]=138
+  root[139]=139
+  root[140]=140
+  root[141]=141
+  root[142]=142
+  root[143]=143
+  root[144]=144
+  root[145]=145
+  root[146]=146
+  root[147]=147
+  root[148]=148
+  root[149]=149
+  root[150]=150
+  root[151]=151
+  root[152]=152
+  root[153]=153
+  root[154]=154
+  root[155]=155
+  root[156]=156
+  root[157]=157
+  root[158]=158
+  root[159]=159
+  root[160]=160
+  root[161]=161
+  root[162]=162
+  root[163]=163
+  root[164]=164
+  root[165]=165
+  root[166]=166
+  root[167]=167
+  root[168]=168
+  root[169]=169
+  root[170]=170
+  root[171]=171
+  root[172]=172
+  root[173]=173
+  root[174]=174
+  root[175]=175
+  root[176]=176
+  root[177]=177
+  root[178]=178
+  root[179]=179
+  root[180]=180
+  root[181]=181
+  root[182]=182
+  root[183]=183
+  root[184]=184
+  root[185]=185
+  root[186]=186
+  root[187]=187
+  root[188]=188
+  root[189]=189
+  root[190]=190
+  root[191]=191
+  root[192]=192
+  root[193]=193
+  root[194]=194
+  root[195]=195
+  root[196]=196
+  root[197]=197
+  root[198]=198
+  root[199]=199
+  root[200]=200
+  root[201]=201
+  root[202]=202
+  root[203]=203
+  root[204]=204
+  root[205]=205
+  root[206]=206
+  root[207]=207
+  root[208]=208
+  root[209]=209
+  root[210]=210
+  root[211]=211
+  root[212]=212
+  root[213]=213
+  root[214]=214
+  root[215]=215
+  root[216]=216
+  root[217]=217
+  root[218]=218
+  root[219]=219
+  root[220]=220
+  root[221]=221
+  root[222]=222
+  root[223]=223
+  root[224]=224
+  root[225]=225
+  root[226]=226
+  root[227]=227
+  root[228]=228
+  root[229]=229
+  root[230]=230
+  root[231]=231
+  root[232]=232
+  root[233]=233
+  root[234]=234
+  root[235]=235
+  root[236]=236
+  root[237]=237
+  root[238]=238
+  root[239]=239
+  root[240]=240
+  root[241]=241
+  root[242]=242
+  root[243]=243
+  root[244]=244
+  root[245]=245
+  root[246]=246
+  root[247]=247
+  root[248]=248
+  root[249]=249
+  root[250]=250
+  root[251]=251
+  root[252]=252
+  root[253]=253
+  root[254]=254
+  root[255]=255
+  root[256]=256
+  root[257]=257
+  root[258]=258
+  root[259]=259
+  root[260]=260
+  root[261]=261
+  root[262]=262
+  root[263]=263
+  root[264]=264
+  root[265]=265
+  root[266]=266
+  root[267]=267
+  root[268]=268
+  root[269]=269
+  root[270]=270
+  root[271]=271
+  root[272]=272
+  root[273]=273
+  root[274]=274
+  root[275]=275
+  root[276]=276
+  root[277]=277
+  root[278]=278
+  root[279]=279
+  root[280]=280
+  root[281]=281
+  root[282]=282
+  root[283]=283
+  root[284]=284
+  root[285]=285
+  root[286]=286
+  root[287]=287
+  root[288]=288
+  root[289]=289
+  root[290]=290
+  root[291]=291
+  root[292]=292
+  root[293]=293
+  root[294]=294
+  root[295]=295
+  root[296]=296
+  root[297]=297
+  root[298]=298
+  root[299]=299
+  root[300]=300
+  root[301]=301
+  root[302]=302
+  root[303]=303
+  root[304]=304
+  root[305]=305
+  root[306]=306
+  root[307]=307
+  root[308]=308
+  root[309]=309
+  root[310]=310
+  root[311]=311
+  root[312]=312
+  root[313]=313
+  root[314]=314
+  root[315]=315
+  root[316]=316
+  root[317]=317
+  root[318]=318
+  root[319]=319
+  root[320]=320
+  root[321]=321
+  root[322]=322
+  root[323]=323
+  root[324]=324
+  root[325]=325
+  root[326]=326
+  root[327]=327
+  root[328]=328
+  root[329]=329
+  root[330]=330
+  root[331]=331
+  root[332]=332
+  root[333]=333
+  root[334]=334
+  root[335]=335
+  root[336]=336
+  root[337]=337
+  root[338]=338
+  root[339]=339
+  root[340]=340
+  root[341]=341
+  root[342]=342
+  root[343]=343
+  root[344]=344
+  root[345]=345
+  root[346]=346
+  root[347]=347
+  root[348]=348
+  root[349]=349
+  root[350]=350
+getNodeByName(first)=1
+extractAllGeometry=60
+allgeom[0] name=Wheel_spike01
+allgeom[0] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[0] verts=12 hash=a75c2bde3775539f
+allgeom[0] norms=12 hash=ee58545154459710
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=12 hash=e6cecede1d259c03
+allgeom[0] tris=19 hash=499db15a79507e8f
+allgeom[0] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[0] transform rot=[3471430c 34e6b1e7 3f800000 340f95b7 3f7fffff b4b244ee bf800000 34221c1a 3490becc ] trans=428e4074 3ec211f8 40d2140c scale=3f800000
+allgeom[1] name=Wheel_spike02
+allgeom[1] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[1] verts=12 hash=a75c2bde3775539f
+allgeom[1] norms=12 hash=ee58545154459710
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=12 hash=e6cecede1d259c03
+allgeom[1] tris=19 hash=499db15a79507e8f
+allgeom[1] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[1] transform rot=[34937024 3f248dc4 3f441b7a b3dec502 3f441b78 bf248dc4 bf800000 33f57be4 34acdb59 ] trans=425957f5 c2379817 40d21414 scale=3f800000
+allgeom[2] name=Wheel_spike03
+allgeom[2] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[2] verts=12 hash=a75c2bde3775539f
+allgeom[2] norms=12 hash=ee58545154459710
+allgeom[2] colors=0 hash=14650fb0739d0383
+allgeom[2] texcoords=12 hash=e6cecede1d259c03
+allgeom[2] tris=19 hash=499db15a79507e8f
+allgeom[2] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[2] transform rot=[34955b32 3f7c1c5c 3e31d0c1 b4ae651a 3e31d0ba bf7c1c5d bf800000 347c21f5 34ddcb96 ] trans=413ba35a c28d1d11 40cbf021 scale=3f800000
+allgeom[3] name=Wheel_spike04
+allgeom[3] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[3] verts=12 hash=a75c2bde3775539f
+allgeom[3] norms=12 hash=ee58545154459710
+allgeom[3] colors=0 hash=14650fb0739d0383
+allgeom[3] texcoords=12 hash=e6cecede1d259c03
+allgeom[3] tris=19 hash=499db15a79507e8f
+allgeom[3] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[3] transform rot=[00000000 3f5db3d6 bf000001 b4e5993f bf000001 bf5db3d8 bf800000 347c21f4 34ddcb98 ] trans=c2130cf2 c2783b43 40dea421 scale=3f800000
+allgeom[4] name=Wheel_spike05
+allgeom[4] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[4] verts=12 hash=a75c2bde3775539f
+allgeom[4] norms=12 hash=ee58545154459710
+allgeom[4] colors=0 hash=14650fb0739d0383
+allgeom[4] texcoords=12 hash=e6cecede1d259c03
+allgeom[4] tris=19 hash=499db15a79507e8f
+allgeom[4] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[4] transform rot=[b491cf5e 3eaf1d40 bf708fb2 b4b15ede bf708fb2 beaf1d44 bf800000 347c21f3 34ddcb97 ] trans=c288e3f1 c1c30748 40d21421 scale=3f800000
+allgeom[5] name=Wheel_spike06
+allgeom[5] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[5] verts=12 hash=a75c2bde3775539f
+allgeom[5] norms=12 hash=ee58545154459710
+allgeom[5] colors=0 hash=14650fb0739d0383
+allgeom[5] texcoords=12 hash=e6cecede1d259c03
+allgeom[5] tris=19 hash=499db15a79507e8f
+allgeom[5] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[5] transform rot=[b4984a70 beaf1d41 bf708fb3 b4930019 bf708fb2 3eaf1d3e bf800000 34c77bee 3469e33d ] trans=c288fdc5 41c6ce14 40d21404 scale=3f800000
+allgeom[6] name=Wheel_spike07
+allgeom[6] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[6] verts=12 hash=a75c2bde3775539f
+allgeom[6] norms=12 hash=ee58545154459710
+allgeom[6] colors=0 hash=14650fb0739d0383
+allgeom[6] texcoords=12 hash=e6cecede1d259c03
+allgeom[6] tris=19 hash=499db15a79507e8f
+allgeom[6] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[6] transform rot=[b4e3f7fa bf5db3d7 bf000003 b3f01b73 bf000001 3f5db3d7 bf800000 34ecb3d5 342c3a5e ] trans=c2138fbe 427a6115 40d213fb scale=3f800000
+allgeom[7] name=Wheel_spike08
+allgeom[7] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[7] verts=12 hash=a75c2bde3775539f
+allgeom[7] norms=12 hash=ee58545154459710
+allgeom[7] colors=0 hash=14650fb0739d0383
+allgeom[7] texcoords=12 hash=e6cecede1d259c03
+allgeom[7] tris=19 hash=499db15a79507e8f
+allgeom[7] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[7] transform rot=[b4c356c4 bf7c1c60 3e31d0bb 346cdd20 3e31d0b8 3f7c1c5f bf800000 34de32fc 3415a756 ] trans=41395074 428e62d6 40d21401 scale=3f800000
+allgeom[8] name=Wheel_spike09
+allgeom[8] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[8] verts=12 hash=a75c2bde3775539f
+allgeom[8] norms=12 hash=ee58545154459710
+allgeom[8] colors=0 hash=14650fb0739d0383
+allgeom[8] texcoords=12 hash=e6cecede1d259c03
+allgeom[8] tris=19 hash=499db15a79507e8f
+allgeom[8] bbox_min=c0600001 c0600000 bef11a23 bbox_max=40600000 40600000 40e387ee
+allgeom[8] transform rot=[b31bf100 bf248dbf 3f441b79 34dd02f9 3f441b79 3f248dc1 bf800000 34bf18c4 34973ee7 ] trans=4258f6e2 423a7d15 40d2140e scale=3f800000
+allgeom[9] name=wheel_spoke01
+allgeom[9] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[9] verts=80 hash=70b3ff76ba409784
+allgeom[9] norms=80 hash=60f248e974b67642
+allgeom[9] colors=0 hash=14650fb0739d0383
+allgeom[9] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[9] tris=131 hash=afbaa07407f44d0b
+allgeom[9] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[9] transform rot=[3f248dbc 3f441b7c 34100153 bf441b7c 3f248dbc b3fe93a8 b43e12c5 b2e3f5ad 3f800000 ] trans=41cdedb4 41b783ac 4099b3f5 scale=3f800000
+allgeom[10] name=wheel_spoke02
+allgeom[10] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[10] verts=80 hash=70b3ff76ba409784
+allgeom[10] norms=80 hash=60f248e974b67642
+allgeom[10] colors=0 hash=14650fb0739d0383
+allgeom[10] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[10] tris=131 hash=afbaa07407f44d0b
+allgeom[10] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[10] transform rot=[b5405542 3f800000 b3d08360 bf800000 b5405542 b3654971 b3654982 33d0835a 3f800000 ] trans=4208483f 3f0e716e 4099b3fe scale=3f7fffff
+allgeom[11] name=wheel_spoke03
+allgeom[11] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[11] verts=80 hash=70b3ff76ba409784
+allgeom[11] norms=80 hash=60f248e974b67642
+allgeom[11] colors=0 hash=14650fb0739d0383
+allgeom[11] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[11] tris=131 hash=afbaa07407f44d0b
+allgeom[11] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[11] transform rot=[bf248dc2 3f441b76 b4144749 bf441b76 bf248dc2 32a2bc8d b39f7519 33fd53b1 3f800000 ] trans=41d082d2 c1af8d25 4099b3ff scale=3f800000
+allgeom[12] name=wheel_spoke04
+allgeom[12] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[12] verts=80 hash=70b3ff76ba409784
+allgeom[12] norms=80 hash=60f248e974b67642
+allgeom[12] colors=0 hash=14650fb0739d0383
+allgeom[12] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[12] tris=131 hash=afbaa07407f44d0b
+allgeom[12] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[12] transform rot=[bf7c1c5d 3e31d0ba b44331a7 be31d0ba bf7c1c5d 343130fc b42175aa 345064f8 3f800000 ] trans=40aef594 c2082264 4099b405 scale=3f800000
+allgeom[13] name=wheel_spoke05
+allgeom[13] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[13] verts=80 hash=70b3ff76ba409784
+allgeom[13] norms=80 hash=60f248e974b67642
+allgeom[13] colors=0 hash=14650fb0739d0383
+allgeom[13] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[13] tris=131 hash=afbaa07407f44d0b
+allgeom[13] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[13] transform rot=[bf5db3d5 bf00000a b355946d 3f00000a bf5db3d5 34a3c034 b451fe08 348076ab 3f800000 ] trans=c190a6ae c1f07213 4099b408 scale=3f7fffff
+allgeom[14] name=wheel_spoke06
+allgeom[14] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[14] verts=80 hash=70b3ff76ba409784
+allgeom[14] norms=80 hash=60f248e974b67642
+allgeom[14] colors=0 hash=14650fb0739d0383
+allgeom[14] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[14] tris=131 hash=afbaa07407f44d0b
+allgeom[14] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[14] transform rot=[beaf1d38 bf708fb3 349ba664 3f708fb3 beaf1d38 34b77875 b46e5753 34d10382 3f800000 ] trans=c2064172 c13df1e0 4099b413 scale=3f800000
+allgeom[15] name=wheel_spoke07
+allgeom[15] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[15] verts=80 hash=70b3ff76ba409784
+allgeom[15] norms=80 hash=60f248e974b67642
+allgeom[15] colors=0 hash=14650fb0739d0383
+allgeom[15] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[15] tris=131 hash=afbaa07407f44d0b
+allgeom[15] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[15] transform rot=[3eaf1d46 bf708fb2 34062134 3f708fb2 3eaf1d46 344cd171 b46e5755 335ff475 3f800000 ] trans=c206f154 41402a22 4099b3fb scale=3f7fffff
+allgeom[16] name=wheel_spoke08
+allgeom[16] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[16] verts=80 hash=70b3ff76ba409784
+allgeom[16] norms=80 hash=60f248e974b67642
+allgeom[16] colors=0 hash=14650fb0739d0383
+allgeom[16] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[16] tris=131 hash=afbaa07407f44d0b
+allgeom[16] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[16] transform rot=[3f5db3d7 befffffe 346a6762 3efffffe 3f5db3d7 338d5da4 b46e5753 335ff474 3f800000 ] trans=c1942164 41f35271 4099b3fb scale=3f800000
+allgeom[17] name=wheel_spoke09
+allgeom[17] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[17] verts=80 hash=70b3ff76ba409784
+allgeom[17] norms=80 hash=60f248e974b67642
+allgeom[17] colors=0 hash=14650fb0739d0383
+allgeom[17] texcoords=80 hash=ab4d7ff346b2c2ce
+allgeom[17] tris=131 hash=afbaa07407f44d0b
+allgeom[17] bbox_min=c1525a32 c21ab03f beedc5bf bbox_max=415e24de 41e01ac5 408edc62
+allgeom[17] transform rot=[3f7c1c5c 3e31d0cb 3274b817 be31d0cb 3f7c1c5c b4735c77 b365497e 346d020f 3f800000 ] trans=409f21eb 420aed03 4099b407 scale=3f7fffff
+allgeom[18] name=Wheel:4
+allgeom[18] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnTrim02int.dds normal=
+allgeom[18] verts=76 hash=c905aec063855ecb
+allgeom[18] norms=76 hash=b911fa92acc7ffa3
+allgeom[18] colors=0 hash=14650fb0739d0383
+allgeom[18] texcoords=76 hash=5bb9113853a0afb2
+allgeom[18] tris=91 hash=a4ff20611e9b4447
+allgeom[18] bbox_min=c28ea12c c290d472 00000000 bbox_max=428ea12c 4290d472 4154cccd
+allgeom[18] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[19] name=Wheel:14
+allgeom[19] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnTrim01int.dds normal=
+allgeom[19] verts=76 hash=1f7fdbd5091ee97b
+allgeom[19] norms=76 hash=702c4147d38e820e
+allgeom[19] colors=0 hash=14650fb0739d0383
+allgeom[19] texcoords=76 hash=a6ad137c8a3bf016
+allgeom[19] tris=91 hash=a4ff20611e9b4447
+allgeom[19] bbox_min=c28ea12c c290d472 00000000 bbox_max=428ea12c 4290d472 4154cccd
+allgeom[19] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[20] name=handle:0
+allgeom[20] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[20] verts=168 hash=a3e700e3f7106673
+allgeom[20] norms=168 hash=ebb79ae4f10b133d
+allgeom[20] colors=0 hash=14650fb0739d0383
+allgeom[20] texcoords=168 hash=1d17139d539646b8
+allgeom[20] tris=326 hash=b2331d5450bb24f6
+allgeom[20] bbox_min=c1dbf4df c1bc5c14 b4a03f65 bbox_max=41e09c51 41cd3710 40e00001
+allgeom[20] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c19e9b60 c1a1e113 368a0fa0 scale=3f800000
+allgeom[21] name=Wheel_axel:0
+allgeom[21] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[21] verts=112 hash=75aea8c238d30bfc
+allgeom[21] norms=112 hash=c5856033e5be293c
+allgeom[21] colors=0 hash=14650fb0739d0383
+allgeom[21] texcoords=112 hash=b35366b285f7ceb5
+allgeom[21] tris=132 hash=7375255195a6a2ea
+allgeom[21] bbox_min=c1000000 c1000000 c1731f64 bbox_max=41000000 41000000 41a02d5e
+allgeom[21] transform rot=[b4000000 34400000 bf800000 bf3504f6 3f3504f1 34400000 3f3504f2 3f3504f6 33800000 ] trans=c2884520 3fff1a00 c0fbd830 scale=3f7ffffe
+allgeom[22] name=Wheel_axel:1
+allgeom[22] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+allgeom[22] verts=16 hash=a43233c3d397d183
+allgeom[22] norms=16 hash=65d1d06c3dbfe103
+allgeom[22] colors=0 hash=14650fb0739d0383
+allgeom[22] texcoords=16 hash=b8717b3aac6305e2
+allgeom[22] tris=16 hash=d8599e4ba201c783
+allgeom[22] bbox_min=c1000000 c1000000 bfbaad0e bbox_max=41000000 40ffffff bfbaad0e
+allgeom[22] transform rot=[b4000000 34400000 bf800000 bf3504f6 3f3504f1 34400000 3f3504f2 3f3504f6 33800000 ] trans=c2884520 3fff1a00 c0fbd830 scale=3f7ffffe
+allgeom[23] name=Cylinder04:0
+allgeom[23] diffuse=textures/architecture/leyawiin/interior/LeyawiinWindowtrimInt01.dds normal=
+allgeom[23] verts=9 hash=7738be2d59dedc1c
+allgeom[23] norms=9 hash=80270b5ee3a9a03a
+allgeom[23] colors=0 hash=14650fb0739d0383
+allgeom[23] texcoords=9 hash=a40d32db28ff470c
+allgeom[23] tris=11 hash=187b51466e0ba2e2
+allgeom[23] bbox_min=c032e236 c02a20e2 c1d33334 bbox_max=4010b84c 402a20e1 c1d33334
+allgeom[23] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+allgeom[24] name=Cylinder04:1
+allgeom[24] diffuse= normal=
+allgeom[24] verts=7 hash=d68a6965e2737a0a
+allgeom[24] norms=7 hash=d75bbae734ad7d6a
+allgeom[24] colors=0 hash=14650fb0739d0383
+allgeom[24] texcoords=0 hash=14650fb0739d0383
+allgeom[24] tris=7 hash=9a04119b2f1c81c8
+allgeom[24] bbox_min=c032e236 c02a20e2 00000000 bbox_max=4010b84c 402a20e1 00000000
+allgeom[24] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+allgeom[25] name=Cylinder04:2
+allgeom[25] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnMCint01.dds normal=
+allgeom[25] verts=20 hash=ae101abba132466b
+allgeom[25] norms=20 hash=309d616cbedda147
+allgeom[25] colors=0 hash=14650fb0739d0383
+allgeom[25] texcoords=20 hash=c1fe4b38ed64564f
+allgeom[25] tris=26 hash=6badca074f568ea0
+allgeom[25] bbox_min=c032e236 c02a20e2 c1d33334 bbox_max=4010b84c 402a20e1 00000000
+allgeom[25] transform rot=[3e848400 b3bbbd30 3f7746e9 b2c25cba bf800000 b3b55789 3f7746e9 00000000 be848404 ] trans=421d1940 3f112400 c1644660 scale=3f800000
+allgeom[26] name=Cylinder03:0
+allgeom[26] diffuse=textures/architecture/leyawiin/interior/LeyawiinWindowtrimInt01.dds normal=
+allgeom[26] verts=9 hash=e3289e355595d798
+allgeom[26] norms=9 hash=d446d9f7d0a009ba
+allgeom[26] colors=0 hash=14650fb0739d0383
+allgeom[26] texcoords=9 hash=28ddd1d06a7d269c
+allgeom[26] tris=11 hash=187b51466e0ba2e2
+allgeom[26] bbox_min=c010b84c c02a20e1 41d33334 bbox_max=4032e236 402a20e2 41d33334
+allgeom[26] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+allgeom[27] name=Cylinder03:1
+allgeom[27] diffuse= normal=
+allgeom[27] verts=7 hash=2a2c3715533c505a
+allgeom[27] norms=7 hash=0c59e2b8d5bf53ea
+allgeom[27] colors=0 hash=14650fb0739d0383
+allgeom[27] texcoords=0 hash=14650fb0739d0383
+allgeom[27] tris=7 hash=9a04119b2f1c81c8
+allgeom[27] bbox_min=c010b84c c02a20e1 00000000 bbox_max=4032e236 402a20e2 00000000
+allgeom[27] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+allgeom[28] name=Cylinder03:2
+allgeom[28] diffuse=textures/architecture/leyawiin/interior/leyawiinColumnMCint01.dds normal=
+allgeom[28] verts=20 hash=62bbad3fc44a301f
+allgeom[28] norms=20 hash=9bf1671f371582b7
+allgeom[28] colors=0 hash=14650fb0739d0383
+allgeom[28] texcoords=20 hash=8971e1db93c08e0b
+allgeom[28] tris=26 hash=6badca074f568ea0
+allgeom[28] bbox_min=c010b84c c02a20e1 00000000 bbox_max=4032e236 402a20e2 41d33334
+allgeom[28] transform rot=[be848410 00000000 bf7746e6 00000000 3f800000 00000000 3f7746e6 00000000 be848410 ] trans=421d1940 3f112400 c25abb46 scale=3f800000
+allgeom[29] name=Line10:0
+allgeom[29] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[29] verts=80 hash=711f9d7db377d9ee
+allgeom[29] norms=80 hash=74f6fdbdf563e3d6
+allgeom[29] colors=0 hash=14650fb0739d0383
+allgeom[29] texcoords=80 hash=63d685d0e3994520
+allgeom[29] tris=136 hash=893d413c03dc4f13
+allgeom[29] bbox_min=c11615ed c1168b5d 4215dce1 bbox_max=41179a8d 4117251d 423b3840
+allgeom[29] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c2b7c100 bf0bd400 c263f230 scale=3f800000
+allgeom[30] name=Line10:4
+allgeom[30] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+allgeom[30] verts=18 hash=353b26ecc99564d3
+allgeom[30] norms=18 hash=019c90974c1205a4
+allgeom[30] colors=0 hash=14650fb0739d0383
+allgeom[30] texcoords=18 hash=88317cf080829943
+allgeom[30] tris=16 hash=fed62bad72083893
+allgeom[30] bbox_min=c0a86ea5 c0a95a31 c33a7002 bbox_max=40ab7892 40aa8d40 4216bb0d
+allgeom[30] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c2b7c100 bf0bd400 c263f230 scale=3f800000
+allgeom[31] name=Box01:0
+allgeom[31] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[31] verts=486 hash=92743c1234cb2905
+allgeom[31] norms=486 hash=4d45307876109d05
+allgeom[31] colors=0 hash=14650fb0739d0383
+allgeom[31] texcoords=486 hash=fa578b01f6494063
+allgeom[31] tris=883 hash=b95a84d8bb1fbd49
+allgeom[31] bbox_min=c20deb7e c236def2 bef86e38 bbox_max=425549b4 4236e4f1 43030000
+allgeom[31] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[32] name=Box01:6
+allgeom[32] diffuse=textures/architecture/castle/kvatch/geargatecase.dds normal=
+allgeom[32] verts=64 hash=192d936e869c2c0a
+allgeom[32] norms=64 hash=2c39dd294d631b7d
+allgeom[32] colors=0 hash=14650fb0739d0383
+allgeom[32] texcoords=64 hash=985db4eabb16c002
+allgeom[32] tris=99 hash=f3f29c3e47dce2bb
+allgeom[32] bbox_min=c1fef6ae c2286ecb bef86e38 bbox_max=4246d98c 422874c9 43000000
+allgeom[32] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[33] name=pump_little:0
+allgeom[33] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[33] verts=316 hash=656e216137ee76e5
+allgeom[33] norms=316 hash=347f6827c296c4ba
+allgeom[33] colors=0 hash=14650fb0739d0383
+allgeom[33] texcoords=316 hash=fb86a061b9db53a1
+allgeom[33] tris=535 hash=96e9b25dc20bdddd
+allgeom[33] bbox_min=c1ac28f6 c1e2cfda c1a0b43a bbox_max=41ac28f6 41e158b5 42a12b80
+allgeom[33] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+allgeom[34] name=pump_little:5
+allgeom[34] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[34] verts=124 hash=7ff3f5947702ca1d
+allgeom[34] norms=124 hash=4205731239914617
+allgeom[34] colors=0 hash=14650fb0739d0383
+allgeom[34] texcoords=124 hash=fe6b3d434a8b761c
+allgeom[34] tris=200 hash=27116e141e0e3f83
+allgeom[34] bbox_min=c14c2b35 c145f127 42974cb5 bbox_max=4157e760 415d4a16 429c3fcd
+allgeom[34] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+allgeom[35] name=pump_little:6
+allgeom[35] diffuse=textures/architecture/castle/kvatch/geargatecase.dds normal=
+allgeom[35] verts=22 hash=55677c4ead867875
+allgeom[35] norms=22 hash=8b4200ff03631751
+allgeom[35] colors=0 hash=14650fb0739d0383
+allgeom[35] texcoords=22 hash=622a92c4d551cd5f
+allgeom[35] tris=26 hash=5ca938f3d61c07b0
+allgeom[35] bbox_min=c195c28f c1d073b6 408cc3bf bbox_max=4195c28f 41cefc8f 428c99f0
+allgeom[35] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 41a0b43a scale=3f800000
+allgeom[36] name=pump_pipe:4
+allgeom[36] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+allgeom[36] verts=290 hash=2499fc4a9d91bba8
+allgeom[36] norms=290 hash=fa1ec2acc9031d54
+allgeom[36] colors=290 hash=81cb7e6d7fee9caa
+allgeom[36] texcoords=290 hash=f11e341eedd91aa8
+allgeom[36] tris=484 hash=e2de7d0140d53e6e
+allgeom[36] bbox_min=c1ae7700 c103b0c1 c19fab01 bbox_max=41ae76b3 4103b0cb 42a00c8c
+allgeom[36] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[37] name=Wheel_axel02
+allgeom[37] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[37] verts=110 hash=3fb953e6328cbbae
+allgeom[37] norms=110 hash=e842ed67c3b6babb
+allgeom[37] colors=0 hash=14650fb0739d0383
+allgeom[37] texcoords=110 hash=ee1b7d2c422cb506
+allgeom[37] tris=168 hash=9b7b088b61538ce2
+allgeom[37] bbox_min=c0a86790 c0a86793 c1450816 bbox_max=40a86791 40a8678f 41a02d5e
+allgeom[37] transform rot=[3f3504f5 bf3504f1 b4200000 00000000 34400000 bf800000 3f3504f2 3f3504f6 34000000 ] trans=40a90000 c2434900 c0c6ded0 scale=3f7ffffe
+allgeom[38] name=Wheel_axel01
+allgeom[38] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[38] verts=138 hash=cc4ebb4e6a1b97f2
+allgeom[38] norms=138 hash=79ace70e98081fa7
+allgeom[38] colors=0 hash=14650fb0739d0383
+allgeom[38] texcoords=138 hash=6d17bc8551308052
+allgeom[38] tris=238 hash=a3df21d4cb128c3d
+allgeom[38] bbox_min=c0a86793 c0a8678e c1d550e7 bbox_max=40a8678f 40a86794 41a02d5e
+allgeom[38] transform rot=[3f3504f5 bf3504f1 b4200000 00000000 34400000 bf800000 3f3504f2 3f3504f6 34000000 ] trans=4255a040 c2434900 c2091740 scale=3f7ffffe
+allgeom[39] name=gear02:0
+allgeom[39] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[39] verts=196 hash=3a2b45127d1811e7
+allgeom[39] norms=196 hash=f8f78eab9c799b56
+allgeom[39] colors=0 hash=14650fb0739d0383
+allgeom[39] texcoords=196 hash=26f5a1cad0499e1a
+allgeom[39] tris=334 hash=03cac6b5db2261a4
+allgeom[39] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+allgeom[39] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[40] name=gear02:5
+allgeom[40] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[40] verts=510 hash=f53d069611591c5c
+allgeom[40] norms=510 hash=d7db346f707fca81
+allgeom[40] colors=0 hash=14650fb0739d0383
+allgeom[40] texcoords=510 hash=2d8395ff8e1721bb
+allgeom[40] tris=946 hash=bf548476a27c0044
+allgeom[40] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+allgeom[40] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[41] name=gear02:0@#0
+allgeom[41] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[41] verts=196 hash=3a2b45127d1811e7
+allgeom[41] norms=196 hash=f8f78eab9c799b56
+allgeom[41] colors=0 hash=14650fb0739d0383
+allgeom[41] texcoords=196 hash=26f5a1cad0499e1a
+allgeom[41] tris=334 hash=03cac6b5db2261a4
+allgeom[41] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+allgeom[41] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[42] name=gear02:5@#1
+allgeom[42] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[42] verts=510 hash=f53d069611591c5c
+allgeom[42] norms=510 hash=d7db346f707fca81
+allgeom[42] colors=0 hash=14650fb0739d0383
+allgeom[42] texcoords=510 hash=2d8395ff8e1721bb
+allgeom[42] tris=946 hash=bf548476a27c0044
+allgeom[42] bbox_min=c1e9a419 c0fa4180 c1e3bc42 bbox_max=41e9a48b 4014ede5 41e87308
+allgeom[42] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[43] name=Wheel_axel03
+allgeom[43] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[43] verts=110 hash=47d212ab9f81c66b
+allgeom[43] norms=110 hash=ce6b33cc5eeb104b
+allgeom[43] colors=0 hash=14650fb0739d0383
+allgeom[43] texcoords=110 hash=52e086d3c99f99be
+allgeom[43] tris=173 hash=4deaee8901faf843
+allgeom[43] bbox_min=c0a8678f c0a8678d c1a02d5e bbox_max=40a8678e 40a86791 41450816
+allgeom[43] transform rot=[bf3504f4 3f3504f1 b4200000 00000000 b4800000 bf800000 bf3504f2 bf3504f6 34000000 ] trans=40a90000 423df3f0 c0c6ded0 scale=3f800000
+allgeom[44] name=Gear04:0
+allgeom[44] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[44] verts=196 hash=fd854fb43800db2f
+allgeom[44] norms=196 hash=88f168a46a7b3192
+allgeom[44] colors=0 hash=14650fb0739d0383
+allgeom[44] texcoords=196 hash=98e9979d6f8cdc6a
+allgeom[44] tris=335 hash=70d7166572851dff
+allgeom[44] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+allgeom[44] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[45] name=Gear04:5
+allgeom[45] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[45] verts=510 hash=50ed911baadef6ac
+allgeom[45] norms=510 hash=4c4f5010afc99501
+allgeom[45] colors=0 hash=14650fb0739d0383
+allgeom[45] texcoords=510 hash=77522a0a6a84e503
+allgeom[45] tris=946 hash=bf548476a27c0044
+allgeom[45] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+allgeom[45] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[46] name=Gear04:0@#2
+allgeom[46] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[46] verts=196 hash=fd854fb43800db2f
+allgeom[46] norms=196 hash=88f168a46a7b3192
+allgeom[46] colors=0 hash=14650fb0739d0383
+allgeom[46] texcoords=196 hash=98e9979d6f8cdc6a
+allgeom[46] tris=335 hash=70d7166572851dff
+allgeom[46] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+allgeom[46] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[47] name=Gear04:5@#3
+allgeom[47] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[47] verts=510 hash=50ed911baadef6ac
+allgeom[47] norms=510 hash=4c4f5010afc99501
+allgeom[47] colors=0 hash=14650fb0739d0383
+allgeom[47] texcoords=510 hash=77522a0a6a84e503
+allgeom[47] tris=946 hash=bf548476a27c0044
+allgeom[47] bbox_min=c1e9a48b c014ede5 c1e87308 bbox_max=41e9a419 40fa4180 41e3bc42
+allgeom[47] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[48] name=Wheel_axel04
+allgeom[48] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[48] verts=138 hash=3c0a090cf8164e4c
+allgeom[48] norms=138 hash=d82bbbd526353f3f
+allgeom[48] colors=0 hash=14650fb0739d0383
+allgeom[48] texcoords=138 hash=e59dffe234ac5f9a
+allgeom[48] tris=241 hash=e17a9cb9fbd9ef3b
+allgeom[48] bbox_min=c0a8678d c0a86792 c1a02d5e bbox_max=40a86791 40a8678c 41d550e7
+allgeom[48] transform rot=[bf3504f4 3f3504f1 b4200000 00000000 b4800000 bf800000 bf3504f2 bf3504f6 34000000 ] trans=4255a040 423df3f0 c2091740 scale=3f800000
+allgeom[49] name=Line07:0
+allgeom[49] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[49] verts=207 hash=817bdf371baec7d5
+allgeom[49] norms=207 hash=c35fcfa624983d30
+allgeom[49] colors=0 hash=14650fb0739d0383
+allgeom[49] texcoords=207 hash=1d093018c167fa2b
+allgeom[49] tris=324 hash=110a7602d490ff6f
+allgeom[49] bbox_min=c110ef07 c110ef6a 426e31cb bbox_max=4110efda 4110ef77 42b3b997
+allgeom[49] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[50] name=Line07:1
+allgeom[50] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+allgeom[50] verts=16 hash=cc18f4a532f098e7
+allgeom[50] norms=16 hash=042f1ce345d98083
+allgeom[50] colors=0 hash=14650fb0739d0383
+allgeom[50] texcoords=16 hash=26433ef8ff4536cb
+allgeom[50] tris=20 hash=1cc6c360f314b1eb
+allgeom[50] bbox_min=c09443fe c08cbd07 42881cc3 bbox_max=40825c36 4085a631 429bcfd0
+allgeom[50] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[51] name=Line07:4
+allgeom[51] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+allgeom[51] verts=27 hash=e3289d314fba40d9
+allgeom[51] norms=27 hash=ce2ded1f06ce838f
+allgeom[51] colors=0 hash=14650fb0739d0383
+allgeom[51] texcoords=27 hash=73ecda619f689758
+allgeom[51] tris=36 hash=e1c3f57357d60241
+allgeom[51] bbox_min=c0acbe14 c0acbedb c2b3b99a bbox_max=40acbfbb 40acbef4 426e31cb
+allgeom[51] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[52] name=Line07:7
+allgeom[52] diffuse=textures/clutter/IronRivets01.dds normal=
+allgeom[52] verts=18 hash=fed00575e56de691
+allgeom[52] norms=18 hash=e4be06c6fb432c91
+allgeom[52] colors=0 hash=14650fb0739d0383
+allgeom[52] texcoords=18 hash=e5db047f28fb6233
+allgeom[52] tris=16 hash=fed62bad72083893
+allgeom[52] bbox_min=c110ef07 c110ef6a 42772342 bbox_max=4110efda 4110ef77 42886016
+allgeom[52] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[53] name=Line09:0
+allgeom[53] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[53] verts=184 hash=d56386e2cdad3f0e
+allgeom[53] norms=184 hash=c233c064e9dc5f7f
+allgeom[53] colors=0 hash=14650fb0739d0383
+allgeom[53] texcoords=184 hash=9931ab37c28c9f37
+allgeom[53] tris=304 hash=3aad4f78862d8233
+allgeom[53] bbox_min=c1e401c8 c1ed9eab 42499bc8 bbox_max=41ea7efb 41f6f93a 429b4ca4
+allgeom[53] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[54] name=Line09:4
+allgeom[54] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+allgeom[54] verts=16 hash=d10014fc442ceacb
+allgeom[54] norms=16 hash=07bffdb2c9ceadb3
+allgeom[54] colors=0 hash=14650fb0739d0383
+allgeom[54] texcoords=16 hash=0292c7ef3b311eca
+allgeom[54] tris=20 hash=1cc6c360f314b1eb
+allgeom[54] bbox_min=c1e401c8 c1ed9eb2 c25b9f66 bbox_max=41ea7f00 41f6f93a 42499bca
+allgeom[54] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[55] name=Line09:5
+allgeom[55] diffuse=textures/architecture/castle/kvatch/geargate.dds normal=
+allgeom[55] verts=126 hash=716c873fac6e6009
+allgeom[55] norms=126 hash=7549f5fa7e16aaef
+allgeom[55] colors=0 hash=14650fb0739d0383
+allgeom[55] texcoords=126 hash=21b000d2d87bde37
+allgeom[55] tris=206 hash=0adac6834e89ea84
+allgeom[55] bbox_min=c1bc0654 c1b4ee93 4289488c bbox_max=41c2bd7b 41c91104 428fd031
+allgeom[55] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[56] name=Line08:0
+allgeom[56] diffuse=textures/architecture/skingrad/SkingradMetalRusty01.dds normal=
+allgeom[56] verts=213 hash=f06d89252d3b285e
+allgeom[56] norms=213 hash=37b8edd0acad8ee0
+allgeom[56] colors=0 hash=14650fb0739d0383
+allgeom[56] texcoords=213 hash=310920c3f1c070a8
+allgeom[56] tris=330 hash=be7541f2537bda5b
+allgeom[56] bbox_min=c1414102 c141b6c6 c30f847d bbox_max=4142c62c 41425068 42c7b637
+allgeom[56] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[57] name=Line08:1
+allgeom[57] diffuse=textures/architecture/ships/MetalRailing01.dds normal=
+allgeom[57] verts=16 hash=4f627db9c8fe9fa7
+allgeom[57] norms=16 hash=042f1ce345d98083
+allgeom[57] colors=0 hash=14650fb0739d0383
+allgeom[57] texcoords=16 hash=26433ef8ff4536cb
+allgeom[57] tris=20 hash=1cc6c360f314b1eb
+allgeom[57] bbox_min=c0c4f4c6 c0bbcbca 428d54b2 bbox_max=40b004f0 40b38189 42a7b373
+allgeom[57] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[58] name=Line08:4
+allgeom[58] diffuse=textures/architecture/leyawiin/blackwoodmachinary/MetalRust01.dds normal=
+allgeom[58] verts=27 hash=4186fb99ac5b835f
+allgeom[58] norms=27 hash=db9cd8f5ea571f12
+allgeom[58] colors=0 hash=14650fb0739d0383
+allgeom[58] texcoords=27 hash=73ecda619f689758
+allgeom[58] tris=36 hash=e1c3f57357d60241
+allgeom[58] bbox_min=c0e5b8b7 c0e6a440 c30cba7c bbox_max=40e8c30e 40e7d784 426d1ba7
+allgeom[58] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[59] name=Line08:7
+allgeom[59] diffuse=textures/clutter/IronRivets01.dds normal=
+allgeom[59] verts=18 hash=bba086abe576561f
+allgeom[59] norms=18 hash=6665e579be138e23
+allgeom[59] colors=0 hash=14650fb0739d0383
+allgeom[59] texcoords=18 hash=e5db047f28fb6233
+allgeom[59] tris=16 hash=fed62bad72083893
+allgeom[59] bbox_min=c1414102 c141b6c6 42791463 bbox_max=4142c62c 41425068 428daed2
+allgeom[59] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

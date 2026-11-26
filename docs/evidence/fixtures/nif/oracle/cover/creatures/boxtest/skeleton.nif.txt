@@ -1,0 +1,145 @@
+parse=1
+magic=Gamebryo File Format, Version 10.2.0.0
+version=0x0A020000 endian=0 hasEndianByte=0 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=10 numObjects=59 unknown=6 numGroups=0
+creator= processScript= exportScript=
+blockTypes=12
+  bt[0]=NiNode
+  bt[1]=BSBound
+  bt[2]=BSXFlags
+  bt[3]=NiTextKeyExtraData
+  bt[4]=NiStringExtraData
+  bt[5]=NiTransformController
+  bt[6]=bhkBlendController
+  bt[7]=bhkConvexVerticesShape
+  bt[8]=bhkRigidBody
+  bt[9]=bhkBlendCollisionObject
+  bt[10]=bhkRagdollConstraint
+  bt[11]=bhkHingeConstraint
+blockTypeIndices=59 hash=45424f8a94c3f64d
+blockDataOffset=423 fileSize=7973
+blockCount=59
+nodes=59
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSBound typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=BSXFlags typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiTextKeyExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[16] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[17] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[18] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[24] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[25] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[26] name= type=bhkRagdollConstraint typeIdx=10 parent=-1 children=0 hasGeom=0
+node[27] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[34] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[35] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[36] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[37] name= type=bhkHingeConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[38] name= type=bhkRagdollConstraint typeIdx=10 parent=-1 children=0 hasGeom=0
+node[39] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[42] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[43] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[44] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[45] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[46] name= type=bhkRagdollConstraint typeIdx=10 parent=-1 children=0 hasGeom=0
+node[47] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[51] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[52] name= type=bhkConvexVerticesShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[53] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[54] name= type=bhkRagdollConstraint typeIdx=10 parent=-1 children=0 hasGeom=0
+node[55] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[56] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+roots=59
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+getNodeByName(first)=1
+extractAllGeometry=0
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=0
+blockTypeName(0)=NiNode

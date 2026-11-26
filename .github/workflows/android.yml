@@ -301,9 +301,9 @@ jobs:
         run: python3 scripts/nif_oracle_check.py
 
       # 型被覆（オラクル検証済み型数）も同じジョブで回す。--min-oracle は
-      # oracle_types ∩ corpus_types なので 20（NiKeyframeController は oracle に居るが
-      # コーパス外）。`if: always()` は、上の dump 比較が落ちてもこちらを走らせて
-      # 片方の失敗がもう片方を隠さないようにするため。
+      # oracle_types ∩ corpus_types。fixture oracle が 119 型を全部供給するので 119。
+      # `if: always()` は、上の dump 比較が落ちてもこちらを走らせて片方の失敗が
+      # もう片方を隠さないようにするため。
       - name: Check oracle-verified type coverage (fixture oracle)
         if: always()
         run: |
@@ -311,7 +311,7 @@ jobs:
           python3 scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
             --oracle docs/evidence/fixtures/nif/oracle \
             --expect-corpus-types 119 --expect-corpus-files 58 \
-            --min-impl 119 --max-missing 0 --max-stray 0 --min-oracle 20
+            --min-impl 119 --max-missing 0 --max-stray 0 --min-oracle 119
 
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較

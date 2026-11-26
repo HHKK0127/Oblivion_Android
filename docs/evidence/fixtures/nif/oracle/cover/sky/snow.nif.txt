@@ -1,0 +1,93 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=26 unknown=11 numGroups=0
+creator=nberry processScript=TriShape Process Script exportScript=Default Export Script
+blockTypes=26
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiBillboardNode
+  bt[3]=NiStringExtraData
+  bt[4]=NiZBufferProperty
+  bt[5]=NiParticleSystem
+  bt[6]=NiPSysEmitterCtlr
+  bt[7]=NiPSysUpdateCtlr
+  bt[8]=NiFloatInterpolator
+  bt[9]=NiBoolInterpolator
+  bt[10]=NiBoolData
+  bt[11]=NiTexturingProperty
+  bt[12]=NiSourceTexture
+  bt[13]=NiDitherProperty
+  bt[14]=NiAlphaProperty
+  bt[15]=NiVertexColorProperty
+  bt[16]=NiMaterialProperty
+  bt[17]=NiPSysData
+  bt[18]=NiPSysAgeDeathModifier
+  bt[19]=NiPSysBoxEmitter
+  bt[20]=NiPSysSpawnModifier
+  bt[21]=NiPSysColorModifier
+  bt[22]=NiColorData
+  bt[23]=NiPSysRotationModifier
+  bt[24]=NiPSysPositionModifier
+  bt[25]=NiPSysBoundUpdateModifier
+blockTypeIndices=26 hash=7a1cc351e0fdcc7a
+blockDataOffset=703 fileSize=1441993
+blockCount=26
+nodes=26
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiBillboardNode typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiZBufferProperty typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiParticleSystem typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiPSysEmitterCtlr typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiPSysUpdateCtlr typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiFloatInterpolator typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiDitherProperty typeIdx=13 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiAlphaProperty typeIdx=14 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiVertexColorProperty typeIdx=15 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiMaterialProperty typeIdx=16 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiPSysData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiPSysAgeDeathModifier typeIdx=18 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiPSysBoxEmitter typeIdx=19 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiPSysSpawnModifier typeIdx=20 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiPSysColorModifier typeIdx=21 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiColorData typeIdx=22 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiPSysRotationModifier typeIdx=23 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiPSysPositionModifier typeIdx=24 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiPSysBoundUpdateModifier typeIdx=25 parent=-1 children=0 hasGeom=0
+roots=26
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+getNodeByName(first)=1
+extractAllGeometry=0
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=0
+blockTypeName(0)=NiNode

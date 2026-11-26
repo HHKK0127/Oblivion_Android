@@ -1,0 +1,137 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=27 unknown=11 numGroups=0
+creator=gstruthers processScript=Default Process Script exportScript=Default Export Script
+blockTypes=14
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkBoxShape
+  bt[4]=bhkConvexTransformShape
+  bt[5]=bhkListShape
+  bt[6]=bhkRigidBody
+  bt[7]=bhkCollisionObject
+  bt[8]=NiTriStrips
+  bt[9]=NiMaterialProperty
+  bt[10]=NiVertexColorProperty
+  bt[11]=NiTexturingProperty
+  bt[12]=NiSourceTexture
+  bt[13]=NiTriStripsData
+blockTypeIndices=27 hash=845b988e2cd5ce3f
+blockDataOffset=437 fileSize=5576
+blockCount=27
+nodes=27
+node[0] name=SkCastleRoof02Upper type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkListShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkRigidBody typeIdx=6 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkCollisionObject typeIdx=7 parent=-1 children=0 hasGeom=0
+node[10] name=SecretBigger29 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[10] name=SecretBigger29
+geom[10] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+geom[10] verts=3 hash=93d7d891ba8176c4
+geom[10] norms=3 hash=d0bd5435cefd1098
+geom[10] colors=3 hash=e61b9d1d10cdca65
+geom[10] texcoords=3 hash=4d2779da44326655
+geom[10] tris=1 hash=c1928e536dc49748
+geom[10] bbox_min=c13c1220 c142f930 c03d8f00 bbox_max=413c1240 4142f930 403d8e80
+geom[10] transform rot=[3f800000 00000000 00000000 00000000 3f800000 352eef4c 00000000 b52eef4c 3f800000 ] trans=432c76fc c288bc5c c53bdcb1 scale=3f800000
+node[11] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiVertexColorProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+node[17] name=SkCastleRoof02Upper:37 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[17] name=SkCastleRoof02Upper:37
+geom[17] diffuse=textures/architecture/skingrad/SkingradMetalRoof01.dds normal=
+geom[17] verts=42 hash=f5befbd0ce3c5bb3
+geom[17] norms=42 hash=7ddda052e3c68623
+geom[17] colors=42 hash=e8f7b278e64d4952
+geom[17] texcoords=42 hash=e731267b8ff2dd2e
+geom[17] tris=86 hash=4eb2a76c75ad0936
+geom[17] bbox_min=c3800000 c310000c 4267875e bbox_max=43800001 432895a6 436fc7fe
+geom[17] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[18] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+node[22] name=SkCastleRoof02Upper:41 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[22] name=SkCastleRoof02Upper:41
+geom[22] diffuse=textures/architecture/skingrad/PlasterSKcastle.dds normal=
+geom[22] verts=18 hash=d31dc77fe5e2c20a
+geom[22] norms=18 hash=b50e23f627d95eb0
+geom[22] colors=18 hash=7b674fb5e2ae4c78
+geom[22] texcoords=18 hash=4fc77d7bdabcd17e
+geom[22] tris=31 hash=f2c4026c7253c479
+geom[22] bbox_min=c3800000 c2e03531 c2cda310 bbox_max=437fffff c2dffff3 4348d322
+geom[22] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[23] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+roots=27
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+getNodeByName(first)=1
+extractAllGeometry=3
+allgeom[0] name=SecretBigger29
+allgeom[0] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+allgeom[0] verts=3 hash=93d7d891ba8176c4
+allgeom[0] norms=3 hash=d0bd5435cefd1098
+allgeom[0] colors=3 hash=e61b9d1d10cdca65
+allgeom[0] texcoords=3 hash=4d2779da44326655
+allgeom[0] tris=1 hash=c1928e536dc49748
+allgeom[0] bbox_min=c13c1220 c142f930 c03d8f00 bbox_max=413c1240 4142f930 403d8e80
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 352eef4c 00000000 b52eef4c 3f800000 ] trans=432c76fc c288bc5c c53bdcb1 scale=3f800000
+allgeom[1] name=SkCastleRoof02Upper:37
+allgeom[1] diffuse=textures/architecture/skingrad/SkingradMetalRoof01.dds normal=
+allgeom[1] verts=42 hash=f5befbd0ce3c5bb3
+allgeom[1] norms=42 hash=7ddda052e3c68623
+allgeom[1] colors=42 hash=e8f7b278e64d4952
+allgeom[1] texcoords=42 hash=e731267b8ff2dd2e
+allgeom[1] tris=86 hash=4eb2a76c75ad0936
+allgeom[1] bbox_min=c3800000 c310000c 4267875e bbox_max=43800001 432895a6 436fc7fe
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=SkCastleRoof02Upper:41
+allgeom[2] diffuse=textures/architecture/skingrad/PlasterSKcastle.dds normal=
+allgeom[2] verts=18 hash=d31dc77fe5e2c20a
+allgeom[2] norms=18 hash=b50e23f627d95eb0
+allgeom[2] colors=18 hash=7b674fb5e2ae4c78
+allgeom[2] texcoords=18 hash=4fc77d7bdabcd17e
+allgeom[2] tris=31 hash=f2c4026c7253c479
+allgeom[2] bbox_min=c3800000 c2e03531 c2cda310 bbox_max=437fffff c2dffff3 4348d322
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

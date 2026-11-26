@@ -1,0 +1,119 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=25 unknown=11 numGroups=0
+creator=hadams processScript=Default Process Script exportScript=Default Export Script
+blockTypes=18
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkBoxShape
+  bt[4]=bhkConvexTransformShape
+  bt[5]=bhkCapsuleShape
+  bt[6]=bhkMultiSphereShape
+  bt[7]=bhkListShape
+  bt[8]=bhkRigidBody
+  bt[9]=bhkCollisionObject
+  bt[10]=NiTriStrips
+  bt[11]=NiMaterialProperty
+  bt[12]=NiTexturingProperty
+  bt[13]=NiSourceTexture
+  bt[14]=NiTriStripsData
+  bt[15]=NiVertexColorProperty
+  bt[16]=NiSpecularProperty
+  bt[17]=NiAlphaProperty
+blockTypeIndices=25 hash=541af54a5dcf3c9b
+blockDataOffset=512 fileSize=96944
+blockCount=25
+nodes=25
+node[0] name=ApparatusAlembicNovice type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkCapsuleShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkMultiSphereShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkListShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[12] name=ApparatusAlembicNovice:1 type=NiTriStrips typeIdx=10 parent=-1 children=0 hasGeom=1
+geom[12] name=ApparatusAlembicNovice:1
+geom[12] diffuse=textures/clutter/RetortNoviceMetal01.dds normal=
+geom[12] verts=908 hash=21ebb3cb0b946034
+geom[12] norms=908 hash=f7a7e0938b18e7fb
+geom[12] colors=908 hash=92e0bea8db35a7df
+geom[12] texcoords=908 hash=9ba0e3b8f70d1af7
+geom[12] tris=1392 hash=8a57646ba5f38e82
+geom[12] bbox_min=c1a32673 c11d4e64 c16410e4 bbox_max=41a26f01 411cf620 bf287ff0
+geom[12] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 b6000000 scale=3f800000
+node[13] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[17] name=ApparatusAlembicNovice:6 type=NiTriStrips typeIdx=10 parent=-1 children=0 hasGeom=1
+geom[17] name=ApparatusAlembicNovice:6
+geom[17] diffuse=textures/clutter/upperclass/GlassPain.dds normal=
+geom[17] verts=922 hash=36e7567b4240f112
+geom[17] norms=922 hash=1ac397198576e8a2
+geom[17] colors=922 hash=60ec624fe6170b4b
+geom[17] texcoords=922 hash=105c6186a09a50ef
+geom[17] tris=1984 hash=0c49cef225767e61
+geom[17] bbox_min=c19a4955 c0ea5442 c1281dbe bbox_max=418d9013 40ea0f82 416410e7
+geom[17] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 b6000000 scale=3f800000
+node[18] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiVertexColorProperty typeIdx=15 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiSpecularProperty typeIdx=16 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiAlphaProperty typeIdx=17 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+roots=25
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+getNodeByName(first)=1
+extractAllGeometry=2
+allgeom[0] name=ApparatusAlembicNovice:1
+allgeom[0] diffuse=textures/clutter/RetortNoviceMetal01.dds normal=
+allgeom[0] verts=908 hash=21ebb3cb0b946034
+allgeom[0] norms=908 hash=f7a7e0938b18e7fb
+allgeom[0] colors=908 hash=92e0bea8db35a7df
+allgeom[0] texcoords=908 hash=9ba0e3b8f70d1af7
+allgeom[0] tris=1392 hash=8a57646ba5f38e82
+allgeom[0] bbox_min=c1a32673 c11d4e64 c16410e4 bbox_max=41a26f01 411cf620 bf287ff0
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 b6000000 scale=3f800000
+allgeom[1] name=ApparatusAlembicNovice:6
+allgeom[1] diffuse=textures/clutter/upperclass/GlassPain.dds normal=
+allgeom[1] verts=922 hash=36e7567b4240f112
+allgeom[1] norms=922 hash=1ac397198576e8a2
+allgeom[1] colors=922 hash=60ec624fe6170b4b
+allgeom[1] texcoords=922 hash=105c6186a09a50ef
+allgeom[1] tris=1984 hash=0c49cef225767e61
+allgeom[1] bbox_min=c19a4955 c0ea5442 c1281dbe bbox_max=418d9013 40ea0f82 416410e7
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 b6000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

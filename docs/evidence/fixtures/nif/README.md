@@ -67,14 +67,16 @@ python scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
 ## オラクル（型被覆だけでなくバイト一致）
 
 `oracle/` は元 C++ パーサ（dump_orig）の出力で、リポジトリに固定した期待値です。
-ローカル専用の `tmp/nif_oracle` を使わずに、`dump_rust` の出力を期待値と 1 バイト比較
-できます:
+`markers/` / `cover/` を**鏡写し**にした構成で、`fixtures/nif/{markers,cover}` の
+**全 NIF（58 本）**に対応します（期待値の無い NIF があれば FAIL）。ローカル専用の
+`tmp/nif_oracle` を使わずに、`dump_rust` の出力を期待値と 1 バイト比較できます:
 
 ```
 bash scripts/build_nif_oracle.sh      # harness（dump_rust）を作る
-python scripts/nif_oracle_check.py    # 不一致で exit 2。--update で焼き直し
+python scripts/nif_oracle_check.py    # 不一致・欠落で exit 2。--update で焼き直し
 ```
 
-ローカルの `nif_coverage.py --oracle tmp/nif_oracle` の `--min-oracle` は **20** で凍結
-（`oracle_types` の 1 つ `NiKeyframeController` はこの meshes コーパスに無いため、
-`oracle_types ∩ corpus_types = 20`）。
+`nif_coverage.py --oracle docs/evidence/fixtures/nif/oracle` の `--min-oracle` は
+**119**（fixture oracle が corpus_types の 119 型をすべて供給する）。
+`NiKeyframeController` は oracle に居るがこの meshes コーパスには無い（`known_out_of_corpus.txt`）。
+残り型・供給元の対応は `manifest.txt` の supply map を参照。

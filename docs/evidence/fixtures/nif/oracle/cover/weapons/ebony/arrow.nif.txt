@@ -1,0 +1,248 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=47 unknown=11 numGroups=0
+creator=jjones processScript=Export AddOnPart exportScript=Default Export Script
+blockTypes=13
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkBoxShape
+  bt[4]=bhkRigidBodyT
+  bt[5]=bhkPrismaticConstraint
+  bt[6]=bhkCollisionObject
+  bt[7]=NiTriStrips
+  bt[8]=NiBinaryExtraData
+  bt[9]=NiMaterialProperty
+  bt[10]=NiTexturingProperty
+  bt[11]=NiSourceTexture
+  bt[12]=NiTriStripsData
+blockTypeIndices=47 hash=80a7c643d9ceb194
+blockDataOffset=447 fileSize=80572
+blockCount=47
+nodes=47
+node[0] name=Arrow type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkRigidBodyT typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkRigidBodyT typeIdx=4 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkPrismaticConstraint typeIdx=5 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkCollisionObject typeIdx=6 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkCollisionObject typeIdx=6 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[15] name=Arrow1:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[15] name=Arrow1:0
+geom[15] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[15] verts=150 hash=c700b094baa9ac7e
+geom[15] norms=150 hash=a07c590d10c46fb5
+geom[15] colors=0 hash=14650fb0739d0383
+geom[15] texcoords=150 hash=391f84441954d62d
+geom[15] tris=265 hash=7e1ad5405a2a04d6
+geom[15] bbox_min=c01cbe0a c240e788 c024d1cf bbox_max=3fa37e40 c1c952f9 3fb45c37
+geom[15] transform rot=[bf7c1c5e 3e31d0da b4faf268 be31d0da bf7c1c5e 36255b83 b30b6090 36284ad9 3f800000 ] trans=40d54882 c215726a 3f0a94bc scale=3f800007
+node[16] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[23] name=Arrow2:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[23] name=Arrow2:0
+geom[23] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[23] verts=150 hash=c889c15ff36de6a2
+geom[23] norms=150 hash=21018b288dac7839
+geom[23] colors=0 hash=14650fb0739d0383
+geom[23] texcoords=150 hash=391f84441954d62d
+geom[23] tris=265 hash=7e1ad5405a2a04d6
+geom[23] bbox_min=c0292751 c24035ca bf832614 bbox_max=3f4f7a74 c1c7e29c 402e6fec
+geom[23] transform rot=[bf7ed9aa 3dc1e1e7 b490628d bdc1e1e7 bf7ed9aa 36250281 b3162060 3625fa2f 3f800000 ] trans=406ac97f c217186f 3f0a9573 scale=3f7fffff
+node[24] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[28] name=Arrow3:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[28] name=Arrow3:0
+geom[28] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[28] verts=150 hash=0fe638fdf0af87f6
+geom[28] norms=150 hash=9a9de84efb67e63f
+geom[28] colors=0 hash=14650fb0739d0383
+geom[28] texcoords=150 hash=391f84441954d62d
+geom[28] tris=265 hash=7e1ad5405a2a04d6
+geom[28] bbox_min=bf830fa0 c2407bf6 c030828a bbox_max=40387fbe c1c873ff 3f897068
+geom[28] transform rot=[bf7f772a bd844692 340e5fcc 3d844692 bf7f772a 36250628 b2e3ad22 36254114 3f800000 ] trans=c018052c c217823c 3f0a93ec scale=3f800007
+node[29] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[33] name=Arrow4:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[33] name=Arrow4:0
+geom[33] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[33] verts=150 hash=d689e5c881321f38
+geom[33] norms=150 hash=e11783c26812880c
+geom[33] colors=0 hash=14650fb0739d0383
+geom[33] texcoords=150 hash=391f84441954d62d
+geom[33] tris=265 hash=7e1ad5405a2a04d6
+geom[33] bbox_min=3fbf6cc5 c242f0f9 bf47c1a3 bbox_max=409d6a95 c1cd6847 404a35fe
+geom[33] transform rot=[bf7d0926 be1b6159 34bfd1f2 3e1b6159 bf7d0926 3625998d b2b6c8b8 36275211 3f800000 ] trans=c0b5df84 c2161829 3f0a954c scale=3f800002
+node[34] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[38] name=Arrow5:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[38] name=Arrow5:0
+geom[38] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[38] verts=150 hash=693f6f27ac0d758a
+geom[38] norms=150 hash=074392e939eff7c7
+geom[38] colors=0 hash=14650fb0739d0383
+geom[38] texcoords=150 hash=391f84441954d62d
+geom[38] tris=265 hash=7e1ad5405a2a04d6
+geom[38] bbox_min=3fcfd1a2 c2467a7d c0118412 bbox_max=40c198a2 c1d556cc 3fde8f07
+geom[38] transform rot=[bf77f192 be7edf36 351f8bf9 3e7edf36 bf77f192 3623fef8 b30bf5e0 3628c340 3f800000 ] trans=c115f55b c2131ab7 3f0a9547 scale=3f800008
+node[39] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[41] name=ArrowQuiver:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[41] name=ArrowQuiver:0
+geom[41] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[41] verts=300 hash=f0c1d1df471422ad
+geom[41] norms=300 hash=b29d5777be8f6805
+geom[41] colors=0 hash=14650fb0739d0383
+geom[41] texcoords=300 hash=97f037483a09bd7d
+geom[41] tris=584 hash=6b9985cbd4d51df3
+geom[41] bbox_min=c103de69 c2092b67 c022026e bbox_max=4107286b 404c4a99 402204b3
+geom[41] transform rot=[bf800000 342b339c b2b90a3d b42b33a0 bf800000 36229b6d b2b90963 36229b6d 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffd
+node[42] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[43] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[44] name=Arrow:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[44] name=Arrow:0
+geom[44] diffuse=textures/weapons/EbonyQuiver.dds normal=
+geom[44] verts=211 hash=d3c7680535db4134
+geom[44] norms=211 hash=148c818c3adef9f8
+geom[44] colors=0 hash=14650fb0739d0383
+geom[44] texcoords=211 hash=678d8f2212ed0488
+geom[44] tris=382 hash=a63fdbd933689634
+geom[44] bbox_min=bfd2e461 c2395889 bfc19ccf bbox_max=3fe765bf 3e36ea90 400f348f
+geom[44] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[45] name= type=NiBinaryExtraData typeIdx=8 parent=-1 children=0 hasGeom=0
+node[46] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+roots=47
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+getNodeByName(first)=1
+extractAllGeometry=7
+allgeom[0] name=Arrow1:0
+allgeom[0] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[0] verts=150 hash=c700b094baa9ac7e
+allgeom[0] norms=150 hash=a07c590d10c46fb5
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=150 hash=391f84441954d62d
+allgeom[0] tris=265 hash=7e1ad5405a2a04d6
+allgeom[0] bbox_min=c01cbe0a c240e788 c024d1cf bbox_max=3fa37e40 c1c952f9 3fb45c37
+allgeom[0] transform rot=[bf7c1c5e 3e31d0da b4faf268 be31d0da bf7c1c5e 36255b83 b30b6090 36284ad9 3f800000 ] trans=40d54882 c215726a 3f0a94bc scale=3f800007
+allgeom[1] name=Arrow2:0
+allgeom[1] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[1] verts=150 hash=c889c15ff36de6a2
+allgeom[1] norms=150 hash=21018b288dac7839
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=150 hash=391f84441954d62d
+allgeom[1] tris=265 hash=7e1ad5405a2a04d6
+allgeom[1] bbox_min=c0292751 c24035ca bf832614 bbox_max=3f4f7a74 c1c7e29c 402e6fec
+allgeom[1] transform rot=[bf7ed9aa 3dc1e1e7 b490628d bdc1e1e7 bf7ed9aa 36250281 b3162060 3625fa2f 3f800000 ] trans=406ac97f c217186f 3f0a9573 scale=3f7fffff
+allgeom[2] name=Arrow3:0
+allgeom[2] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[2] verts=150 hash=0fe638fdf0af87f6
+allgeom[2] norms=150 hash=9a9de84efb67e63f
+allgeom[2] colors=0 hash=14650fb0739d0383
+allgeom[2] texcoords=150 hash=391f84441954d62d
+allgeom[2] tris=265 hash=7e1ad5405a2a04d6
+allgeom[2] bbox_min=bf830fa0 c2407bf6 c030828a bbox_max=40387fbe c1c873ff 3f897068
+allgeom[2] transform rot=[bf7f772a bd844692 340e5fcc 3d844692 bf7f772a 36250628 b2e3ad22 36254114 3f800000 ] trans=c018052c c217823c 3f0a93ec scale=3f800007
+allgeom[3] name=Arrow4:0
+allgeom[3] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[3] verts=150 hash=d689e5c881321f38
+allgeom[3] norms=150 hash=e11783c26812880c
+allgeom[3] colors=0 hash=14650fb0739d0383
+allgeom[3] texcoords=150 hash=391f84441954d62d
+allgeom[3] tris=265 hash=7e1ad5405a2a04d6
+allgeom[3] bbox_min=3fbf6cc5 c242f0f9 bf47c1a3 bbox_max=409d6a95 c1cd6847 404a35fe
+allgeom[3] transform rot=[bf7d0926 be1b6159 34bfd1f2 3e1b6159 bf7d0926 3625998d b2b6c8b8 36275211 3f800000 ] trans=c0b5df84 c2161829 3f0a954c scale=3f800002
+allgeom[4] name=Arrow5:0
+allgeom[4] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[4] verts=150 hash=693f6f27ac0d758a
+allgeom[4] norms=150 hash=074392e939eff7c7
+allgeom[4] colors=0 hash=14650fb0739d0383
+allgeom[4] texcoords=150 hash=391f84441954d62d
+allgeom[4] tris=265 hash=7e1ad5405a2a04d6
+allgeom[4] bbox_min=3fcfd1a2 c2467a7d c0118412 bbox_max=40c198a2 c1d556cc 3fde8f07
+allgeom[4] transform rot=[bf77f192 be7edf36 351f8bf9 3e7edf36 bf77f192 3623fef8 b30bf5e0 3628c340 3f800000 ] trans=c115f55b c2131ab7 3f0a9547 scale=3f800008
+allgeom[5] name=ArrowQuiver:0
+allgeom[5] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[5] verts=300 hash=f0c1d1df471422ad
+allgeom[5] norms=300 hash=b29d5777be8f6805
+allgeom[5] colors=0 hash=14650fb0739d0383
+allgeom[5] texcoords=300 hash=97f037483a09bd7d
+allgeom[5] tris=584 hash=6b9985cbd4d51df3
+allgeom[5] bbox_min=c103de69 c2092b67 c022026e bbox_max=4107286b 404c4a99 402204b3
+allgeom[5] transform rot=[bf800000 342b339c b2b90a3d b42b33a0 bf800000 36229b6d b2b90963 36229b6d 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffd
+allgeom[6] name=Arrow:0
+allgeom[6] diffuse=textures/weapons/EbonyQuiver.dds normal=
+allgeom[6] verts=211 hash=d3c7680535db4134
+allgeom[6] norms=211 hash=148c818c3adef9f8
+allgeom[6] colors=0 hash=14650fb0739d0383
+allgeom[6] texcoords=211 hash=678d8f2212ed0488
+allgeom[6] tris=382 hash=a63fdbd933689634
+allgeom[6] bbox_min=bfd2e461 c2395889 bfc19ccf bbox_max=3fe765bf 3e36ea90 400f348f
+allgeom[6] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

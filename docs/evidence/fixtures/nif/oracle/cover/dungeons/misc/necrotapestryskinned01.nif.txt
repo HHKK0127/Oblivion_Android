@@ -1,0 +1,270 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=99 unknown=11 numGroups=0
+creator=ipely processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=21
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkConvexVerticesShape
+  bt[4]=bhkRigidBody
+  bt[5]=bhkCollisionObject
+  bt[6]=bhkCapsuleShape
+  bt[7]=bhkRagdollConstraint
+  bt[8]=bhkStiffSpringConstraint
+  bt[9]=NiTriShape
+  bt[10]=NiBinaryExtraData
+  bt[11]=NiTexturingProperty
+  bt[12]=NiSourceTexture
+  bt[13]=NiMaterialProperty
+  bt[14]=NiStencilProperty
+  bt[15]=NiTriShapeData
+  bt[16]=NiSkinInstance
+  bt[17]=NiSkinData
+  bt[18]=NiSkinPartition
+  bt[19]=NiTriStrips
+  bt[20]=NiTriStripsData
+blockTypeIndices=99 hash=0b05285ac488c446
+blockDataOffset=716 fileSize=35841
+blockCount=99
+nodes=99
+node[0] name=NecroTapestrySkinned01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkConvexVerticesShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[13] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[16] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[17] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[18] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[22] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[24] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[25] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[28] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[29] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[30] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[31] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[32] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[33] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[34] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[35] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[36] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[37] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[38] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[39] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[40] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[41] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[42] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[43] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[44] name= type=bhkStiffSpringConstraint typeIdx=8 parent=-1 children=0 hasGeom=0
+node[45] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[46] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[47] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[48] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[49] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[50] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[51] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[52] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[53] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[54] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[55] name= type=bhkStiffSpringConstraint typeIdx=8 parent=-1 children=0 hasGeom=0
+node[56] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[57] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[59] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[60] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[61] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[63] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[66] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[67] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[68] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[69] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[70] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[71] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[72] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[73] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[74] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[75] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[76] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[77] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[78] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[79] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[80] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[81] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[82] name=cloth type=NiTriShape typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[82] name=cloth
+geom[82] diffuse=textures/dungeons/misc/NecroTapestry01.dds normal=
+geom[82] verts=99 hash=31899ff2d1794bf8
+geom[82] norms=99 hash=d37cbc7bd8c30be7
+geom[82] colors=0 hash=14650fb0739d0383
+geom[82] texcoords=99 hash=dd669a46df498e7b
+geom[82] tris=160 hash=8234cc4560464584
+geom[82] bbox_min=c263f104 c0d41fd9 c2d4536d bbox_max=4263f104 40d41fd9 42d4536d
+geom[82] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4020d60c c2140187 c2d5c72d scale=3f800000
+node[83] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[84] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[85] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[86] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[87] name= type=NiMaterialProperty typeIdx=13 parent=-1 children=0 hasGeom=0
+node[88] name= type=NiStencilProperty typeIdx=14 parent=-1 children=0 hasGeom=0
+node[89] name= type=NiTriShapeData typeIdx=15 parent=-1 children=0 hasGeom=0
+node[90] name= type=NiSkinInstance typeIdx=16 parent=-1 children=0 hasGeom=0
+node[91] name= type=NiSkinData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[92] name= type=NiSkinPartition typeIdx=18 parent=-1 children=0 hasGeom=0
+node[93] name=NecroTapestrySkinned01:1 type=NiTriStrips typeIdx=19 parent=-1 children=0 hasGeom=1
+geom[93] name=NecroTapestrySkinned01:1
+geom[93] diffuse=textures/architecture/lowerclass/WoodPost02.dds normal=
+geom[93] verts=212 hash=be66dc67f6f575a7
+geom[93] norms=212 hash=546d49349ac8d0c7
+geom[93] colors=0 hash=14650fb0739d0383
+geom[93] texcoords=212 hash=f63ef8e0b50affed
+geom[93] tris=400 hash=7a715aeb418f3997
+geom[93] bbox_min=c2808cbe c2238127 c05c4da0 bbox_max=42808cbe 42238127 405c4d80
+geom[93] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[94] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[95] name= type=NiMaterialProperty typeIdx=13 parent=-1 children=0 hasGeom=0
+node[96] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[97] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[98] name= type=NiTriStripsData typeIdx=20 parent=-1 children=0 hasGeom=0
+roots=99
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+  root[89]=89
+  root[90]=90
+  root[91]=91
+  root[92]=92
+  root[93]=93
+  root[94]=94
+  root[95]=95
+  root[96]=96
+  root[97]=97
+  root[98]=98
+getNodeByName(first)=1
+extractAllGeometry=2
+allgeom[0] name=cloth
+allgeom[0] diffuse=textures/dungeons/misc/NecroTapestry01.dds normal=
+allgeom[0] verts=99 hash=31899ff2d1794bf8
+allgeom[0] norms=99 hash=d37cbc7bd8c30be7
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=99 hash=dd669a46df498e7b
+allgeom[0] tris=160 hash=8234cc4560464584
+allgeom[0] bbox_min=c263f104 c0d41fd9 c2d4536d bbox_max=4263f104 40d41fd9 42d4536d
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=4020d60c c2140187 c2d5c72d scale=3f800000
+allgeom[1] name=NecroTapestrySkinned01:1
+allgeom[1] diffuse=textures/architecture/lowerclass/WoodPost02.dds normal=
+allgeom[1] verts=212 hash=be66dc67f6f575a7
+allgeom[1] norms=212 hash=546d49349ac8d0c7
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=212 hash=f63ef8e0b50affed
+allgeom[1] tris=400 hash=7a715aeb418f3997
+allgeom[1] bbox_min=c2808cbe c2238127 c05c4da0 bbox_max=42808cbe 42238127 405c4d80
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=1
+blockTypeName(0)=NiNode

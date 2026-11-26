@@ -1,0 +1,135 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=10 numObjects=32 unknown=11 numGroups=0
+creator=ccafasso processScript=Default Process Script exportScript=Anim Export Script
+blockTypes=20
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=NiControllerManager
+  bt[4]=NiMultiTargetTransformController
+  bt[5]=NiControllerSequence
+  bt[6]=NiTransformInterpolator
+  bt[7]=NiTransformData
+  bt[8]=NiStringPalette
+  bt[9]=NiTextKeyExtraData
+  bt[10]=NiDefaultAVObjectPalette
+  bt[11]=NiFogProperty
+  bt[12]=bhkConvexVerticesShape
+  bt[13]=bhkRigidBody
+  bt[14]=bhkCollisionObject
+  bt[15]=NiTriStrips
+  bt[16]=NiMaterialProperty
+  bt[17]=NiTexturingProperty
+  bt[18]=NiSourceTexture
+  bt[19]=NiTriStripsData
+blockTypeIndices=32 hash=cdca069ffa663614
+blockDataOffset=600 fileSize=5096
+blockCount=32
+nodes=32
+node[0] name=ShingleOnFire01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiControllerManager typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiMultiTargetTransformController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiControllerSequence typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiStringPalette typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiTextKeyExtraData typeIdx=9 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiDefaultAVObjectPalette typeIdx=10 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiFogProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[17] name= type=bhkConvexVerticesShape typeIdx=12 parent=-1 children=0 hasGeom=0
+node[18] name= type=bhkRigidBody typeIdx=13 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkCollisionObject typeIdx=14 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[22] name=shingle01:3 type=NiTriStrips typeIdx=15 parent=-1 children=0 hasGeom=1
+geom[22] name=shingle01:3
+geom[22] diffuse=textures/architecture/kvatch/kvatchshingles.dds normal=
+geom[22] verts=18 hash=693f37481ac60f2c
+geom[22] norms=18 hash=fe22dc85871ea6aa
+geom[22] colors=0 hash=14650fb0739d0383
+geom[22] texcoords=18 hash=4b0f7a35bc5dea28
+geom[22] tris=31 hash=7ea5ecca5e0efcbb
+geom[22] bbox_min=c1064ce3 c12bbf96 bf62c494 bbox_max=410c98b4 41222590 3fbfe7b5
+geom[22] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[23] name= type=NiMaterialProperty typeIdx=16 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTexturingProperty typeIdx=17 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiSourceTexture typeIdx=18 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiTriStripsData typeIdx=19 parent=-1 children=0 hasGeom=0
+node[27] name=shingle01:12 type=NiTriStrips typeIdx=15 parent=-1 children=0 hasGeom=1
+geom[27] name=shingle01:12
+geom[27] diffuse=textures/architecture/kvatch/sorched.dds normal=
+geom[27] verts=26 hash=4e39c36f1413bb6a
+geom[27] norms=26 hash=3abd0a4e2a8a6cad
+geom[27] colors=0 hash=14650fb0739d0383
+geom[27] texcoords=26 hash=97960eeec65ca191
+geom[27] tris=34 hash=f338132d8d814c9e
+geom[27] bbox_min=c1064ce3 c12bbf96 bf62c494 bbox_max=410c98b4 41222590 3fbfe7b5
+geom[27] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[28] name= type=NiMaterialProperty typeIdx=16 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiTexturingProperty typeIdx=17 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiSourceTexture typeIdx=18 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiTriStripsData typeIdx=19 parent=-1 children=0 hasGeom=0
+roots=32
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+getNodeByName(first)=1
+extractAllGeometry=2
+allgeom[0] name=shingle01:3
+allgeom[0] diffuse=textures/architecture/kvatch/kvatchshingles.dds normal=
+allgeom[0] verts=18 hash=693f37481ac60f2c
+allgeom[0] norms=18 hash=fe22dc85871ea6aa
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=18 hash=4b0f7a35bc5dea28
+allgeom[0] tris=31 hash=7ea5ecca5e0efcbb
+allgeom[0] bbox_min=c1064ce3 c12bbf96 bf62c494 bbox_max=410c98b4 41222590 3fbfe7b5
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=shingle01:12
+allgeom[1] diffuse=textures/architecture/kvatch/sorched.dds normal=
+allgeom[1] verts=26 hash=4e39c36f1413bb6a
+allgeom[1] norms=26 hash=3abd0a4e2a8a6cad
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=26 hash=97960eeec65ca191
+allgeom[1] tris=34 hash=f338132d8d814c9e
+allgeom[1] bbox_min=c1064ce3 c12bbf96 bf62c494 bbox_max=410c98b4 41222590 3fbfe7b5
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode
