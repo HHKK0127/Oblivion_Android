@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # build_nif_oracle.sh — NIF 差分オラクルの harness（dump_rust / dump_orig）をビルドする。
 #
-# 背景: オラクルはローカル専用（tmp/nif_oracle は gitignore）で、ビルド経路が文書化
-# されていないと再現しない（2026-11-26 に dump_rust.exe が 9 日古いままそれと気づかず
-# 使った）。ここで固定する。
+# 背景: オラクルの**正典は docs/evidence/fixtures/nif/oracle/**（コミット済みの期待値）。
+# このスクリプトが作る tmp/nif_oracle は**ハーネスのビルド置き場**で、coverage の分母には
+# 使わない。ビルド経路が文書化されていないと再現しない（2026-11-26 に dump_rust.exe が
+# 9 日古いままそれと気づかず使った）。ここで固定する。
 #
 # 入力:
 #   tools/nif_oracle/{dump.cpp, log_stub.cpp, android/log.h}  — コミット済み driver

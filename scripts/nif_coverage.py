@@ -300,6 +300,8 @@ def main():
                     help="oracle_verified がこれを下回ったら警告（soft ラチェット）")
     ap.add_argument("--min-oracle-files", type=int, default=None,
                     help="oracle の期待値ダンプ本数がこれを下回ったら exit 2（hard・第 2 軸）")
+    ap.add_argument("--corpus-total", type=int, default=None,
+                    help="見出しのファイル分母（実コーパス B の本数。fixture 実行で 8032 など）")
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--show", default=None, metavar="SUBSTR")
     ap.add_argument("--json", default=None)
@@ -341,14 +343,18 @@ def main():
     for k, v in errors.most_common():
         print("            %-12s %d" % (k, v))
     # 見出しは 2 軸: 型（種類）とファイル（本数）。型が満点でもファイル被覆は別軸で、
-    # 100% だけ出すと「実コーパス全体を比較した」と誤読される。
+    # 100% だけ出すと「実コーパス全体を比較した」と誤読される。--corpus-total を渡すと
+    # ファイルの分母を実コーパス B にできる（fixture 実行で 8032 など）。
     if args.oracle:
-        n_corpus = "-" if args.types_list else files
-        file_pct = 100.0 * n_oracle_files / files if files else 0.0
-        print("== oracle types = %d / %d (%.1f%%)  |  oracle files = %d / %s (%.1f%%) =="
+        total = args.corpus_total if args.corpus_total else files
+        print("== oracle types = %d / %d (%.1f%%)  |  oracle files = %d / %d (%.1f%%) =="
               % (len(oracle_verified), len(known),
                  100.0 * len(oracle_verified) / len(known) if known else 0.0,
-                 n_oracle_files, n_corpus, file_pct))
+                 n_oracle_files, total,
+                 100.0 * n_oracle_files / total if total else 0.0))
+        if args.corpus_total:
+            print("   (fixture corpus = %s files / corpus-total = %d)"
+                  % ("-" if args.types_list else files, args.corpus_total))
     else:
         print("== corpus_types = %d（oracle 未指定。被覆はローカルで測る）==" % len(known))
     print("corpus_types    : %d distinct" % len(known))

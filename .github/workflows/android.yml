@@ -312,7 +312,7 @@ jobs:
             --oracle docs/evidence/fixtures/nif/oracle \
             --expect-corpus-types 119 --expect-corpus-files 58 \
             --min-impl 119 --max-missing 0 --max-stray 0 \
-            --min-oracle 119 --min-oracle-files 58
+            --min-oracle 119 --min-oracle-files 58 --corpus-total 8032
 
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較
