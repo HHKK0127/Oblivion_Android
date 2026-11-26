@@ -163,6 +163,10 @@ pub struct NifHeaderInfo {
     pub num_objects: u32,
     pub unknown_field: u32,
     pub num_groups: u32,
+    /// Length of the block-type **name** table (`block_type_names`). This is not
+    /// the block count — that is `num_objects`. The two differ on 86% of the
+    /// retail meshes, so feeding `num_objects` here over-reads the name table
+    /// and desyncs the header (found by the NIF oracle, 2026-11-26).
     pub block_type_count: u32,
     pub block_type_indices: *const u16,
     pub block_data_offset: u64,
@@ -2015,7 +2019,10 @@ pub unsafe extern "C" fn nif_get_header_info(handle: *mut Handle, out: *mut NifH
             num_objects: header.num_objects,
             unknown_field: header.unknown_field,
             num_groups: header.num_groups,
-            block_type_count: header.block_type_indices.len() as u32,
+            // The name-table length, not `block_type_indices.len()` (which is
+            // `num_objects`): the C++ shim loops `block_type_count` times calling
+            // `nif_header_block_type_name`, so this must be the name count.
+            block_type_count: header.block_type_names.len() as u32,
             block_type_indices: header.block_type_indices.as_ptr(),
             block_data_offset: header.block_data_offset as u64,
         };

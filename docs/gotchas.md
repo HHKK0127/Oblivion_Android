@@ -50,3 +50,44 @@ AGENTS.md の Learnings（振る舞い）とは別。ここは**ドメイン知�
   GNU の実体（`rustup which rustc/cargo --toolchain <gnu>`）を `RUSTC` に固定する。
 - **確認方法**: `OBLIVION_RUST_FORCE_REBUILD=1 bash scripts/build_host_rust.sh` が exit 0 で
   `target/gnu/x86_64-pc-windows-gnu/release/lib*_ffi.a` を 6 本出す。
+
+## 5. `nif_header_info.block_type_count` は型名テーブル長（`num_objects` ではない）
+
+- **症状**: C++ shim の `NIFParser::getHeader().blockTypeNames` が実体より多く、後ろに空文字が
+  並ぶ（例: 実 8 型のファイルで 15 件、`bt[8..14]=` が空）。オラクルで `dump_rust` が
+  `blockTypes=15`、`dump_orig` が `blockTypes=8` と食い違う。
+- **原因**: `nif-ffi/src/lib.rs` の `nif_get_header_info` が `block_type_count` に
+  `header.block_type_indices.len()`（＝ブロック数＝`num_objects`）を入れていた。C++ shim はこの
+  値を**型名テーブルのループ回数**に使うため、`num_objects != 型数` のファイルで後ろを読み過ぎる。
+  Oblivion の実メッシュは 8032 中 6896 本（86%）で両者が異なる。
+- **正しい手順**: `block_type_count` は `header.block_type_names.len()`（型名テーブル長）にする。
+  ブロック数が要る箇所は `num_objects` を使う。`nif_ffi.h` のフィールドにもその旨を書く。
+- **確認方法**: C ABI の `nobj != ntyp` ケース（3 blocks / 2 types で `num_objects==3` かつ
+  `block_type_count==2`）と、marker 27 本のオラクル `27/27`。lodnif 100 本は `nobj==ntyp` なので
+  このバグを見抜けない（100/100 のまま）。
+
+## 6. `scripts/build_host_rust.sh` を WSL の bash で走らせない
+
+- **症状**: `rust/target/` が丸ごと消える（`gnu/` と `cmake/` の `lib*_ffi.a` が消え、次回の
+  install が古い/空の `.a` でリンクする）。
+- **原因**: WSL の `bash`（`C:\WINDOWS\system32\bash.exe`）は `uname -s` が `Linux` を返すため、
+  スクリプトが Linux 分岐に入り `cargo clean --target-dir target` を実行する。Windows 用の `.a` は
+  作らないまま `target/` を消す。
+- **正しい手順**: Git Bash（`C:\Program Files\Git\bin\bash.exe`）で実行する。スクリプトは
+  `WSL_DISTRO_NAME` を見て WSL を拒否する（`OBLIVION_ALLOW_WSL=1` で上書き可）。`cargo clean` は
+  `--clean`（または `OBLIVION_RUST_CLEAN=1`）のときだけ走る。CI は `run_host_tests.sh` が
+  `CI=true` を見て `--clean` を付ける。
+- **確認方法**: `bash --version` に `system32\bash.exe`、`uname -r` に `microsoft` が出れば WSL。
+  Git Bash なら `uname -s` が `MINGW64_NT-...`。
+
+## 7. Rust の `.a` を消しても Gradle の native タスクは UP-TO-DATE
+
+- **症状**: `rust/target/cmake/**/lib*_ffi.a` を消して `./gradlew assembleDebug` しても、
+  古い `libnative-lib.so`（前回ビルドの mtime）が APK に積まれる。実機検証が修正前のコードで
+  空振りする。
+- **原因**: Rust の `.a` は Gradle の追跡入力ではない。CMake のスタンプが UP-TO-DATE のままだと
+  native タスクが再実行されず、`app/build/intermediates/{cmake,cxx}` の古い `.so` を拾い直す。
+- **正しい手順**: `scripts/build_apk.sh` を使う（`app/.cxx` と
+  `app/build/intermediates/{cmake,cxx}` を消してから `assembleDebug`）。
+- **確認方法**: ビルド開始時刻より新しい `libnative-lib.so` が 3 本（ABI 数）以上あること。
+  `scripts/build_apk.sh` がこれを検査し、3 未満なら exit 1。

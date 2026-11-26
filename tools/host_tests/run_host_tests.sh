@@ -56,7 +56,11 @@ have_rust_archives() {
 #   それ以外は素通しで作る。staleness（古い .a でテストが緑）も同スクリプトが判定する。
 #   詳細と既知の失敗例: scripts/build_host_rust.sh のヘッダ。
 if [ -z "${OBLIVION_RUST_SKIP_BUILD:-}" ]; then
-  bash scripts/build_host_rust.sh >&2 || {
+  # CI だけ --clean を付ける（MSVC 製 proc-macro の混入を保険で断つ）。ローカルは
+  # 消さない: 全消しは遅く、WSL の bash で走ると target/ を全損させる（2026-11-26）。
+  BUILD_ARGS=()
+  if [ "${CI:-}" = "true" ]; then BUILD_ARGS=(--clean); fi
+  bash scripts/build_host_rust.sh ${BUILD_ARGS[@]+"${BUILD_ARGS[@]}"} >&2 || {
     echo "warning: scripts/build_host_rust.sh に失敗。既存のアーカイブを探す" >&2
   }
 fi

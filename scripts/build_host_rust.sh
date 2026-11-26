@@ -35,9 +35,25 @@
 #   Windows: rust/target/gnu/<gnu-triple>/release/lib*_ffi.a
 #   それ以外: rust/target/release/lib*_ffi.a
 #
-# 使い方: scripts/build_host_rust.sh
+# 使い方: scripts/build_host_rust.sh [--clean]
 #   OBLIVION_RUST_FORCE_REBUILD=1 で staleness 判定を無視して作り直す。
+#   --clean（または OBLIVION_RUST_CLEAN=1）で CARGO_TARGET_DIR を消してから作る。
+#     既定では消さない（毎回の全消しは遅く、WSL 事故で全損した原因でもある）。
+#     CI は --clean を付ける（MSVC 製 proc-macro の混入を保険で断つ）。
 set -euo pipefail
+
+# WSL の bash は uname -s が Linux を返し、Windows 用 .a を作らないまま
+# cargo clean で target/ を消す（2026-11-26 に実際に全損させた）。Git Bash を要求する。
+if [ -n "${WSL_DISTRO_NAME:-}" ] && [ "${OBLIVION_ALLOW_WSL:-0}" != "1" ]; then
+  echo "::error::WSL の bash です。Git Bash で実行するか OBLIVION_ALLOW_WSL=1 を付けてください。" >&2
+  exit 1
+fi
+
+CLEAN=0
+for _arg in "$@"; do
+  if [ "$_arg" = "--clean" ]; then CLEAN=1; fi
+done
+if [ "${OBLIVION_RUST_CLEAN:-}" = "1" ]; then CLEAN=1; fi
 
 cd "$(dirname "$0")/.."                     # repo root
 RUST_DIR="${OBLIVION_RUST_DIR:-$(pwd)/rust}"
@@ -141,7 +157,10 @@ fi
 cd "$RUST_DIR"
 export CARGO_TARGET_DIR="$TARGET_DIR"
 # 混在を断つ: この dir だけを消す（他ツールチェーンのキャッシュは触らない）。
-"$CARGO_BIN" clean --target-dir "$TARGET_DIR" >/dev/null 2>&1 || true
+# 既定では消さない（--clean / OBLIVION_RUST_CLEAN=1 のときだけ。CI は付ける）。
+if [ "$CLEAN" = "1" ]; then
+  "$CARGO_BIN" clean --target-dir "$TARGET_DIR" >/dev/null 2>&1 || true
+fi
 "$CARGO_BIN" build --release ${TARGET_ARGS[@]+"${TARGET_ARGS[@]}"} "${CRATES[@]}"
 
 # 期待した形で出たかを確認する（見つからなければ失敗）。

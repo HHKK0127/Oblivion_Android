@@ -626,6 +626,7 @@ typedef struct nif_header_info {
     uint32_t num_objects;
     uint32_t unknown_field;
     uint32_t num_groups;
+    /* Length of the block-type *name* table, not the block count (num_objects). */
     uint32_t block_type_count;
     const uint16_t *block_type_indices;
     uint64_t block_data_offset;

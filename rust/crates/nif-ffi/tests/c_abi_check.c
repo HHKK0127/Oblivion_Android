@@ -89,8 +89,10 @@ static void put_bzstring(const char *text)
     put_u8(0);
 }
 
-/* The header of a Gamebryo 20.0.0.5 file with two blocks. */
-static void put_header(void)
+/* The header of a Gamebryo 20.0.0.5 file with `objects` blocks over two types.
+ * Blocks after the first reuse type 1, so once objects > 2 num_objects differs
+ * from the block-type table length and the two counts cannot be confused. */
+static void put_header_n(unsigned objects)
 {
     static const char magic[] = "Gamebryo File Format, Version 20.0.0.5\n";
     size_t i;
@@ -101,7 +103,7 @@ static void put_header(void)
     put_u32(0x14000005u); /* version */
     put_u8(1);            /* endian byte */
     put_u32(11);          /* user version */
-    put_u32(2);           /* num objects */
+    put_u32(objects);     /* num objects */
     put_u32(11);          /* block stream (BS) version */
     put_bzstring("ccafasso");
     put_bzstring("");
@@ -110,8 +112,16 @@ static void put_header(void)
     put_sized("NiTriShape");
     put_sized("NiTriShapeData");
     put_u16(0); /* block 0 type index */
-    put_u16(1); /* block 1 type index */
+    for (i = 1; i < objects; ++i) {
+        put_u16(1); /* every later block is a NiTriShapeData */
+    }
     put_u32(0); /* num groups */
+}
+
+/* The two-block header used by the bulk of the suite. */
+static void put_header(void)
+{
+    put_header_n(2);
 }
 
 /* NiTriShape scene block: name, extra data, controller, flags, transform,
@@ -684,6 +694,33 @@ static void check_nodes_and_header_abi(void)
     nif_destroy(handle);
 }
 
+/* num_objects and the block-type table length differ on 86% of the retail
+ * meshes. block_type_count must report the *name* table length, not the block
+ * count; the two-block fixture cannot tell them apart (both are 2), so this
+ * rebuilds a three-block, two-type file where they differ. */
+static void check_header_counts_abi(void)
+{
+    nif_header_info header;
+    void *handle = nif_create();
+
+    fixture_pos = 0;
+    put_header_n(3);
+    fixture_block_start = fixture_pos;
+    put_shape_block();
+    put_shape_data_block();
+    put_shape_data_block(); /* third block, reuses type 1 */
+    put_trailer();
+
+    CHECK(nif_parse_memory(handle, fixture, fixture_pos) == NIF_OK);
+    CHECK(nif_get_header_info(handle, &header) == NIF_OK);
+    CHECK(header.num_objects == 3);
+    CHECK(header.block_type_count == 2); /* name table, not the block count */
+    CHECK(header.block_type_indices != NULL);
+    CHECK(header.block_type_indices[0] == 0 && header.block_type_indices[1] == 1 &&
+          header.block_type_indices[2] == 1);
+    nif_destroy(handle);
+}
+
 int main(void)
 {
     fixture_pos = 0;
@@ -698,6 +735,7 @@ int main(void)
     check_skin_and_collision_abi();
     check_animation_abi();
     check_nodes_and_header_abi();
+    check_header_counts_abi();
 
     if (failures == 0) {
         printf("nif-ffi C ABI check: all assertions passed\n");
