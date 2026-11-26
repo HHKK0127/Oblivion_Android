@@ -1,0 +1,178 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=38 unknown=11 numGroups=0
+creator=rvargas processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=15
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkCapsuleShape
+  bt[4]=bhkRigidBodyT
+  bt[5]=bhkBoxShape
+  bt[6]=bhkRigidBody
+  bt[7]=bhkRagdollConstraint
+  bt[8]=bhkCollisionObject
+  bt[9]=NiTriStrips
+  bt[10]=NiBinaryExtraData
+  bt[11]=NiMaterialProperty
+  bt[12]=NiTexturingProperty
+  bt[13]=NiSourceTexture
+  bt[14]=NiTriStripsData
+blockTypeIndices=38 hash=a3ed692118245583
+blockDataOffset=470 fileSize=40094
+blockCount=38
+nodes=38
+node[0] name=sign02 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkCapsuleShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkRigidBodyT typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkBoxShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkRigidBody typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkRagdollConstraint typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkCollisionObject typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[13] name= type=bhkCollisionObject typeIdx=8 parent=-1 children=0 hasGeom=0
+node[14] name=sign02_hanging:0 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[14] name=sign02_hanging:0
+geom[14] diffuse=textures/clutter/barset/sign03.dds normal=
+geom[14] verts=123 hash=04c23387d77ba60b
+geom[14] norms=123 hash=183c454235f59ef6
+geom[14] colors=123 hash=d444b6efc8aa0663
+geom[14] texcoords=123 hash=aa661ca69d38c486
+geom[14] tris=218 hash=54379d41f8f098f7
+geom[14] bbox_min=bf8c8ac2 c170001c c19f90f8 bbox_max=3f7ce704 416fffe6 4128525e
+geom[14] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[15] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[20] name=sign02_hanging:2 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[20] name=sign02_hanging:2
+geom[20] diffuse=textures/clutter/barset/metalrusty01.dds normal=
+geom[20] verts=310 hash=7aadc4bb9e2062c6
+geom[20] norms=310 hash=d00f000cf8ca0835
+geom[20] colors=310 hash=85e2705177795395
+geom[20] texcoords=310 hash=6ac920d1a4726f71
+geom[20] tris=517 hash=a753256318cdd6ae
+geom[20] bbox_min=c0341e83 c09a5107 40e3c925 bbox_max=40341e6b 403e23c4 419f910c
+geom[20] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[21] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[26] name=sign02:1 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[26] name=sign02:1
+geom[26] diffuse=textures/clutter/barset/metalbracerusty04.dds normal=
+geom[26] verts=27 hash=7314a5e3a815827a
+geom[26] norms=27 hash=75487d9779d0b03b
+geom[26] colors=27 hash=6abababbb077567f
+geom[26] texcoords=27 hash=3d472f37a4cfacd2
+geom[26] tris=49 hash=4be75f513a2063a0
+geom[26] bbox_min=c0c09bc9 bfcfa572 bfd2e29e bbox_max=c0a3d9e2 3fcfa49d 3fd2e362
+geom[26] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[27] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[32] name=sign02:3 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[32] name=sign02:3
+geom[32] diffuse=textures/clutter/barset/handle01.dds normal=
+geom[32] verts=20 hash=ea8c2393e618e578
+geom[32] norms=20 hash=8e06865623350550
+geom[32] colors=20 hash=9b4b1ba2e387a50d
+geom[32] texcoords=20 hash=43e3c72c3154aa04
+geom[32] tris=18 hash=2000db7d22aad700
+geom[32] bbox_min=c0a96488 bfcfa572 bfd2e29e bbox_max=40c09bde 3fcfa49d 3fd2e362
+geom[32] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[33] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+roots=38
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+getNodeByName(first)=1
+extractAllGeometry=4
+allgeom[0] name=sign02_hanging:0
+allgeom[0] diffuse=textures/clutter/barset/sign03.dds normal=
+allgeom[0] verts=123 hash=04c23387d77ba60b
+allgeom[0] norms=123 hash=183c454235f59ef6
+allgeom[0] colors=123 hash=d444b6efc8aa0663
+allgeom[0] texcoords=123 hash=aa661ca69d38c486
+allgeom[0] tris=218 hash=54379d41f8f098f7
+allgeom[0] bbox_min=bf8c8ac2 c170001c c19f90f8 bbox_max=3f7ce704 416fffe6 4128525e
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=sign02_hanging:2
+allgeom[1] diffuse=textures/clutter/barset/metalrusty01.dds normal=
+allgeom[1] verts=310 hash=7aadc4bb9e2062c6
+allgeom[1] norms=310 hash=d00f000cf8ca0835
+allgeom[1] colors=310 hash=85e2705177795395
+allgeom[1] texcoords=310 hash=6ac920d1a4726f71
+allgeom[1] tris=517 hash=a753256318cdd6ae
+allgeom[1] bbox_min=c0341e83 c09a5107 40e3c925 bbox_max=40341e6b 403e23c4 419f910c
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=sign02:1
+allgeom[2] diffuse=textures/clutter/barset/metalbracerusty04.dds normal=
+allgeom[2] verts=27 hash=7314a5e3a815827a
+allgeom[2] norms=27 hash=75487d9779d0b03b
+allgeom[2] colors=27 hash=6abababbb077567f
+allgeom[2] texcoords=27 hash=3d472f37a4cfacd2
+allgeom[2] tris=49 hash=4be75f513a2063a0
+allgeom[2] bbox_min=c0c09bc9 bfcfa572 bfd2e29e bbox_max=c0a3d9e2 3fcfa49d 3fd2e362
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[3] name=sign02:3
+allgeom[3] diffuse=textures/clutter/barset/handle01.dds normal=
+allgeom[3] verts=20 hash=ea8c2393e618e578
+allgeom[3] norms=20 hash=8e06865623350550
+allgeom[3] colors=20 hash=9b4b1ba2e387a50d
+allgeom[3] texcoords=20 hash=43e3c72c3154aa04
+allgeom[3] tris=18 hash=2000db7d22aad700
+allgeom[3] bbox_min=c0a96488 bfcfa572 bfd2e29e bbox_max=40c09bde 3fcfa49d 3fd2e362
+allgeom[3] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

@@ -1,0 +1,140 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=28 unknown=11 numGroups=0
+creator=rsears processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=15
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkCapsuleShape
+  bt[4]=bhkBoxShape
+  bt[5]=bhkConvexTransformShape
+  bt[6]=bhkListShape
+  bt[7]=bhkRigidBody
+  bt[8]=bhkCollisionObject
+  bt[9]=NiTriStrips
+  bt[10]=NiBinaryExtraData
+  bt[11]=NiMaterialProperty
+  bt[12]=NiTexturingProperty
+  bt[13]=NiSourceTexture
+  bt[14]=NiTriStripsData
+blockTypeIndices=28 hash=8e968256c98656af
+blockDataOffset=451 fileSize=22374
+blockCount=28
+nodes=28
+node[0] name=ClothBolt04 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkCapsuleShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkCapsuleShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkBoxShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkConvexTransformShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkListShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkRigidBody typeIdx=7 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkCollisionObject typeIdx=8 parent=-1 children=0 hasGeom=0
+node[10] name=ClothBolt04:10 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[10] name=ClothBolt04:10
+geom[10] diffuse=textures/architecture/cathedral/CathedralLightMetal01.dds normal=
+geom[10] verts=178 hash=cabdce2faf6b4b81
+geom[10] norms=178 hash=28cfac1a711c78d5
+geom[10] colors=0 hash=14650fb0739d0383
+geom[10] texcoords=178 hash=84b6b025f5e1e721
+geom[10] tris=241 hash=90db74368bccbd53
+geom[10] bbox_min=c213378f bf6d07a0 405933d0 bbox_max=42133923 40398398 40ecdce3
+geom[10] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[11] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[16] name=ClothBolt04:19 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[16] name=ClothBolt04:19
+geom[16] diffuse=textures/clutter/ClothBolt04.dds normal=
+geom[16] verts=118 hash=8a652c6c58195b70
+geom[16] norms=118 hash=4c7cac6969ccfb24
+geom[16] colors=0 hash=14650fb0739d0383
+geom[16] texcoords=118 hash=97292bb9cc6b5e5b
+geom[16] tris=217 hash=8ddd41af6fca806f
+geom[16] bbox_min=c1f69847 c0b127ff bdb9e014 bbox_max=41f35ef8 40cdbf37 412f0e87
+geom[16] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[17] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[22] name=ClothBolt04:20 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[22] name=ClothBolt04:20
+geom[22] diffuse=textures/clutter/ClothBoltEnd04.dds normal=
+geom[22] verts=38 hash=61a499260382939e
+geom[22] norms=38 hash=640cf6cd7ccbbb90
+geom[22] colors=0 hash=14650fb0739d0383
+geom[22] texcoords=38 hash=caf68bd358518fff
+geom[22] tris=74 hash=19a9849f67b965c8
+geom[22] bbox_min=c1f69847 c07435f8 3f0c17f8 bbox_max=41f35ef8 40b9940f 4124d53d
+geom[22] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[23] name= type=NiBinaryExtraData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiMaterialProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+roots=28
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+getNodeByName(first)=1
+extractAllGeometry=3
+allgeom[0] name=ClothBolt04:10
+allgeom[0] diffuse=textures/architecture/cathedral/CathedralLightMetal01.dds normal=
+allgeom[0] verts=178 hash=cabdce2faf6b4b81
+allgeom[0] norms=178 hash=28cfac1a711c78d5
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=178 hash=84b6b025f5e1e721
+allgeom[0] tris=241 hash=90db74368bccbd53
+allgeom[0] bbox_min=c213378f bf6d07a0 405933d0 bbox_max=42133923 40398398 40ecdce3
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=ClothBolt04:19
+allgeom[1] diffuse=textures/clutter/ClothBolt04.dds normal=
+allgeom[1] verts=118 hash=8a652c6c58195b70
+allgeom[1] norms=118 hash=4c7cac6969ccfb24
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=118 hash=97292bb9cc6b5e5b
+allgeom[1] tris=217 hash=8ddd41af6fca806f
+allgeom[1] bbox_min=c1f69847 c0b127ff bdb9e014 bbox_max=41f35ef8 40cdbf37 412f0e87
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=ClothBolt04:20
+allgeom[2] diffuse=textures/clutter/ClothBoltEnd04.dds normal=
+allgeom[2] verts=38 hash=61a499260382939e
+allgeom[2] norms=38 hash=640cf6cd7ccbbb90
+allgeom[2] colors=0 hash=14650fb0739d0383
+allgeom[2] texcoords=38 hash=caf68bd358518fff
+allgeom[2] tris=74 hash=19a9849f67b965c8
+allgeom[2] bbox_min=c1f69847 c07435f8 3f0c17f8 bbox_max=41f35ef8 40b9940f 4124d53d
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

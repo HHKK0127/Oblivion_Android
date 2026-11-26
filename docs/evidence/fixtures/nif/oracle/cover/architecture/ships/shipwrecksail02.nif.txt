@@ -1,0 +1,127 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=37 unknown=11 numGroups=0
+creator=ccafasso processScript=FlagAndBanner exportScript=Default Export Script
+blockTypes=20
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiTriShape
+  bt[3]=NiBinaryExtraData
+  bt[4]=NiStringExtraData
+  bt[5]=NiTexturingProperty
+  bt[6]=NiSourceTexture
+  bt[7]=NiAlphaProperty
+  bt[8]=NiMaterialProperty
+  bt[9]=NiStencilProperty
+  bt[10]=NiTriShapeData
+  bt[11]=NiSkinInstance
+  bt[12]=NiSkinData
+  bt[13]=NiSkinPartition
+  bt[14]=bhkBoxShape
+  bt[15]=bhkRigidBodyT
+  bt[16]=bhkConvexVerticesShape
+  bt[17]=bhkRigidBody
+  bt[18]=bhkLimitedHingeConstraint
+  bt[19]=bhkCollisionObject
+blockTypeIndices=37 hash=5722e9a663ff69b8
+blockDataOffset=560 fileSize=12259
+blockCount=37
+nodes=37
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name=ShipWreckSail02 type=NiTriShape typeIdx=2 parent=-1 children=0 hasGeom=1
+geom[2] name=ShipWreckSail02
+geom[2] diffuse=textures/architecture/ships/SailRipped01.dds normal=
+geom[2] verts=72 hash=012f1966b33e1119
+geom[2] norms=72 hash=014a398adffbeafb
+geom[2] colors=0 hash=14650fb0739d0383
+geom[2] texcoords=72 hash=82f2ff65a2bfaa5b
+geom[2] tris=112 hash=ea34daea82ab711f
+geom[2] bbox_min=c204273c c08fa70d c30a0000 bbox_max=4204273c 408fa710 430a0000
+geom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=37800000 00000000 00000000 scale=3f800000
+node[3] name= type=NiBinaryExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiTexturingProperty typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiSourceTexture typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiAlphaProperty typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiStencilProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTriShapeData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiSkinInstance typeIdx=11 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiSkinData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiSkinPartition typeIdx=13 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[16] name= type=bhkBoxShape typeIdx=14 parent=-1 children=0 hasGeom=0
+node[17] name= type=bhkRigidBodyT typeIdx=15 parent=-1 children=0 hasGeom=0
+node[18] name= type=bhkBoxShape typeIdx=14 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkRigidBodyT typeIdx=15 parent=-1 children=0 hasGeom=0
+node[20] name= type=bhkBoxShape typeIdx=14 parent=-1 children=0 hasGeom=0
+node[21] name= type=bhkRigidBodyT typeIdx=15 parent=-1 children=0 hasGeom=0
+node[22] name= type=bhkConvexVerticesShape typeIdx=16 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkRigidBody typeIdx=17 parent=-1 children=0 hasGeom=0
+node[24] name= type=bhkLimitedHingeConstraint typeIdx=18 parent=-1 children=0 hasGeom=0
+node[25] name= type=bhkLimitedHingeConstraint typeIdx=18 parent=-1 children=0 hasGeom=0
+node[26] name= type=bhkLimitedHingeConstraint typeIdx=18 parent=-1 children=0 hasGeom=0
+node[27] name= type=bhkCollisionObject typeIdx=19 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[30] name= type=bhkCollisionObject typeIdx=19 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[33] name= type=bhkCollisionObject typeIdx=19 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiStringExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[36] name= type=bhkCollisionObject typeIdx=19 parent=-1 children=0 hasGeom=0
+roots=37
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=ShipWreckSail02
+allgeom[0] diffuse=textures/architecture/ships/SailRipped01.dds normal=
+allgeom[0] verts=72 hash=012f1966b33e1119
+allgeom[0] norms=72 hash=014a398adffbeafb
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=72 hash=82f2ff65a2bfaa5b
+allgeom[0] tris=112 hash=ea34daea82ab711f
+allgeom[0] bbox_min=c204273c c08fa70d c30a0000 bbox_max=4204273c 408fa710 430a0000
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=37800000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=0
+blockTypeName(0)=NiNode

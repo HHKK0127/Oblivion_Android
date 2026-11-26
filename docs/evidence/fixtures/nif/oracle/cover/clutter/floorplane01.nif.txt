@@ -1,0 +1,66 @@
+parse=1
+magic=NetImmerse File Format, Version 10.0.1.0
+version=0x0A000100 endian=0 hasEndianByte=0 legacyNetImmerse=1 hasBlockTypeTable=1
+userVersion=0 numObjects=11 unknown=0 numGroups=0
+creator= processScript= exportScript=
+blockTypes=11
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=bhkBoxShape
+  bt[3]=bhkRigidBodyT
+  bt[4]=bhkCollisionObject
+  bt[5]=NiTriStrips
+  bt[6]=NiBinaryExtraData
+  bt[7]=NiMaterialProperty
+  bt[8]=NiTexturingProperty
+  bt[9]=NiSourceTexture
+  bt[10]=NiTriStripsData
+blockTypeIndices=11 hash=2c24ad59aa8be890
+blockDataOffset=272 fileSize=1289
+blockCount=11
+nodes=11
+node[0] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkRigidBodyT typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkCollisionObject typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name=Plane01:0 type=NiTriStrips typeIdx=5 parent=-1 children=0 hasGeom=1
+geom[5] name=Plane01:0
+geom[5] diffuse=textures/wood/Woodfloor03.dds normal=
+geom[5] verts=4 hash=f5b39fec380c3783
+geom[5] norms=4 hash=210c0af2f6141133
+geom[5] colors=0 hash=14650fb0739d0383
+geom[5] texcoords=4 hash=43b46f201cb2d363
+geom[5] tris=2 hash=c5aa7c17c29ffe90
+geom[5] bbox_min=c3000000 c3000000 00000000 bbox_max=43000000 43000000 00000000
+geom[5] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[6] name= type=NiBinaryExtraData typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiMaterialProperty typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiTexturingProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiSourceTexture typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTriStripsData typeIdx=10 parent=-1 children=0 hasGeom=0
+roots=11
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=Plane01:0
+allgeom[0] diffuse=textures/wood/Woodfloor03.dds normal=
+allgeom[0] verts=4 hash=f5b39fec380c3783
+allgeom[0] norms=4 hash=210c0af2f6141133
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=4 hash=43b46f201cb2d363
+allgeom[0] tris=2 hash=c5aa7c17c29ffe90
+allgeom[0] bbox_min=c3000000 c3000000 00000000 bbox_max=43000000 43000000 00000000
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

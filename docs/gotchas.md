@@ -102,3 +102,15 @@ AGENTS.md の Learnings（振る舞い）とは別。ここは**ドメイン知�
 - **正しい手順**: float は IEEE-754 の生ビット（`%08x`）で出す（`tools/nif_oracle/dump.cpp`
   の `f32()`）。
 - **確認方法**: Linux CI（`nif-oracle` ジョブ）で 27/27。
+
+## 9. PowerShell の `Select-Object -First` は `$LASTEXITCODE` を壊す
+
+- **症状**: `python script.py 2>&1 | Select-Object -First 3` の後で `$LASTEXITCODE` を
+  見ると 0 になる。スクリプトが赤（exit 2）を出していても緑と誤読する。
+- **原因**: `-First N` は N 個読んだ時点で上流パイプラインを早期終了させる。native プロセス
+  が終了前に切られるため、`$LASTEXITCODE` が正しく設定されない（`-Last N` は最後まで
+  読むので壊れない）。
+- **正しい手順**: 終了コードを見るときは切り捨てない。`python script.py > out.txt 2>&1;
+  $LASTEXITCODE` として出力はファイルから読む。どうしても切りたいなら `-Last N` を使う。
+- **確認方法**: わざと落ちる入力（期待値ダンプを 1 バイト壊す）で `$LASTEXITCODE` が 2 に
+  なること。0 なら計測器を疑う。

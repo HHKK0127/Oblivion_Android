@@ -9,10 +9,14 @@
 - markers（meshes 直下 = editor/marker 27 本）は必ず含める。NiWireframeProperty の
   唯一の供給源で、meshes_extracted が落としていた分そのもの。被覆計算には混ぜない。
 - 評価関数は「新規型数 / sqrt(バイト数)」。1 ファイル上限・総量上限で打ち切る。
+- --add は型被覆の貪欲集合とは別に、**レイアウト被覆用**の固定集合を cover/ に加える
+  （衝突形状の署名多様性で選ぶ。同一署名 20 本ではレイアウトも型も増えない）。
+  manifest では貪欲分とレイアウト分を別セクションに分ける。
 
 使い方:
   python scripts/nif_fixture_select.py --corpus tools/BSAFileExtractor/extracted/meshes \
-      --manifest docs/evidence/fixtures/nif/manifest.txt --copy-to docs/evidence/fixtures/nif
+      --manifest docs/evidence/fixtures/nif/manifest.txt --copy-to docs/evidence/fixtures/nif \
+      --add scripts/data/nif_layout_add.txt
 """
 import argparse
 import math
@@ -52,6 +56,8 @@ def main():
     ap.add_argument("--limit-bytes", type=int, default=2 * 1024 * 1024)
     ap.add_argument("--supply-map", default=None,
                     help="型 -> 供給ファイルの対応を別ファイルにも書き出す")
+    ap.add_argument("--add", default=None, metavar="LISTFILE",
+                    help="レイアウト被覆用に固定で加える B 相対パスのリスト（# コメント可）")
     args = ap.parse_args()
 
     info = scan(args.corpus)
@@ -101,10 +107,30 @@ def main():
         covered |= info[rel][0]
         total_bytes += info[rel][1]
 
-    cover = sorted(r for r in set(selected) if r not in markers)
+    greedy_cover = sorted(r for r in set(selected) if r not in markers)
     markers = sorted(markers)
-    print("selected=%d (markers=%d cover=%d) bytes=%d covered=%d/%d"
+
+    # レイアウト被覆用の固定集合。型被覆の貪欲集合とは選定基準が違う（署名多様性）。
+    # 型は増えない（増えてもよい）が、同じ型の異なるレイアウトを読めるかを見る。
+    # 貪欲が既に選んだ分は layout から外す（manifest の重複表示を防ぐ）。
+    layout = []
+    if args.add:
+        with open(args.add, encoding="utf-8") as f:
+            for line in f:
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                rel = line.replace("\\", "/")
+                if rel not in info:
+                    sys.exit("--add のパスがコーパスに無い: %s" % rel)
+                if rel not in markers and rel not in greedy_cover:
+                    layout.append(rel)
+        layout = sorted(set(layout))
+    cover = sorted(set(greedy_cover) | set(layout))
+
+    print("selected=%d (markers=%d cover=%d greedy=%d layout=%d) bytes=%d covered=%d/%d"
           % (len(markers) + len(cover), len(markers), len(cover),
+             len(greedy_cover), len(layout),
              total_bytes, len(covered), len(all_types)))
 
     # fixture 内の相対パス（markers/ と cover/ を分ける）
@@ -136,8 +162,11 @@ def main():
         f.write("# markers（meshes 直下・必ず含める / NiWireframeProperty の供給源）:\n")
         for r in markers:
             f.write("markers/%s\n" % r)
-        f.write("# cover（貪欲被覆。markers と役割が違うので分ける）:\n")
-        for r in cover:
+        f.write("# cover（型被覆。貪欲法で選んだ最小集合。markers と役割が違う）:\n")
+        for r in greedy_cover:
+            f.write("cover/%s\n" % r)
+        f.write("# cover（レイアウト被覆。衝突形状の署名多様性で選んだ固定集合。--add 由来）:\n")
+        for r in layout:
             f.write("cover/%s\n" % r)
         f.write("\n")
         for line in supply_lines():

@@ -1,0 +1,141 @@
+parse=1
+magic=Gamebryo File Format, Version 10.2.0.0
+version=0x0A020000 endian=0 hasEndianByte=0 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=10 numObjects=28 unknown=7 numGroups=0
+creator=ipely processScript=Default Process Script exportScript=Default Export Script
+blockTypes=16
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=BSFurnitureMarker
+  bt[3]=NiStringExtraData
+  bt[4]=bhkBoxShape
+  bt[5]=bhkConvexTransformShape
+  bt[6]=bhkListShape
+  bt[7]=bhkRigidBodyT
+  bt[8]=bhkCollisionObject
+  bt[9]=NiTriStrips
+  bt[10]=NiMaterialProperty
+  bt[11]=NiVertexColorProperty
+  bt[12]=NiTexturingProperty
+  bt[13]=NiSourceTexture
+  bt[14]=NiTriStripsData
+  bt[15]=NiAlphaProperty
+blockTypeIndices=28 hash=c1fe540c70c1efea
+blockDataOffset=474 fileSize=10474
+blockCount=28
+nodes=28
+node[0] name=ShrineSacrificeAltarTagged01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=BSFurnitureMarker typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkBoxShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkConvexTransformShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkBoxShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkConvexTransformShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkListShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkRigidBodyT typeIdx=7 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkCollisionObject typeIdx=8 parent=-1 children=0 hasGeom=0
+node[11] name=ShrineSacrificeAltarTagged01:0 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[11] name=ShrineSacrificeAltarTagged01:0
+geom[11] diffuse=textures/dungeons/misc/ShrineStone01.dds normal=
+geom[11] verts=38 hash=f05173278cca9872
+geom[11] norms=38 hash=3571cc3d1f7e7f14
+geom[11] colors=38 hash=57f2bde227d3562a
+geom[11] texcoords=38 hash=6f1e871aafc80f45
+geom[11] tris=62 hash=f19be3d8f0ff1df0
+geom[11] bbox_min=c20ff160 c2a3b320 3eb610ac bbox_max=420ff160 42a3b320 4158d23a
+geom[11] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[12] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiVertexColorProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[17] name=ShrineSacrificeAltarTagged01:1 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[17] name=ShrineSacrificeAltarTagged01:1
+geom[17] diffuse=textures/dungeons/misc/ShrineStone02.dds normal=
+geom[17] verts=96 hash=6cf3900e117b1bc3
+geom[17] norms=96 hash=f986fd98b9105bdf
+geom[17] colors=96 hash=a59707e69fa98283
+geom[17] texcoords=96 hash=f2e7fd62c01e3da7
+geom[17] tris=195 hash=c343c72368bfb57e
+geom[17] bbox_min=c20ff160 c2a3b320 4158d238 bbox_max=420ff160 42a3b320 422bcc89
+geom[17] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[18] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[22] name=ShrineSacrificeAltarTagged01:2 type=NiTriStrips typeIdx=9 parent=-1 children=0 hasGeom=1
+geom[22] name=ShrineSacrificeAltarTagged01:2
+geom[22] diffuse=textures/dungeons/misc/ShadeFade01.dds normal=
+geom[22] verts=18 hash=a9e2488259ab83ca
+geom[22] norms=18 hash=ea4918ffd9904e33
+geom[22] colors=18 hash=e9224e805fde4723
+geom[22] texcoords=18 hash=2a438b2f83d051a4
+geom[22] tris=16 hash=fed62bad72083893
+geom[22] bbox_min=c225567b c2acb3cb 3eb610ac bbox_max=4225567b 42acc4ab 3eb610ac
+geom[22] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[23] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiAlphaProperty typeIdx=15 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTexturingProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiSourceTexture typeIdx=13 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiTriStripsData typeIdx=14 parent=-1 children=0 hasGeom=0
+roots=28
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+getNodeByName(first)=1
+extractAllGeometry=3
+allgeom[0] name=ShrineSacrificeAltarTagged01:0
+allgeom[0] diffuse=textures/dungeons/misc/ShrineStone01.dds normal=
+allgeom[0] verts=38 hash=f05173278cca9872
+allgeom[0] norms=38 hash=3571cc3d1f7e7f14
+allgeom[0] colors=38 hash=57f2bde227d3562a
+allgeom[0] texcoords=38 hash=6f1e871aafc80f45
+allgeom[0] tris=62 hash=f19be3d8f0ff1df0
+allgeom[0] bbox_min=c20ff160 c2a3b320 3eb610ac bbox_max=420ff160 42a3b320 4158d23a
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=ShrineSacrificeAltarTagged01:1
+allgeom[1] diffuse=textures/dungeons/misc/ShrineStone02.dds normal=
+allgeom[1] verts=96 hash=6cf3900e117b1bc3
+allgeom[1] norms=96 hash=f986fd98b9105bdf
+allgeom[1] colors=96 hash=a59707e69fa98283
+allgeom[1] texcoords=96 hash=f2e7fd62c01e3da7
+allgeom[1] tris=195 hash=c343c72368bfb57e
+allgeom[1] bbox_min=c20ff160 c2a3b320 4158d238 bbox_max=420ff160 42a3b320 422bcc89
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=ShrineSacrificeAltarTagged01:2
+allgeom[2] diffuse=textures/dungeons/misc/ShadeFade01.dds normal=
+allgeom[2] verts=18 hash=a9e2488259ab83ca
+allgeom[2] norms=18 hash=ea4918ffd9904e33
+allgeom[2] colors=18 hash=e9224e805fde4723
+allgeom[2] texcoords=18 hash=2a438b2f83d051a4
+allgeom[2] tris=16 hash=fed62bad72083893
+allgeom[2] bbox_min=c225567b c2acb3cb 3eb610ac bbox_max=4225567b 42acc4ab 3eb610ac
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

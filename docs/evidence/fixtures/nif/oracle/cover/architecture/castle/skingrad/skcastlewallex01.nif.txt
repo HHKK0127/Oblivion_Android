@@ -1,0 +1,238 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=42 unknown=11 numGroups=0
+creator=gstruthers processScript=Default Process Script exportScript=Default Export Script
+blockTypes=13
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkConvexVerticesShape
+  bt[4]=bhkListShape
+  bt[5]=bhkRigidBodyT
+  bt[6]=bhkCollisionObject
+  bt[7]=NiTriStrips
+  bt[8]=NiMaterialProperty
+  bt[9]=NiVertexColorProperty
+  bt[10]=NiTexturingProperty
+  bt[11]=NiSourceTexture
+  bt[12]=NiTriStripsData
+blockTypeIndices=42 hash=dfe6dd98bc4f3e6f
+blockDataOffset=452 fileSize=6132
+blockCount=42
+nodes=42
+node[0] name=SkCastleWallEx01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkConvexVerticesShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkConvexVerticesShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkListShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkRigidBodyT typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkCollisionObject typeIdx=6 parent=-1 children=0 hasGeom=0
+node[8] name=SecretBigger41 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[8] name=SecretBigger41
+geom[8] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+geom[8] verts=3 hash=93d7d891ba8176c4
+geom[8] norms=3 hash=d0bd5435cefd1098
+geom[8] colors=3 hash=e61b9d1d10cdca65
+geom[8] texcoords=3 hash=4d2779da44326655
+geom[8] tris=1 hash=c1928e536dc49748
+geom[8] bbox_min=c13c1220 c142f930 c03d8f00 bbox_max=413c1240 4142f930 403d8e80
+geom[8] transform rot=[3f800000 00000000 00000000 00000000 3f800000 359777a6 00000000 b59777a6 3f800000 ] trans=4096d500 c11daa00 c513dcb1 scale=3f800000
+node[9] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiVertexColorProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[15] name=SkCastleWallEx01:0 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[15] name=SkCastleWallEx01:0
+geom[15] diffuse=textures/architecture/castle/CastleDoor01.dds normal=
+geom[15] verts=4 hash=cb48acbb6eb817df
+geom[15] norms=4 hash=9872fe856f7c514b
+geom[15] colors=4 hash=008e86eede302803
+geom[15] texcoords=4 hash=5a35d217fcd5c997
+geom[15] tris=2 hash=c5aa7c17c29ffe90
+geom[15] bbox_min=c09a522c c304b720 43be7c14 bbox_max=40a4af9e 4304f580 43bf2ce3
+geom[15] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[16] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[20] name=SkCastleWallEx01:7 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[20] name=SkCastleWallEx01:7
+geom[20] diffuse=textures/architecture/castle/CastleStrip02.dds normal=
+geom[20] verts=8 hash=31323933581dfcef
+geom[20] norms=8 hash=bab4e304da7bb657
+geom[20] colors=8 hash=41ae475de14ea883
+geom[20] texcoords=8 hash=7c9e6444b50ba61f
+geom[20] tris=7 hash=382fd5ed8651ca55
+geom[20] bbox_min=b7100000 c3000000 43b73eba bbox_max=4112d604 43000000 43c00000
+geom[20] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[21] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[25] name=SkCastleWallEx01:9 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[25] name=SkCastleWallEx01:9
+geom[25] diffuse=textures/architecture/castle/CastleStone01.dds normal=
+geom[25] verts=4 hash=bec55ebb4f562b2f
+geom[25] norms=4 hash=c09249d88676b00d
+geom[25] colors=4 hash=c9ac5dfc2b206203
+geom[25] texcoords=4 hash=53b5d59b3c7cf69f
+geom[25] tris=2 hash=c5aa7c17c29ffe90
+geom[25] bbox_min=425c8445 c3000000 c3a0e5cf bbox_max=42800000 43000000 c30b3a56
+geom[25] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[26] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[30] name=SkCastleWallEx01:12 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[30] name=SkCastleWallEx01:12
+geom[30] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+geom[30] verts=4 hash=8b3011a340406007
+geom[30] norms=4 hash=5822f3aa2b14e22e
+geom[30] colors=4 hash=c9ac5dfc2b206203
+geom[30] texcoords=4 hash=e844910d1ab7070a
+geom[30] tris=2 hash=c5aa7c17c29ffe90
+geom[30] bbox_min=4131958c c3000000 c2d9d1ad bbox_max=4200cf6c 43000000 42f4b143
+geom[30] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[31] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[32] name=SkCastleWallEx01:14 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[32] name=SkCastleWallEx01:14
+geom[32] diffuse=textures/architecture/castle/CastleCrenels03.dds normal=
+geom[32] verts=10 hash=128cd44517f3da23
+geom[32] norms=10 hash=9bc850f9dea2644b
+geom[32] colors=10 hash=da923b37f582efc3
+geom[32] texcoords=10 hash=48bd35da29c6aaec
+geom[32] tris=11 hash=d53bb3c63a4bf9b3
+geom[32] bbox_min=4200cf6c c3000000 c30b3a56 bbox_max=42701d57 43000000 c2d9d1ad
+geom[32] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[33] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+node[37] name=SkCastleWallEx01:23 type=NiTriStrips typeIdx=7 parent=-1 children=0 hasGeom=1
+geom[37] name=SkCastleWallEx01:23
+geom[37] diffuse=textures/architecture/castle/CastleWall04.dds normal=
+geom[37] verts=12 hash=78ee37bf3975129c
+geom[37] norms=12 hash=f274e15176e4bd7e
+geom[37] colors=12 hash=03ad00d39546cd03
+geom[37] texcoords=12 hash=b9f15340294c2320
+geom[37] tris=14 hash=771789b75cec1370
+geom[37] bbox_min=c2800001 c304b721 c3a3040d bbox_max=41c79d08 4304f580 43c00000
+geom[37] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[38] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+roots=42
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+getNodeByName(first)=1
+extractAllGeometry=7
+allgeom[0] name=SecretBigger41
+allgeom[0] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+allgeom[0] verts=3 hash=93d7d891ba8176c4
+allgeom[0] norms=3 hash=d0bd5435cefd1098
+allgeom[0] colors=3 hash=e61b9d1d10cdca65
+allgeom[0] texcoords=3 hash=4d2779da44326655
+allgeom[0] tris=1 hash=c1928e536dc49748
+allgeom[0] bbox_min=c13c1220 c142f930 c03d8f00 bbox_max=413c1240 4142f930 403d8e80
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 359777a6 00000000 b59777a6 3f800000 ] trans=4096d500 c11daa00 c513dcb1 scale=3f800000
+allgeom[1] name=SkCastleWallEx01:0
+allgeom[1] diffuse=textures/architecture/castle/CastleDoor01.dds normal=
+allgeom[1] verts=4 hash=cb48acbb6eb817df
+allgeom[1] norms=4 hash=9872fe856f7c514b
+allgeom[1] colors=4 hash=008e86eede302803
+allgeom[1] texcoords=4 hash=5a35d217fcd5c997
+allgeom[1] tris=2 hash=c5aa7c17c29ffe90
+allgeom[1] bbox_min=c09a522c c304b720 43be7c14 bbox_max=40a4af9e 4304f580 43bf2ce3
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=SkCastleWallEx01:7
+allgeom[2] diffuse=textures/architecture/castle/CastleStrip02.dds normal=
+allgeom[2] verts=8 hash=31323933581dfcef
+allgeom[2] norms=8 hash=bab4e304da7bb657
+allgeom[2] colors=8 hash=41ae475de14ea883
+allgeom[2] texcoords=8 hash=7c9e6444b50ba61f
+allgeom[2] tris=7 hash=382fd5ed8651ca55
+allgeom[2] bbox_min=b7100000 c3000000 43b73eba bbox_max=4112d604 43000000 43c00000
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[3] name=SkCastleWallEx01:9
+allgeom[3] diffuse=textures/architecture/castle/CastleStone01.dds normal=
+allgeom[3] verts=4 hash=bec55ebb4f562b2f
+allgeom[3] norms=4 hash=c09249d88676b00d
+allgeom[3] colors=4 hash=c9ac5dfc2b206203
+allgeom[3] texcoords=4 hash=53b5d59b3c7cf69f
+allgeom[3] tris=2 hash=c5aa7c17c29ffe90
+allgeom[3] bbox_min=425c8445 c3000000 c3a0e5cf bbox_max=42800000 43000000 c30b3a56
+allgeom[3] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[4] name=SkCastleWallEx01:12
+allgeom[4] diffuse=textures/architecture/castle/CastleWall02.dds normal=
+allgeom[4] verts=4 hash=8b3011a340406007
+allgeom[4] norms=4 hash=5822f3aa2b14e22e
+allgeom[4] colors=4 hash=c9ac5dfc2b206203
+allgeom[4] texcoords=4 hash=e844910d1ab7070a
+allgeom[4] tris=2 hash=c5aa7c17c29ffe90
+allgeom[4] bbox_min=4131958c c3000000 c2d9d1ad bbox_max=4200cf6c 43000000 42f4b143
+allgeom[4] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[5] name=SkCastleWallEx01:14
+allgeom[5] diffuse=textures/architecture/castle/CastleCrenels03.dds normal=
+allgeom[5] verts=10 hash=128cd44517f3da23
+allgeom[5] norms=10 hash=9bc850f9dea2644b
+allgeom[5] colors=10 hash=da923b37f582efc3
+allgeom[5] texcoords=10 hash=48bd35da29c6aaec
+allgeom[5] tris=11 hash=d53bb3c63a4bf9b3
+allgeom[5] bbox_min=4200cf6c c3000000 c30b3a56 bbox_max=42701d57 43000000 c2d9d1ad
+allgeom[5] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[6] name=SkCastleWallEx01:23
+allgeom[6] diffuse=textures/architecture/castle/CastleWall04.dds normal=
+allgeom[6] verts=12 hash=78ee37bf3975129c
+allgeom[6] norms=12 hash=f274e15176e4bd7e
+allgeom[6] colors=12 hash=03ad00d39546cd03
+allgeom[6] texcoords=12 hash=b9f15340294c2320
+allgeom[6] tris=14 hash=771789b75cec1370
+allgeom[6] bbox_min=c2800001 c304b721 c3a3040d bbox_max=41c79d08 4304f580 43c00000
+allgeom[6] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

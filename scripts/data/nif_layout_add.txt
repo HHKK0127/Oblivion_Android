@@ -1,0 +1,26 @@
+# レイアウト被覆用の追加 NIF（B 相対パス）。nif_fixture_select.py --add で固定投入する。
+#
+# cover/ の型被覆用 greedy 集合とは選定基準が違う: こちらは「衝突形状の署名が異なる」
+# 代表を 1 つずつ選ぶ（同一署名 20 本ではレイアウトも型も増えない）。型は増えない
+# （衝突系の型は既に corpus 119 に居ることを実測済み）。
+# このファイルは scripts/nif_layout_select.py が生成する（手で編集しない）。
+dungeons/chargen/idpitflr4way01a.nif
+dungeons/misc/palepassicelayer.nif
+clutter/floorplane01.nif
+clutter/soulgemblack.nif
+clutter/clothbolt04.nif
+clutter/candlefat01.nif
+dungeons/misc/shrinesacrificealtartagged01.nif
+dungeons/ayleidruins/interior/arfloorsmasher01.nif
+architecture/castle/skingrad/skcastlewallex01.nif
+clutter/sign02.nif
+clutter/books/wantedposter01.nif
+clutter/middleclass/middlebowlred01.nif
+clutter/gems/pearlflawed.nif
+architecture/ships/shipwrecksail02.nif
+dungeons/misc/mdtapestryskinned01.nif
+dungeons/caves/cdoor03.nif
+dungeons/ayleidruins/interior/traps/argastrapgrate01.nif
+dungeons/ayleidruins/interior/traps/artrapspikepit01.nif
+dungeons/caves/triggers/ctrigpressureplate01.nif
+clutter/fightersguild/chaindoll02.nif

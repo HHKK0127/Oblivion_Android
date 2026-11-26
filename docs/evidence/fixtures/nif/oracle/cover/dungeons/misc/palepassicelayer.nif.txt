@@ -1,0 +1,72 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=13 unknown=11 numGroups=0
+creator=fward processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=13
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkConvexVerticesShape
+  bt[4]=bhkRigidBody
+  bt[5]=bhkCollisionObject
+  bt[6]=NiTriStrips
+  bt[7]=NiBinaryExtraData
+  bt[8]=NiMaterialProperty
+  bt[9]=NiAlphaProperty
+  bt[10]=NiTexturingProperty
+  bt[11]=NiSourceTexture
+  bt[12]=NiTriStripsData
+blockTypeIndices=13 hash=b41d88fb924a39b7
+blockDataOffset=388 fileSize=1904
+blockCount=13
+nodes=13
+node[0] name=IcePad type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkConvexVerticesShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkRigidBody typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkCollisionObject typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name=IcePad:0 type=NiTriStrips typeIdx=6 parent=-1 children=0 hasGeom=1
+geom[6] name=IcePad:0
+geom[6] diffuse=textures/dungeons/misc/PalePassIce04.dds normal=
+geom[6] verts=4 hash=620ad17152c45e43
+geom[6] norms=4 hash=88f4489ce67a73e3
+geom[6] colors=0 hash=14650fb0739d0383
+geom[6] texcoords=4 hash=dca49d245bffb063
+geom[6] tris=2 hash=c5aa7c17c29ffe90
+geom[6] bbox_min=c3c80000 c3c80000 00000000 bbox_max=43c80000 43c80000 00000000
+geom[6] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[7] name= type=NiBinaryExtraData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiMaterialProperty typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiAlphaProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTexturingProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiSourceTexture typeIdx=11 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiTriStripsData typeIdx=12 parent=-1 children=0 hasGeom=0
+roots=13
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=IcePad:0
+allgeom[0] diffuse=textures/dungeons/misc/PalePassIce04.dds normal=
+allgeom[0] verts=4 hash=620ad17152c45e43
+allgeom[0] norms=4 hash=88f4489ce67a73e3
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=4 hash=dca49d245bffb063
+allgeom[0] tris=2 hash=c5aa7c17c29ffe90
+allgeom[0] bbox_min=c3c80000 c3c80000 00000000 bbox_max=43c80000 43c80000 00000000
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

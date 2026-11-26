@@ -1,0 +1,363 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=89 unknown=11 numGroups=0
+creator=ipely processScript=TriStrip Process Script exportScript=Anim Export Script
+blockTypes=44
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=NiControllerManager
+  bt[4]=NiMultiTargetTransformController
+  bt[5]=NiControllerSequence
+  bt[6]=NiTransformInterpolator
+  bt[7]=NiStringPalette
+  bt[8]=NiFloatInterpolator
+  bt[9]=NiPSysEmitterCtlr
+  bt[10]=NiPSysUpdateCtlr
+  bt[11]=NiBlendFloatInterpolator
+  bt[12]=NiBlendBoolInterpolator
+  bt[13]=NiBoolInterpolator
+  bt[14]=NiBoolData
+  bt[15]=NiTextKeyExtraData
+  bt[16]=NiDefaultAVObjectPalette
+  bt[17]=NiTriStripsData
+  bt[18]=bhkNiTriStripsShape
+  bt[19]=bhkMoppBvTreeShape
+  bt[20]=bhkRigidBody
+  bt[21]=bhkCollisionObject
+  bt[22]=NiZBufferProperty
+  bt[23]=NiParticleSystem
+  bt[24]=NiTexturingProperty
+  bt[25]=NiSourceTexture
+  bt[26]=NiAlphaProperty
+  bt[27]=NiVertexColorProperty
+  bt[28]=NiMaterialProperty
+  bt[29]=NiPSysData
+  bt[30]=NiPSysAgeDeathModifier
+  bt[31]=NiPSysBoxEmitter
+  bt[32]=NiPSysSpawnModifier
+  bt[33]=NiPSysGrowFadeModifier
+  bt[34]=NiPSysColorModifier
+  bt[35]=NiColorData
+  bt[36]=NiPSysGravityModifier
+  bt[37]=NiPSysPositionModifier
+  bt[38]=NiPSysBoundUpdateModifier
+  bt[39]=NiTriStrips
+  bt[40]=bhkConvexVerticesShape
+  bt[41]=bhkSimpleShapePhantom
+  bt[42]=bhkSPCollisionObject
+  bt[43]=NiBinaryExtraData
+blockTypeIndices=89 hash=85a07889ec34cb03
+blockDataOffset=1258 fileSize=31624
+blockCount=89
+nodes=89
+node[0] name=ARGasTrapGrate01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiControllerManager typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiMultiTargetTransformController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiControllerSequence typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiStringPalette typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiFloatInterpolator typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiPSysEmitterCtlr typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiPSysUpdateCtlr typeIdx=10 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiBlendFloatInterpolator typeIdx=11 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiBlendBoolInterpolator typeIdx=12 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiBoolInterpolator typeIdx=13 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiBoolData typeIdx=14 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTextKeyExtraData typeIdx=15 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiDefaultAVObjectPalette typeIdx=16 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[20] name= type=bhkNiTriStripsShape typeIdx=18 parent=-1 children=0 hasGeom=0
+node[21] name= type=bhkMoppBvTreeShape typeIdx=19 parent=-1 children=0 hasGeom=0
+node[22] name= type=bhkRigidBody typeIdx=20 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkCollisionObject typeIdx=21 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiZBufferProperty typeIdx=22 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiParticleSystem typeIdx=23 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiAlphaProperty typeIdx=26 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiVertexColorProperty typeIdx=27 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiPSysData typeIdx=29 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiPSysAgeDeathModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiPSysBoxEmitter typeIdx=31 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiPSysSpawnModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiPSysGrowFadeModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[38] name= type=NiPSysColorModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiColorData typeIdx=35 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiPSysGravityModifier typeIdx=36 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiPSysPositionModifier typeIdx=37 parent=-1 children=0 hasGeom=0
+node[42] name= type=NiPSysBoundUpdateModifier typeIdx=38 parent=-1 children=0 hasGeom=0
+node[43] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[44] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[45] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[46] name=EditorMarker:0 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[46] name=EditorMarker:0
+geom[46] diffuse= normal=
+geom[46] verts=48 hash=203d510d9c6a4f0a
+geom[46] norms=48 hash=c06aa056adb17215
+geom[46] colors=0 hash=14650fb0739d0383
+geom[46] texcoords=0 hash=14650fb0739d0383
+geom[46] tris=80 hash=b1617f9bc2c62fdf
+geom[46] bbox_min=c35a2aa9 c372088a c29e5640 bbox_max=442d75ed 44286944 433cb4c6
+geom[46] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[47] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[51] name= type=bhkConvexVerticesShape typeIdx=40 parent=-1 children=0 hasGeom=0
+node[52] name= type=bhkSimpleShapePhantom typeIdx=41 parent=-1 children=0 hasGeom=0
+node[53] name= type=bhkSPCollisionObject typeIdx=42 parent=-1 children=0 hasGeom=0
+node[54] name=ARGasTrapGrate01:3 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[54] name=ARGasTrapGrate01:3
+geom[54] diffuse=textures/dungeons/ayleidruins/ARWetStone01.dds normal=
+geom[54] verts=12 hash=0a8545d0ac584237
+geom[54] norms=12 hash=1116e3bc0ef4905a
+geom[54] colors=12 hash=d3c7511a32a01203
+geom[54] texcoords=12 hash=5a981b3c42d0123a
+geom[54] tris=14 hash=84fcece81a9b3718
+geom[54] bbox_min=c3441b89 c343c380 41e01c8f bbox_max=4343f849 4343e6f9 423e8fce
+geom[54] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[55] name= type=NiBinaryExtraData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[56] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[59] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[60] name=ARGasTrapGrate01:6 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[60] name=ARGasTrapGrate01:6
+geom[60] diffuse=textures/dungeons/ayleidruins/ARMisc02.dds normal=
+geom[60] verts=30 hash=c652d88d515c597a
+geom[60] norms=30 hash=7921e6597e345df5
+geom[60] colors=30 hash=3240b1bac95a8743
+geom[60] texcoords=30 hash=226dcc89467d878d
+geom[60] tris=41 hash=1f1ff338cc35c7d2
+geom[60] bbox_min=c2b947db c2b8cf2f 41e01c8f bbox_max=42b9015b 42b91688 423e8fce
+geom[60] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[61] name= type=NiBinaryExtraData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[63] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[66] name=ARGasTrapGrate01:7 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[66] name=ARGasTrapGrate01:7
+geom[66] diffuse=textures/dungeons/ayleidruins/ARWall02.dds normal=
+geom[66] verts=36 hash=e875957c4d1d2cdb
+geom[66] norms=36 hash=f75095b8684dcc28
+geom[66] colors=36 hash=34a22e98c507cba3
+geom[66] texcoords=36 hash=7b1081a350b61b5a
+geom[66] tris=59 hash=dd19480626fa2f37
+geom[66] bbox_min=c34f7cd4 c34f21bd 41cbb20e bbox_max=434f5994 434f4535 41f22568
+geom[66] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[67] name= type=NiBinaryExtraData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[68] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[69] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[70] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[71] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[72] name=ARGasTrapGrate01:10 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[72] name=ARGasTrapGrate01:10
+geom[72] diffuse=textures/dungeons/misc/ShadeFade01.dds normal=
+geom[72] verts=26 hash=80bd4331aa2386cb
+geom[72] norms=26 hash=d4952584a6d89a50
+geom[72] colors=26 hash=059a29f11a1aa6e4
+geom[72] texcoords=26 hash=bead3463ea7d4a72
+geom[72] tris=36 hash=19bc27f8c01b9239
+geom[72] bbox_min=c35f8ab4 c35f2b4d 41cb5330 bbox_max=435f6774 435f4ec5 41cbb20e
+geom[72] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[73] name= type=NiBinaryExtraData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[74] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[75] name= type=NiAlphaProperty typeIdx=26 parent=-1 children=0 hasGeom=0
+node[76] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[77] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[78] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[79] name=ARGasTrapGrate01:12 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[79] name=ARGasTrapGrate01:12
+geom[79] diffuse=textures/dungeons/ayleidruins/ARIronWork01.dds normal=
+geom[79] verts=8 hash=07b2b36851699af3
+geom[79] norms=8 hash=5e0e1ee21a38e443
+geom[79] colors=8 hash=09150abb70bbf75b
+geom[79] texcoords=8 hash=32dff0992cde7726
+geom[79] tris=13 hash=627ddafd103cd90c
+geom[79] bbox_min=c2800000 c27fffc4 422fb048 bbox_max=42800000 4280001e 422fb048
+geom[79] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[80] name= type=NiBinaryExtraData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[81] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[82] name= type=NiAlphaProperty typeIdx=26 parent=-1 children=0 hasGeom=0
+node[83] name= type=NiTexturingProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[84] name= type=NiSourceTexture typeIdx=25 parent=-1 children=0 hasGeom=0
+node[85] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+node[86] name=ARGasTrapGrate01:16 type=NiTriStrips typeIdx=39 parent=-1 children=0 hasGeom=1
+geom[86] name=ARGasTrapGrate01:16
+geom[86] diffuse= normal=
+geom[86] verts=4 hash=4fa23b3e9377e76f
+geom[86] norms=4 hash=9445c1ae8e5b36e3
+geom[86] colors=4 hash=008e86eede302803
+geom[86] texcoords=0 hash=14650fb0739d0383
+geom[86] tris=2 hash=c5aa7c17c29ffe90
+geom[86] bbox_min=c2801280 c27f5280 41e01c8f bbox_max=427f9800 427fe100 41e01c8f
+geom[86] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[87] name= type=NiMaterialProperty typeIdx=28 parent=-1 children=0 hasGeom=0
+node[88] name= type=NiTriStripsData typeIdx=17 parent=-1 children=0 hasGeom=0
+roots=89
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+getNodeByName(first)=1
+extractAllGeometry=7
+allgeom[0] name=EditorMarker:0
+allgeom[0] diffuse= normal=
+allgeom[0] verts=48 hash=203d510d9c6a4f0a
+allgeom[0] norms=48 hash=c06aa056adb17215
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=0 hash=14650fb0739d0383
+allgeom[0] tris=80 hash=b1617f9bc2c62fdf
+allgeom[0] bbox_min=c35a2aa9 c372088a c29e5640 bbox_max=442d75ed 44286944 433cb4c6
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=ARGasTrapGrate01:3
+allgeom[1] diffuse=textures/dungeons/ayleidruins/ARWetStone01.dds normal=
+allgeom[1] verts=12 hash=0a8545d0ac584237
+allgeom[1] norms=12 hash=1116e3bc0ef4905a
+allgeom[1] colors=12 hash=d3c7511a32a01203
+allgeom[1] texcoords=12 hash=5a981b3c42d0123a
+allgeom[1] tris=14 hash=84fcece81a9b3718
+allgeom[1] bbox_min=c3441b89 c343c380 41e01c8f bbox_max=4343f849 4343e6f9 423e8fce
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=ARGasTrapGrate01:6
+allgeom[2] diffuse=textures/dungeons/ayleidruins/ARMisc02.dds normal=
+allgeom[2] verts=30 hash=c652d88d515c597a
+allgeom[2] norms=30 hash=7921e6597e345df5
+allgeom[2] colors=30 hash=3240b1bac95a8743
+allgeom[2] texcoords=30 hash=226dcc89467d878d
+allgeom[2] tris=41 hash=1f1ff338cc35c7d2
+allgeom[2] bbox_min=c2b947db c2b8cf2f 41e01c8f bbox_max=42b9015b 42b91688 423e8fce
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[3] name=ARGasTrapGrate01:7
+allgeom[3] diffuse=textures/dungeons/ayleidruins/ARWall02.dds normal=
+allgeom[3] verts=36 hash=e875957c4d1d2cdb
+allgeom[3] norms=36 hash=f75095b8684dcc28
+allgeom[3] colors=36 hash=34a22e98c507cba3
+allgeom[3] texcoords=36 hash=7b1081a350b61b5a
+allgeom[3] tris=59 hash=dd19480626fa2f37
+allgeom[3] bbox_min=c34f7cd4 c34f21bd 41cbb20e bbox_max=434f5994 434f4535 41f22568
+allgeom[3] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[4] name=ARGasTrapGrate01:10
+allgeom[4] diffuse=textures/dungeons/misc/ShadeFade01.dds normal=
+allgeom[4] verts=26 hash=80bd4331aa2386cb
+allgeom[4] norms=26 hash=d4952584a6d89a50
+allgeom[4] colors=26 hash=059a29f11a1aa6e4
+allgeom[4] texcoords=26 hash=bead3463ea7d4a72
+allgeom[4] tris=36 hash=19bc27f8c01b9239
+allgeom[4] bbox_min=c35f8ab4 c35f2b4d 41cb5330 bbox_max=435f6774 435f4ec5 41cbb20e
+allgeom[4] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[5] name=ARGasTrapGrate01:12
+allgeom[5] diffuse=textures/dungeons/ayleidruins/ARIronWork01.dds normal=
+allgeom[5] verts=8 hash=07b2b36851699af3
+allgeom[5] norms=8 hash=5e0e1ee21a38e443
+allgeom[5] colors=8 hash=09150abb70bbf75b
+allgeom[5] texcoords=8 hash=32dff0992cde7726
+allgeom[5] tris=13 hash=627ddafd103cd90c
+allgeom[5] bbox_min=c2800000 c27fffc4 422fb048 bbox_max=42800000 4280001e 422fb048
+allgeom[5] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[6] name=ARGasTrapGrate01:16
+allgeom[6] diffuse= normal=
+allgeom[6] verts=4 hash=4fa23b3e9377e76f
+allgeom[6] norms=4 hash=9445c1ae8e5b36e3
+allgeom[6] colors=4 hash=008e86eede302803
+allgeom[6] texcoords=0 hash=14650fb0739d0383
+allgeom[6] tris=2 hash=c5aa7c17c29ffe90
+allgeom[6] bbox_min=c2801280 c27f5280 41e01c8f bbox_max=427f9800 427fe100 41e01c8f
+allgeom[6] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode
