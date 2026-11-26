@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#191** 【判断待ち・低優先】precheck の CN リストが日本語字 U+636E（「すえる」「すえおき」等で使う字）を誤検出する。CN_CHARS に U+636E が入っており（scripts/precheck.py:37 付近）、日本語文書で正当に使うと既定モードが FAIL、--all の baseline も押し上げる。STATE.md の該当行は allow-cn マーカーで回避済み。候補: (a) U+636E を CN_CHARS から除外し --all baseline を再測（日本語でも使う字のため『簡体字専用』の定義に反する） (b) 現状維持で都度 allow マーカー／言い換え。実測 2026-11-26: この誤検出で #189/#190 の文面を言い換えた。 `#approval` `#precheck` `#tooling`
+
 - [ ] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip`
 
 - [x] **#189** 【判断待ち・中優先】WIP 上限警告（scripts/check_wip_limit.py / android.yml wip-limit ジョブ）の扱いを決める。実測 2026-11-26: 未マージブランチ=33（CI 注記は 18）・open PR=0・上限=3 で warn-only が常時鳴る。候補: (a) 指標を open PR 数へ変更（ただし現在 0 で常に緑＝死んだゲート） (b) 上限を 33 前後へ上げる（実質 no-op） (c) 未マージ枝の棚卸し（close/merge）を先に行い上限を変えずに維持する。policy 値のため人間が決定。 `#approval` `#gate` `#tooling` (2026-11-26)
@@ -3771,4 +3773,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-26 09:33:06
+**ai-todo** | Last Updated: 2026-11-26 09:34:14
