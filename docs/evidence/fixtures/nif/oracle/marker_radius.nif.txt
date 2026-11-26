@@ -1,0 +1,40 @@
+parse=1
+magic=NetImmerse File Format, Version 3.3.0.13
+version=0x0303000D endian=0 hasEndianByte=0 legacyNetImmerse=1 hasBlockTypeTable=0
+userVersion=0 numObjects=3 unknown=0 numGroups=0
+creator= processScript= exportScript=
+blockTypes=3
+  bt[0]=NiTriShape
+  bt[1]=NiMaterialProperty
+  bt[2]=NiTriShapeData
+blockTypeIndices=3 hash=c1928e536dc49748
+blockDataOffset=49 fileSize=1822
+blockCount=3
+nodes=3
+node[0] name=NiTriShape type=NiTriShape typeIdx=0 parent=-1 children=0 hasGeom=1
+geom[0] name=NiTriShape
+geom[0] diffuse= normal=
+geom[0] verts=0 hash=14650fb0739d0383
+geom[0] norms=0 hash=14650fb0739d0383
+geom[0] colors=0 hash=14650fb0739d0383
+geom[0] texcoords=0 hash=14650fb0739d0383
+geom[0] tris=0 hash=14650fb0739d0383
+geom[0] transform rot=[0x1.fbfff8p-128 0x1.a2p-128 0x1.fcp-128 0x0p+0 0x0p+0 0x1p-125 0x1p-125 0x0p+0 0x1p-123 ] trans=-0x1.688p+127 0x1.7efffep-126 -0x1p+127 scale=-0x1p+127
+node[1] name= type=NiMaterialProperty typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiTriShapeData typeIdx=2 parent=-1 children=0 hasGeom=0
+roots=3
+  root[0]=0
+  root[1]=1
+  root[2]=2
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=NiTriShape
+allgeom[0] diffuse= normal=
+allgeom[0] verts=0 hash=14650fb0739d0383
+allgeom[0] norms=0 hash=14650fb0739d0383
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=0 hash=14650fb0739d0383
+allgeom[0] tris=0 hash=14650fb0739d0383
+allgeom[0] transform rot=[0x1.fbfff8p-128 0x1.a2p-128 0x1.fcp-128 0x0p+0 0x0p+0 0x1p-125 0x1p-125 0x0p+0 0x1p-123 ] trans=-0x1.688p+127 0x1.7efffep-126 -0x1p+127 scale=-0x1p+127
+hasNiNode=0 hasNiTriShape=1 hasNiTriStrips=0
+blockTypeName(0)=NiTriShape

@@ -1,0 +1,48 @@
+parse=1
+magic=Gamebryo File Format, Version 10.2.0.0
+version=0x0A020000 endian=0 hasEndianByte=0 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=10 numObjects=5 unknown=9 numGroups=0
+creator=mcarofano processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=5
+  bt[0]=NiNode
+  bt[1]=NiTriStrips
+  bt[2]=NiMaterialProperty
+  bt[3]=NiSpecularProperty
+  bt[4]=NiTriStripsData
+blockTypeIndices=5 hash=9ac45cbc1007521f
+blockDataOffset=218 fileSize=1633
+blockCount=5
+nodes=5
+node[0] name=marker_horse type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name=marker_horse:0 type=NiTriStrips typeIdx=1 parent=-1 children=0 hasGeom=1
+geom[1] name=marker_horse:0
+geom[1] diffuse= normal=
+geom[1] verts=39 hash=c3230eefe031d556
+geom[1] norms=39 hash=7c3bbf329c9a03b0
+geom[1] colors=0 hash=14650fb0739d0383
+geom[1] texcoords=0 hash=14650fb0739d0383
+geom[1] tris=66 hash=9cd2531919df95c2
+geom[1] bbox_min=-0x1.000004p+5 -0x1.e00004p+6 -0x1.4p+6 bbox_max=0x1.fffff8p+4 0x1.dffffcp+6 0x1.3ffffcp+6
+geom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+node[2] name= type=NiMaterialProperty typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiSpecularProperty typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiTriStripsData typeIdx=4 parent=-1 children=0 hasGeom=0
+roots=5
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=marker_horse:0
+allgeom[0] diffuse= normal=
+allgeom[0] verts=39 hash=c3230eefe031d556
+allgeom[0] norms=39 hash=7c3bbf329c9a03b0
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=0 hash=14650fb0739d0383
+allgeom[0] tris=66 hash=9cd2531919df95c2
+allgeom[0] bbox_min=-0x1.000004p+5 -0x1.e00004p+6 -0x1.4p+6 bbox_max=0x1.fffff8p+4 0x1.dffffcp+6 0x1.3ffffcp+6
+allgeom[0] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

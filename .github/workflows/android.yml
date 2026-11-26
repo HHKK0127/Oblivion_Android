@@ -274,6 +274,32 @@ jobs:
             --expect-corpus-types 119 --expect-corpus-files 58 \
             --min-impl 119 --max-missing 0 --max-stray 0
 
+  # 実物 NIF fixture をオラクル（dump_rust）に通し、コミット済み期待値（元 C++ パーサ
+  # dump_orig の出力、docs/evidence/fixtures/nif/oracle/）と 1 バイト比較する。harness は
+  # scripts/build_nif_oracle.sh が tools/nif_oracle/ の driver から作る（ローカルの
+  # out_rust は使わない）。不一致は exit 2。
+  nif-oracle:
+    name: NIF oracle (fixture vs expected dumps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # Rust std は MinGW で zlib を使う経路があるため、ホストビルドに zlib を用意する。
+      - name: Ensure zlib development headers
+        run: sudo apt-get update && sudo apt-get install -y zlib1g-dev
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build the oracle harness
+        run: bash scripts/build_nif_oracle.sh
+
+      - name: Check dump_rust against the committed expected dumps
+        run: python3 scripts/nif_oracle_check.py
+
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較
   # （scripts/compare_golden.py）を通す。2026-11 の停滞の主因は「既定経路の

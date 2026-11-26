@@ -1,0 +1,66 @@
+parse=1
+magic=NetImmerse File Format, Version 10.0.1.0
+version=0x0A000100 endian=0 hasEndianByte=0 legacyNetImmerse=1 hasBlockTypeTable=1
+userVersion=0 numObjects=11 unknown=0 numGroups=0
+creator= processScript= exportScript=
+blockTypes=11
+  bt[0]=NiNode
+  bt[1]=NiZBufferProperty
+  bt[2]=NiVertexColorProperty
+  bt[3]=NiTriShape
+  bt[4]=NiIntegerExtraData
+  bt[5]=NiBooleanExtraData
+  bt[6]=NiAlphaProperty
+  bt[7]=NiTexturingProperty
+  bt[8]=NiSourceTexture
+  bt[9]=NiMaterialProperty
+  bt[10]=NiTriShapeData
+blockTypeIndices=11 hash=2c24ad59aa8be890
+blockDataOffset=292 fileSize=989
+blockCount=11
+nodes=11
+node[0] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=NiZBufferProperty typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiVertexColorProperty typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name=Plane type=NiTriShape typeIdx=3 parent=-1 children=0 hasGeom=1
+geom[3] name=Plane
+geom[3] diffuse=textures/Target.dds normal=
+geom[3] verts=4 hash=0433bf62b0579803
+geom[3] norms=4 hash=559fdd29b636fee3
+geom[3] colors=0 hash=14650fb0739d0383
+geom[3] texcoords=4 hash=43b46f201cb2d363
+geom[3] tris=2 hash=c257a831adf65568
+geom[3] bbox_min=-0x1p+4 -0x1p+4 0x0p+0 bbox_max=0x1p+4 0x1p+4 0x0p+0
+geom[3] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 -0x1p+0 0x0p+0 0x1p+0 0x0p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+node[4] name= type=NiIntegerExtraData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiBooleanExtraData typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiAlphaProperty typeIdx=6 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTexturingProperty typeIdx=7 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiSourceTexture typeIdx=8 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiMaterialProperty typeIdx=9 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiTriShapeData typeIdx=10 parent=-1 children=0 hasGeom=0
+roots=11
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=Plane
+allgeom[0] diffuse=textures/Target.dds normal=
+allgeom[0] verts=4 hash=0433bf62b0579803
+allgeom[0] norms=4 hash=559fdd29b636fee3
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=4 hash=43b46f201cb2d363
+allgeom[0] tris=2 hash=c257a831adf65568
+allgeom[0] bbox_min=-0x1p+4 -0x1p+4 0x0p+0 bbox_max=0x1p+4 0x1p+4 0x0p+0
+allgeom[0] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x0p+0 -0x1p+0 0x0p+0 0x1p+0 0x0p+0 ] trans=0x0p+0 0x0p+0 0x0p+0 scale=0x1p+0
+hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=0
+blockTypeName(0)=NiNode

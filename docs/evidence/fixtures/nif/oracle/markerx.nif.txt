@@ -1,0 +1,72 @@
+parse=1
+magic=Gamebryo File Format, Version 10.2.0.0
+version=0x0A020000 endian=0 hasEndianByte=0 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=10 numObjects=8 unknown=9 numGroups=0
+creator=mcarofano processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=5
+  bt[0]=NiNode
+  bt[1]=NiTriStrips
+  bt[2]=NiMaterialProperty
+  bt[3]=NiAlphaProperty
+  bt[4]=NiTriStripsData
+blockTypeIndices=8 hash=6066c9faa2eb76e8
+blockDataOffset=221 fileSize=2705
+blockCount=8
+nodes=8
+node[0] name=MarkerX type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name=MarkerX:0 type=NiTriStrips typeIdx=1 parent=-1 children=0 hasGeom=1
+geom[1] name=MarkerX:0
+geom[1] diffuse= normal=
+geom[1] verts=60 hash=f793e3361df9d4ae
+geom[1] norms=60 hash=e79223e1e3902ef8
+geom[1] colors=0 hash=14650fb0739d0383
+geom[1] texcoords=0 hash=14650fb0739d0383
+geom[1] tris=87 hash=fd065e0ff6a3c5b0
+geom[1] bbox_min=-0x1.276c8cp+4 0x0p+0 0x0p+0 bbox_max=0x1.276c8cp+4 0x1.34395ap+5 0x1p+4
+geom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 -0x1.483128p+4 0x0p+0 scale=0x1p+0
+node[2] name= type=NiMaterialProperty typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiAlphaProperty typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiTriStripsData typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name=MarkerX:1 type=NiTriStrips typeIdx=1 parent=-1 children=0 hasGeom=1
+geom[5] name=MarkerX:1
+geom[5] diffuse= normal=
+geom[5] verts=12 hash=044ef688f7bba9c6
+geom[5] norms=12 hash=fa7992613fc92023
+geom[5] colors=0 hash=14650fb0739d0383
+geom[5] texcoords=0 hash=14650fb0739d0383
+geom[5] tris=15 hash=eb14f02d446c39d0
+geom[5] bbox_min=-0x1.276c8cp+4 0x0p+0 0x1p+4 bbox_max=0x1.276c8cp+4 0x1.34395ap+5 0x1p+4
+geom[5] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 -0x1.483128p+4 0x0p+0 scale=0x1p+0
+node[6] name= type=NiMaterialProperty typeIdx=2 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTriStripsData typeIdx=4 parent=-1 children=0 hasGeom=0
+roots=8
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+getNodeByName(first)=1
+extractAllGeometry=2
+allgeom[0] name=MarkerX:0
+allgeom[0] diffuse= normal=
+allgeom[0] verts=60 hash=f793e3361df9d4ae
+allgeom[0] norms=60 hash=e79223e1e3902ef8
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=0 hash=14650fb0739d0383
+allgeom[0] tris=87 hash=fd065e0ff6a3c5b0
+allgeom[0] bbox_min=-0x1.276c8cp+4 0x0p+0 0x0p+0 bbox_max=0x1.276c8cp+4 0x1.34395ap+5 0x1p+4
+allgeom[0] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 -0x1.483128p+4 0x0p+0 scale=0x1p+0
+allgeom[1] name=MarkerX:1
+allgeom[1] diffuse= normal=
+allgeom[1] verts=12 hash=044ef688f7bba9c6
+allgeom[1] norms=12 hash=fa7992613fc92023
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=0 hash=14650fb0739d0383
+allgeom[1] tris=15 hash=eb14f02d446c39d0
+allgeom[1] bbox_min=-0x1.276c8cp+4 0x0p+0 0x1p+4 bbox_max=0x1.276c8cp+4 0x1.34395ap+5 0x1p+4
+allgeom[1] transform rot=[0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 0x0p+0 0x0p+0 0x0p+0 0x1p+0 ] trans=0x0p+0 -0x1.483128p+4 0x0p+0 scale=0x1p+0
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

@@ -7,6 +7,11 @@
 #
 # 2026-11-26 実測: tools/BSAFileExtractor/extracted/meshes（8032 files / 119 types）
 # に対して stray 16 種。いずれも walk.rs の match 腕にある。
+#
+# 注意: NiKeyframeController は marker のオラクル（dump_orig）には現れるが、この
+# meshes コーパスには無い。oracle_verified = oracle_types ∩ corpus_types なので、
+# オラクルを marker 27 本まで広げても **20** で、21 にはならない。ローカルの
+# nif_coverage は --min-oracle 20 で凍結する。
 NiBSplineBasisData
 NiBSplineCompFloatInterpolator
 NiBSplineCompPoint3Interpolator

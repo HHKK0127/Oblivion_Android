@@ -63,3 +63,18 @@ python scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
 `--expect-corpus-types` / `--expect-corpus-files` は fixture が痩せた（ファイルが消えた・
 型が減った）ことを検知します。B 全体（8032 files / 119 types）での計測はローカルで
 回し、CI の数字と混ぜないこと。
+
+## オラクル（型被覆だけでなくバイト一致）
+
+`oracle/` は元 C++ パーサ（dump_orig）の出力で、リポジトリに固定した期待値です。
+ローカル専用の `tmp/nif_oracle` を使わずに、`dump_rust` の出力を期待値と 1 バイト比較
+できます:
+
+```
+bash scripts/build_nif_oracle.sh      # harness（dump_rust）を作る
+python scripts/nif_oracle_check.py    # 不一致で exit 2。--update で焼き直し
+```
+
+ローカルの `nif_coverage.py --oracle tmp/nif_oracle` の `--min-oracle` は **20** で凍結
+（`oracle_types` の 1 つ `NiKeyframeController` はこの meshes コーパスに無いため、
+`oracle_types ∩ corpus_types = 20`）。
