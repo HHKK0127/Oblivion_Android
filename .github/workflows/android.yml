@@ -229,19 +229,16 @@ jobs:
   # 分けると「どれが生きていてどれが死んでいるか」が出る。律速は人間の注意と
   # マージ帯域。
   #
-  # 当面は warn-only（`continue-on-error: true` ＋ check_wip_limit.py は既定で exit 0）。
-  # 判定は active（直近 7 日）のみ・上限 5。stale（30 日超）は件数と一覧を常に出す
-  # （黙らせない）。release.yml は「緑の CI」を要求するので、ここを blocking にすると
-  # リリースも止まる。active が上限内に収まったら `continue-on-error` を外し
-  # `--strict` を付けて blocking にする。
+  # 判定は active（直近 7 日）のみの二段しきい値: warn 5 / block 10。warn は警告
+  # のみ（exit 0）、block は exit 1 で止める。stale（30 日超）は件数と一覧を常に
+  # 出す（黙らせない）。active が 5 以下に落ちたら block を 5 へ下げる（ラチェット）。
   #
   # 注意: CI の fresh clone は origin の枝しか見ないため、未 push の WIP は
-  # ここに出ない（ローカル実行で見る）。
+  # ここに出ない（CI の active は 0 になり、block は実質ローカル実行で効く）。
   wip-limit:
     name: WIP limit (unmerged branches)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    continue-on-error: true
 
     steps:
       - name: Checkout
@@ -255,7 +252,7 @@ jobs:
         run: git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
 
       - name: Check unmerged branch count
-        run: python3 scripts/check_wip_limit.py --base origin/master --limit 5 --overlap
+        run: python3 scripts/check_wip_limit.py --base origin/master --limit 5 --block-limit 10 --overlap
 
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較

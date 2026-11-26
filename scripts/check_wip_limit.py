@@ -22,14 +22,20 @@
   3. docs/claims.md があれば、宣言された占有（lane → paths）を表示
   4. open PR 数（gh が使えれば併記のみ。判定には使わない）
 
+判定は active のみの二段しきい値:
+  warn  = --limit（既定 5）: 超えたら警告。既定は exit 0（--strict で exit 1）。
+  block = --block-limit（既定 10）: 超えたら exit 1（作業を止める）。
+  現状 active 9 は warn 帯なので通り、10 本目で止まる。active が 5 以下に落ちたら
+  block を 5 へ下げる（ラチェット）。
+
 終了コード:
-  0 = OK、または警告のみ（既定）
-  1 = active が上限超過かつ --strict
+  0 = OK、または warn のみ
+  1 = active が block 超過（常時）、または warn 超過かつ --strict
 
 使い方:
   python scripts/check_wip_limit.py
   python scripts/check_wip_limit.py --base origin/master --overlap
-  python scripts/check_wip_limit.py --active-days 7 --stale-days 30 --limit 5
+  python scripts/check_wip_limit.py --active-days 7 --stale-days 30 --limit 5 --block-limit 10
 
 注意:
   ローカル専用ブランチ（origin 未 push）はローカル実行でしか見えない。CI の
@@ -46,6 +52,7 @@ from datetime import datetime, timezone
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_LIMIT = 5
+DEFAULT_BLOCK_LIMIT = 10
 DEFAULT_ACTIVE_DAYS = 7
 DEFAULT_STALE_DAYS = 30
 DEFAULT_BASE_CANDIDATES = ("master", "main", "origin/master", "origin/main")
@@ -178,7 +185,9 @@ def main():
     ap = argparse.ArgumentParser(description="未マージブランチの WIP / 滞留チェック")
     ap.add_argument("--base", default=None, help="基準ブランチ（既定: master/main を自動判定）")
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT,
-                    help="active（直近）ブランチの上限（既定 %d）" % DEFAULT_LIMIT)
+                    help="active（直近）ブランチの warn 上限（既定 %d）" % DEFAULT_LIMIT)
+    ap.add_argument("--block-limit", type=int, default=DEFAULT_BLOCK_LIMIT,
+                    help="active の block 上限（超過で exit 1。既定 %d）" % DEFAULT_BLOCK_LIMIT)
     ap.add_argument("--active-days", type=int, default=DEFAULT_ACTIVE_DAYS,
                     help="active とみなす最終コミットからの日数（既定 %d）" % DEFAULT_ACTIVE_DAYS)
     ap.add_argument("--stale-days", type=int, default=DEFAULT_STALE_DAYS,
@@ -212,9 +221,9 @@ def main():
     unknown = sorted([x for x in unmerged if x[2] is None], key=lambda kv: kv[0])
 
     print("check_wip_limit: base=%s / 未マージ=%d / active(<=%dd)=%d / 中間=%d / "
-          "stale(>%dd)=%d / active 上限=%d"
+          "stale(>%dd)=%d / warn=%d block=%d"
           % (base, len(unmerged), args.active_days, len(active),
-             len(middle), args.stale_days, len(stale), args.limit))
+             len(middle), args.stale_days, len(stale), args.limit, args.block_limit))
 
     show_section("active（生きている WIP）", active)
     show_section("中間", middle)
@@ -254,19 +263,22 @@ def main():
                 print("  … 他 %d 組" % (len(pairs) - 10))
             print("  → 同じ機能の二重実装の疑い。docs/claims.md の占有宣言と統合順を確認すること。")
 
-    over = len(active) > args.limit
-    if over:
-        msg = ("WIP 上限超過: active %d 本（上限 %d）。滞留 %d 本。新しい作業を始める前に"
-               "マージするか、閉じるブランチを決めること。"
-               % (len(active), args.limit, len(stale)))
+    n = len(active)
+    if n > args.block_limit:
+        msg = ("WIP 上限超過（block）: active %d 本 > block %d。滞留 %d 本。"
+               "新しい作業を始める前にマージするか、閉じるブランチを決めること。"
+               % (n, args.block_limit, len(stale)))
         print("\n" + msg)
-        # GitHub Actions のアノテーション（あれば PR 画面に出る）。
+        print("::error::" + msg)
+        return 1
+    if n > args.limit:
+        msg = ("WIP 注意（warn）: active %d 本 > warn %d（block %d）。滞留 %d 本。"
+               % (n, args.limit, args.block_limit, len(stale)))
+        print("\n" + msg)
         print("::warning::" + msg)
-        if args.strict:
-            return 1
-    else:
-        print("\nOK: active %d 本（上限 %d 以内）/ stale %d 本"
-              % (len(active), args.limit, len(stale)))
+        return 1 if args.strict else 0
+    print("\nOK: active %d 本（warn %d / block %d 以内）/ stale %d 本"
+          % (n, args.limit, args.block_limit, len(stale)))
     return 0
 
 
