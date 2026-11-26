@@ -15,6 +15,7 @@
 
 - [ ] **#185** 【作製・中優先】NIF オラクルを 100 件・NiNode 以外へ拡張。現状 tmp/nif_oracle は LOD 100 件（NiTriStrips / NiTriStripsData の 2 型のみ）をバイト検証。実コーパスは 119 型（meshes_extracted 118 ∪ tools/BSAFileExtractor 119）。`scripts/nif_coverage.py --oracle tmp/nif_oracle --corpus meshes_extracted` で oracle_verified=2 / unverified=117（98.3%）。未検証を頻度順に出せる（NiNode 7896 / NiMaterialProperty 7871 / NiSourceTexture 7850 / NiTriStripsData 7038 / bhkCollisionObject 6401 …）。オラクルの入力 NIF を meshes_extracted・tools/BSAFileExtractor の NiNode/bhk 系へ広げ、型カバレッジを上げる。RE/解析タスク。実測 2026-11-25。 `#RE` `#coverage` `#nif` `#oracle`
   > 実測 2026-11-26（分母の集計。scripts/nif_coverage.block_types を再利用）: ①.nif 数 = meshes_extracted/meshes 8005 / tools/BSAFileExtractor/extracted/meshes 8032。②相対パス集合 = A ⊂ B（A にしか無い 0 本 / B にしか無い 27 本）。27 本は全て editor/marker 系（editorlandplane, furnituremarker01-04/11-14, marker_arrow/creature/divine/error/horse/light/map/north/prison/radius/sound/temple/travel, markerteleport, markerx, markerxheading, target, targetsafezone）。case-only 差 0。他拡張子は完全一致（.kf 1843/.egm 141/.tri 85/.egt 20/.kfm 2/.fim 1/.txt 1）。③型集合 = A ⊆ B（A 118 / B 119）。B にしか無い型は NiWireframeProperty（8 本、marker 群由来）のみ。④型ごと件数は両コーパスで大半一致（差は marker 27 本に由来）。→ 読み方表の『bsa_types ⊃ meshes_types』に該当し **分母は |B|=119**。27 本は 961B〜27024B の有効 NIF で、意図的フィルタか抽出漏れかは未確認（meshes_extracted の生成方法が未特定）。
+  > 進捗 2026-11-26: ①regex 修正（e31f6583）— HANDLER_RE を本体全体から match 腕パターン（ARM_RE・全深さ・複数行対応）へ。本体リテラル（byte/float/string/Vector3/Color4）を拾わなくなり、stray 21→0（known_out_of_corpus.txt に実在型 16 を理由付き除外）。impl_covered 119 / missing 0。②型被覆 fixture（2b14422b）— CI にコーパスが無い（両コーパス gitignore 済み）ため、Oblivion - Meshes.bsa の最小抜粋 58 本 / 5.01MB を docs/evidence/fixtures/nif/ に固定（markers 27 + cover 31・全 119 型）。nif_fixture_select.py が決定的に選択（gain/sqrt(bytes)・supply map 出力）。android.yml に nif-coverage ジョブ。外せない 4 本＝minotaurold / snow / rainlight / blackwoodpump01（7 型の唯一の供給元）。ゲート --min-impl 119 --max-missing 0 --max-stray 0 --expect-corpus-types 119 --expect-corpus-files 58 -> exit 0。③オラクル拡張の順番（未着手）: NiWireframeProperty を扱う marker 8 本 → 外せない 4 本（粒子・キーフレーム）→ 頻度順（bhkCollisionObject 6401 → NiNode 7896）。見出しは oracle_verified/corpus_types = 2/119 (1.7%)。
 
 - [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
   > 2026-11-25 時点で blocked: 並行レーンが docs/evidence/golden/newgame-no-esm-prefix.json / docs/smoke-tests/newgame.sh / scripts/compare_golden.py を未コミットで編集中。--update すると相手の WIP を上書きするため、相手の landing 待ち。再開時は事前に差分画像を目視（赤は正常）。
@@ -3753,11 +3754,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3781,4 +3777,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-26 11:17:04
+**ai-todo** | Last Updated: 2026-11-26 12:08:04
