@@ -224,15 +224,19 @@ jobs:
           python3 scripts/compare_golden.py out1.json --require \
             --golden docs/evidence/golden/newgame-no-esm.json
 
-  # 未マージブランチの滞留を機械的に可視化する（docs/claims.md の WIP 上限）。
-  # エージェントは書くのが速いので滞留が「タダ」に見えるが、律速は人間の注意と
+  # 未マージブランチを最終コミット日で active / 中間 / stale に分けて可視化する
+  # （docs/claims.md の WIP 上限）。一律に数えると「多すぎる」しか言えないが、
+  # 分けると「どれが生きていてどれが死んでいるか」が出る。律速は人間の注意と
   # マージ帯域。
   #
   # 当面は warn-only（`continue-on-error: true` ＋ check_wip_limit.py は既定で exit 0）。
-  # 未マージ 33 本に対して上限 3 なので、初回から必ず超過する。33 本を 3 本に減らすのは
-  # 30 回のマージで、ゴールデン採取とは時間軸が違う。加えて release.yml は「緑の CI」を
-  # 要求するので、ここを blocking にするとリリースも止まる。
-  # 滞留が上限内に収まったら `continue-on-error` を外し `--strict` を付けて blocking にする。
+  # 判定は active（直近 7 日）のみ・上限 5。stale（30 日超）は件数と一覧を常に出す
+  # （黙らせない）。release.yml は「緑の CI」を要求するので、ここを blocking にすると
+  # リリースも止まる。active が上限内に収まったら `continue-on-error` を外し
+  # `--strict` を付けて blocking にする。
+  #
+  # 注意: CI の fresh clone は origin の枝しか見ないため、未 push の WIP は
+  # ここに出ない（ローカル実行で見る）。
   wip-limit:
     name: WIP limit (unmerged branches)
     runs-on: ubuntu-latest
@@ -251,7 +255,7 @@ jobs:
         run: git fetch --no-tags --prune origin '+refs/heads/*:refs/remotes/origin/*'
 
       - name: Check unmerged branch count
-        run: python3 scripts/check_wip_limit.py --base origin/master --limit 3 --overlap
+        run: python3 scripts/check_wip_limit.py --base origin/master --limit 5 --overlap
 
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較

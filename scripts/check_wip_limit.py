@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_wip_limit.py — 未マージブランチの WIP 上限チェック（滞留の可視化）。
+"""check_wip_limit.py — 未マージブランチの WIP と滞留の可視化。
 
 背景:
   エージェントは書くのが速いので「書くコスト」はほぼゼロに見える。そのため
@@ -9,29 +9,45 @@
   まま。結果、書く速度にマージと検証が追いつかず滞留が生まれ、滞留したまま
   次の作業が始まる（chargen の二重実装はこの典型）。
 
-  そこで滞留を機械的に数え、上限を超えたら警告する。
+  そこで未マージブランチを **最終コミット日** で active / 中間 / stale に分ける。
+  33 本を一律に数えると「多すぎる」しか言えないが、分けると「どれが生きていて
+  どれが死んでいるか」が毎回出る。滞留一覧はそのまま棚卸しキューになる。
 
 検査:
-  1. 未マージブランチ数（base にマージされていないブランチ）
+  1. 未マージブランチを最終コミット日で分類:
+     - active（<= --active-days 日。既定 7）: 生きている WIP。上限判定はこれのみ。
+     - 中間（active と stale の間）: 参考表示。
+     - stale（> --stale-days 日。既定 30）: 滞留。件数と一覧を常に出す（黙らせない）。
   2. --overlap: 未マージブランチ同士が同じファイルを変更している組（二重実装の検出）
   3. docs/claims.md があれば、宣言された占有（lane → paths）を表示
+  4. open PR 数（gh が使えれば併記のみ。判定には使わない）
 
 終了コード:
   0 = OK、または警告のみ（既定）
-  1 = 上限超過かつ --strict
+  1 = active が上限超過かつ --strict
 
 使い方:
   python scripts/check_wip_limit.py
-  python scripts/check_wip_limit.py --strict --limit 3
   python scripts/check_wip_limit.py --base origin/master --overlap
+  python scripts/check_wip_limit.py --active-days 7 --stale-days 30 --limit 5
+
+注意:
+  ローカル専用ブランチ（origin 未 push）はローカル実行でしか見えない。CI の
+  fresh clone は origin の枝しか数えないため、CI の active はローカルのそれより
+  小さくなる。CI は「push 済みの滞留」の検出器であり、未 push の WIP は
+  ローカル実行で見る。
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_LIMIT = 3
+DEFAULT_LIMIT = 5
+DEFAULT_ACTIVE_DAYS = 7
+DEFAULT_STALE_DAYS = 30
 DEFAULT_BASE_CANDIDATES = ("master", "main", "origin/master", "origin/main")
 
 
@@ -99,6 +115,38 @@ def ahead_count(ref, base):
         return -1
 
 
+def commit_age_days(ref):
+    """最終コミットからの経過日数。取得できなければ None。"""
+    iso = git("log", "-1", "--format=%cI", ref)
+    if not iso:
+        return None
+    try:
+        dt = datetime.fromisoformat(iso)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return (datetime.now(timezone.utc) - dt).days
+
+
+def open_pr_count():
+    """open PR 数。gh が使えなければ None（併記のみ・判定には使わない）。"""
+    try:
+        r = subprocess.run(
+            ["gh", "pr", "list", "--state", "open", "--json", "number"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        return len(json.loads(r.stdout or "[]"))
+    except ValueError:
+        return None
+
+
 def changed_files(ref, base):
     out = git("diff", "--name-only", "%s...%s" % (base, ref))
     return set(l.strip() for l in out.splitlines() if l.strip())
@@ -117,15 +165,28 @@ def read_claims():
     return lines
 
 
+def show_section(title, rows):
+    if not rows:
+        return
+    print("\n%s:" % title)
+    for ref, n, age in rows:
+        age_s = "%3dd" % age if age is not None else "  ?"
+        print("  - %-45s %s  %s commits ahead" % (ref, age_s, n if n >= 0 else "?"))
+
+
 def main():
-    ap = argparse.ArgumentParser(description="未マージブランチの WIP 上限チェック")
+    ap = argparse.ArgumentParser(description="未マージブランチの WIP / 滞留チェック")
     ap.add_argument("--base", default=None, help="基準ブランチ（既定: master/main を自動判定）")
     ap.add_argument("--limit", type=int, default=DEFAULT_LIMIT,
-                    help="未マージブランチの上限（既定 %d）" % DEFAULT_LIMIT)
+                    help="active（直近）ブランチの上限（既定 %d）" % DEFAULT_LIMIT)
+    ap.add_argument("--active-days", type=int, default=DEFAULT_ACTIVE_DAYS,
+                    help="active とみなす最終コミットからの日数（既定 %d）" % DEFAULT_ACTIVE_DAYS)
+    ap.add_argument("--stale-days", type=int, default=DEFAULT_STALE_DAYS,
+                    help="stale（滞留）とみなす日数（既定 %d）" % DEFAULT_STALE_DAYS)
     ap.add_argument("--overlap", action="store_true",
                     help="未マージブランチ同士のファイル重複（二重実装）を検出")
     ap.add_argument("--strict", action="store_true",
-                    help="上限超過時に終了コード 1 を返す（既定は警告のみ）")
+                    help="active が上限超過のとき終了コード 1 を返す（既定は警告のみ）")
     args = ap.parse_args()
 
     base = resolve_base(args.base)
@@ -139,14 +200,30 @@ def main():
             continue
         if is_merged(ref, base):
             continue
-        unmerged.append((ref, ahead_count(ref, base)))
+        unmerged.append((ref, ahead_count(ref, base), commit_age_days(ref)))
 
-    unmerged.sort(key=lambda kv: (-kv[1], kv[0]))
+    active = sorted([x for x in unmerged if x[2] is not None and x[2] <= args.active_days],
+                    key=lambda kv: (kv[2], kv[0]))
+    middle = sorted([x for x in unmerged if x[2] is not None
+                     and args.active_days < x[2] <= args.stale_days],
+                    key=lambda kv: (kv[2], kv[0]))
+    stale = sorted([x for x in unmerged if x[2] is not None and x[2] > args.stale_days],
+                   key=lambda kv: (-kv[2], kv[0]))
+    unknown = sorted([x for x in unmerged if x[2] is None], key=lambda kv: kv[0])
 
-    print("check_wip_limit: base=%s / 未マージブランチ=%d / 上限=%d"
-          % (base, len(unmerged), args.limit))
-    for ref, n in unmerged:
-        print("  - %-45s %s commits ahead" % (ref, n if n >= 0 else "?"))
+    print("check_wip_limit: base=%s / 未マージ=%d / active(<=%dd)=%d / 中間=%d / "
+          "stale(>%dd)=%d / active 上限=%d"
+          % (base, len(unmerged), args.active_days, len(active),
+             len(middle), args.stale_days, len(stale), args.limit))
+
+    show_section("active（生きている WIP）", active)
+    show_section("中間", middle)
+    show_section("stale（滞留・棚卸しキュー）", stale)
+    show_section("日付不明", unknown)
+
+    prs = open_pr_count()
+    print("\nopen PR: %s（併記のみ・判定には使わない）"
+          % ("未取得" if prs is None else prs))
 
     claims = read_claims()
     if claims:
@@ -154,10 +231,8 @@ def main():
         for line in claims:
             print("  " + line)
 
-    over = len(unmerged) > args.limit
-
     if args.overlap and unmerged:
-        refs = [r for r, _ in unmerged]
+        refs = [r for r, _, _ in unmerged]
         files = {}
         for ref in refs:
             fs = changed_files(ref, base)
@@ -179,16 +254,19 @@ def main():
                 print("  … 他 %d 組" % (len(pairs) - 10))
             print("  → 同じ機能の二重実装の疑い。docs/claims.md の占有宣言と統合順を確認すること。")
 
+    over = len(active) > args.limit
     if over:
-        msg = ("WIP 上限超過: 未マージ %d 本（上限 %d）。新しい作業を始める前に"
-               "マージするか、閉じるブランチを決めること。" % (len(unmerged), args.limit))
+        msg = ("WIP 上限超過: active %d 本（上限 %d）。滞留 %d 本。新しい作業を始める前に"
+               "マージするか、閉じるブランチを決めること。"
+               % (len(active), args.limit, len(stale)))
         print("\n" + msg)
         # GitHub Actions のアノテーション（あれば PR 画面に出る）。
         print("::warning::" + msg)
         if args.strict:
             return 1
     else:
-        print("\nOK: 未マージ %d 本（上限 %d 以内）" % (len(unmerged), args.limit))
+        print("\nOK: active %d 本（上限 %d 以内）/ stale %d 本"
+              % (len(active), args.limit, len(stale)))
     return 0
 
 
