@@ -55,16 +55,9 @@ DOTAV = re.compile(r"(?<!\?)\.AV[A-Z]")
 # （片方だけだと経路が丸ごと抜ける）。
 INTERMEDIATE_PATTERNS = ("*.bak", "*.orig", "*.rej", "*~")
 
-# 検査 4 の既知 baseline（追跡下 .bak 5 本）。削除はユーザー確認が必要なため保留中
-# （.github/copilot-instructions.md:33 に「追跡下ファイルの削除はユーザー確認が必要」）。
-# 承認後に削除し、この集合を空にすること。新規の中間ファイルはここに入れない。
-INTERMEDIATE_BASELINE = {
-    ".github/memory/session-memory.json.bak",
-    ".opencode/utf8-console.ts.retired-20261112.bak",
-    "docs/RE_ANALYSIS_ROADMAP.md.bak",
-    "loop-constraints.md.bak",
-    "tools/sync_memory_to_supermemory.py.bak",
-}
+# 検査 4 の既知 baseline。追跡下 .bak 5 本は 2026-11-26 に削除した（履歴には
+# 残る）ため、現在は空。新規の中間ファイルはすべて FAIL にする。
+INTERMEDIATE_BASELINE = set()
 
 # 検査 6: Panel レーン所有ファイル（判定はファイル名だけで機械的に導ける形にする）。
 PANEL_PREFIXES = ("race_sex_panel", "ui_toggle", "chargen_commit")
@@ -110,14 +103,18 @@ def changed_files():
 
 
 def intermediate_files():
-    """検査 4: .bak/.orig/.rej/*~ の残存（追跡下＋未追跡/staged の両方）。"""
+    """検査 4: .bak/.orig/.rej/*~ の残存（追跡下＋未追跡/staged の両方）。
+
+    git ls-files は index を、git status --porcelain は作業ツリーの状態を返す。
+    削除（D）は「残っていない」ので除外し、最後に実在するものだけを対象にする。
+    """
     found = []
     for p in git_out(["ls-files", "--"] + list(INTERMEDIATE_PATTERNS)).splitlines():
         p = p.strip()
         if p and p not in found:
             found.append(p)
     for line in git_out(["-c", "core.quotepath=false", "status", "--porcelain"]).splitlines():
-        if len(line) < 4:
+        if len(line) < 4 or "D" in line[:2]:  # 削除は残存ではない
             continue
         p = line[3:].strip()
         if " -> " in p:
@@ -126,7 +123,9 @@ def intermediate_files():
             continue
         if p and p not in found:
             found.append(p)
-    return [p for p in found if p not in INTERMEDIATE_BASELINE]
+    return [p for p in found
+            if p not in INTERMEDIATE_BASELINE
+            and os.path.exists(os.path.join(REPO, p))]
 
 
 def version_code_failures():
