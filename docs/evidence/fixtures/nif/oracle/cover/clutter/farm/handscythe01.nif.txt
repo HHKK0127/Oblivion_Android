@@ -1,0 +1,177 @@
+parse=1
+magic=NetImmerse File Format, Version 10.0.1.0
+version=0x0A000100 endian=0 hasEndianByte=0 legacyNetImmerse=1 hasBlockTypeTable=1
+userVersion=0 numObjects=47 unknown=0 numGroups=0
+creator= processScript= exportScript=
+blockTypes=14
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=bhkBoxShape
+  bt[3]=bhkConvexSweepShape
+  bt[4]=bhkTransformShape
+  bt[5]=bhkListShape
+  bt[6]=bhkRigidBodyT
+  bt[7]=bhkCollisionObject
+  bt[8]=NiTriStrips
+  bt[9]=NiBinaryExtraData
+  bt[10]=NiMaterialProperty
+  bt[11]=NiTexturingProperty
+  bt[12]=NiSourceTexture
+  bt[13]=NiTriStripsData
+blockTypeIndices=47 hash=6e815fa58727d817
+blockDataOffset=404 fileSize=56513
+blockCount=47
+nodes=47
+node[0] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[13] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[14] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[15] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[16] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[17] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[18] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[20] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[21] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[22] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkBoxShape typeIdx=2 parent=-1 children=0 hasGeom=0
+node[24] name= type=bhkConvexSweepShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[25] name= type=bhkTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[26] name= type=bhkListShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[27] name= type=bhkRigidBodyT typeIdx=6 parent=-1 children=0 hasGeom=0
+node[28] name= type=bhkCollisionObject typeIdx=7 parent=-1 children=0 hasGeom=0
+node[29] name=HandSythe:0 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[29] name=HandSythe:0
+geom[29] diffuse=textures/clutter/farmhouse/Handsickle.dds normal=
+geom[29] verts=230 hash=496d92288567311b
+geom[29] norms=230 hash=3b29be3990aed5be
+geom[29] colors=230 hash=f362f44c3766ddec
+geom[29] texcoords=230 hash=82e541f4ed34a952
+geom[29] tris=320 hash=8caed6a900cc5d0e
+geom[29] bbox_min=c15e541e be65b298 c1a465dd bbox_max=415e541a 3e4e005e 41a465dd
+geom[29] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[30] name= type=NiBinaryExtraData typeIdx=9 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+node[35] name=HandSythe:1 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[35] name=HandSythe:1
+geom[35] diffuse=textures/clutter/lowerclass/LowerKnife01.dds normal=
+geom[35] verts=193 hash=be572bad9539a6cc
+geom[35] norms=193 hash=e90e19dfea55ed46
+geom[35] colors=193 hash=b8093156270ca656
+geom[35] texcoords=193 hash=cf1b504c427db867
+geom[35] tris=279 hash=2d8a762e180238ee
+geom[35] bbox_min=402440e2 bf6b7bf2 c1a3e137 bbox_max=40bdec91 3f6ae33d c074c822
+geom[35] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[36] name= type=NiBinaryExtraData typeIdx=9 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[38] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+node[41] name=HandSythe:2 type=NiTriStrips typeIdx=8 parent=-1 children=0 hasGeom=1
+geom[41] name=HandSythe:2
+geom[41] diffuse=textures/architecture/lowerclass/metalhinge.dds normal=
+geom[41] verts=284 hash=15b2a2e67dc5d101
+geom[41] norms=284 hash=aaf90378f37b2d8d
+geom[41] colors=284 hash=2cd66f5e2fb6f103
+geom[41] texcoords=284 hash=4df37ee7a46d046b
+geom[41] tris=531 hash=a535bb1e9cb0fb37
+geom[41] bbox_min=406437f3 bf9f2f9a c1893ee8 bbox_max=409de3b0 3f9f2f9a c0dd6a48
+geom[41] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[42] name= type=NiBinaryExtraData typeIdx=9 parent=-1 children=0 hasGeom=0
+node[43] name= type=NiMaterialProperty typeIdx=10 parent=-1 children=0 hasGeom=0
+node[44] name= type=NiTexturingProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[45] name= type=NiSourceTexture typeIdx=12 parent=-1 children=0 hasGeom=0
+node[46] name= type=NiTriStripsData typeIdx=13 parent=-1 children=0 hasGeom=0
+roots=47
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+getNodeByName(first)=1
+extractAllGeometry=3
+allgeom[0] name=HandSythe:0
+allgeom[0] diffuse=textures/clutter/farmhouse/Handsickle.dds normal=
+allgeom[0] verts=230 hash=496d92288567311b
+allgeom[0] norms=230 hash=3b29be3990aed5be
+allgeom[0] colors=230 hash=f362f44c3766ddec
+allgeom[0] texcoords=230 hash=82e541f4ed34a952
+allgeom[0] tris=320 hash=8caed6a900cc5d0e
+allgeom[0] bbox_min=c15e541e be65b298 c1a465dd bbox_max=415e541a 3e4e005e 41a465dd
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=HandSythe:1
+allgeom[1] diffuse=textures/clutter/lowerclass/LowerKnife01.dds normal=
+allgeom[1] verts=193 hash=be572bad9539a6cc
+allgeom[1] norms=193 hash=e90e19dfea55ed46
+allgeom[1] colors=193 hash=b8093156270ca656
+allgeom[1] texcoords=193 hash=cf1b504c427db867
+allgeom[1] tris=279 hash=2d8a762e180238ee
+allgeom[1] bbox_min=402440e2 bf6b7bf2 c1a3e137 bbox_max=40bdec91 3f6ae33d c074c822
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[2] name=HandSythe:2
+allgeom[2] diffuse=textures/architecture/lowerclass/metalhinge.dds normal=
+allgeom[2] verts=284 hash=15b2a2e67dc5d101
+allgeom[2] norms=284 hash=aaf90378f37b2d8d
+allgeom[2] colors=284 hash=2cd66f5e2fb6f103
+allgeom[2] texcoords=284 hash=4df37ee7a46d046b
+allgeom[2] tris=531 hash=a535bb1e9cb0fb37
+allgeom[2] bbox_min=406437f3 bf9f2f9a c1893ee8 bbox_max=409de3b0 3f9f2f9a c0dd6a48
+allgeom[2] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode

@@ -257,7 +257,7 @@ jobs:
   # 実物 NIF fixture でブロック型被覆ゲートを回す。fixture は
   # docs/evidence/fixtures/nif/（Oblivion - Meshes.bsa の最小抜粋）。
   # cover/ は 2 用途: 型被覆（貪欲・最小集合）とレイアウト被覆（衝突形状の署名多様性）。
-  # ゲート値は fixture 側の実測（119 型 / 78 files = markers 27 ＋ cover 51）。
+  # ゲート値は fixture 側の実測（119 型 / 84 files = markers 27 ＋ cover 57）。
   # B 全体（8032 files）での計測はローカルで回し、CI の数字と混ぜない。
   # 詳細は docs/evidence/fixtures/nif/README.md。
   nif-coverage:
@@ -273,7 +273,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
-            --expect-corpus-types 119 --expect-corpus-files 78 \
+            --expect-corpus-types 119 --expect-corpus-files 84 \
             --min-impl 119 --max-missing 0 --max-stray 0
 
   # 実物 NIF fixture をオラクル（dump_rust）に通し、コミット済み期待値（元 C++ パーサ
@@ -312,9 +312,9 @@ jobs:
           set -euo pipefail
           python3 scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
             --oracle docs/evidence/fixtures/nif/oracle \
-            --expect-corpus-types 119 --expect-corpus-files 78 \
+            --expect-corpus-types 119 --expect-corpus-files 84 \
             --min-impl 119 --max-missing 0 --max-stray 0 \
-            --min-oracle 119 --min-oracle-files 78 --corpus-total 8032
+            --min-oracle 119 --min-oracle-files 84 --corpus-total 8032
 
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較

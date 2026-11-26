@@ -1,0 +1,113 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=23 unknown=11 numGroups=0
+creator=gstruthers processScript=TriStrip Process Script exportScript=Default Export Script
+blockTypes=16
+  bt[0]=NiNode
+  bt[1]=BSXFlags
+  bt[2]=NiStringExtraData
+  bt[3]=bhkBoxShape
+  bt[4]=bhkConvexTransformShape
+  bt[5]=bhkSphereShape
+  bt[6]=bhkCapsuleShape
+  bt[7]=bhkListShape
+  bt[8]=bhkRigidBodyT
+  bt[9]=bhkCollisionObject
+  bt[10]=NiTriStrips
+  bt[11]=NiBinaryExtraData
+  bt[12]=NiMaterialProperty
+  bt[13]=NiTexturingProperty
+  bt[14]=NiSourceTexture
+  bt[15]=NiTriStripsData
+blockTypeIndices=23 hash=487f47f4a3f824ee
+blockDataOffset=464 fileSize=34422
+blockCount=23
+nodes=23
+node[0] name=LowerJugTan01 type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSXFlags typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=NiStringExtraData typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=bhkBoxShape typeIdx=3 parent=-1 children=0 hasGeom=0
+node[4] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[5] name= type=bhkSphereShape typeIdx=5 parent=-1 children=0 hasGeom=0
+node[6] name= type=bhkConvexTransformShape typeIdx=4 parent=-1 children=0 hasGeom=0
+node[7] name= type=bhkCapsuleShape typeIdx=6 parent=-1 children=0 hasGeom=0
+node[8] name= type=bhkListShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkRigidBodyT typeIdx=8 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[11] name=LowerJugTan01:0 type=NiTriStrips typeIdx=10 parent=-1 children=0 hasGeom=1
+geom[11] name=LowerJugTan01:0
+geom[11] diffuse=textures/clutter/lowerclass/ceramicpitcher.dds normal=
+geom[11] verts=187 hash=14e7af34438cf638
+geom[11] norms=187 hash=6c0ee2a0ae257153
+geom[11] colors=187 hash=b7ffd573b00b3889
+geom[11] texcoords=187 hash=3c7195c7eefe540c
+geom[11] tris=356 hash=3f6e7415c3d4ad1c
+geom[11] bbox_min=c0de1130 c0de112f c18d9751 bbox_max=40de1130 40de1131 418d8e13
+geom[11] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[12] name= type=NiBinaryExtraData typeIdx=11 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiMaterialProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiTexturingProperty typeIdx=13 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiSourceTexture typeIdx=14 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTriStripsData typeIdx=15 parent=-1 children=0 hasGeom=0
+node[17] name=LowerJugTan01:1 type=NiTriStrips typeIdx=10 parent=-1 children=0 hasGeom=1
+geom[17] name=LowerJugTan01:1
+geom[17] diffuse=textures/clutter/lowerclass/ceramiccupbottom.dds normal=
+geom[17] verts=236 hash=c428738d776f4e0a
+geom[17] norms=236 hash=56e4b2af8ba34826
+geom[17] colors=236 hash=1fd47e2d4666d981
+geom[17] texcoords=236 hash=fd0ead18895a23d6
+geom[17] tris=498 hash=cb71be3b6d273c3c
+geom[17] bbox_min=c0cc7690 c0cc768f c18d9751 bbox_max=40cc7690 40cc7691 418d9751
+geom[17] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+node[18] name= type=NiBinaryExtraData typeIdx=11 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiMaterialProperty typeIdx=12 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiTexturingProperty typeIdx=13 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiSourceTexture typeIdx=14 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTriStripsData typeIdx=15 parent=-1 children=0 hasGeom=0
+roots=23
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+getNodeByName(first)=1
+extractAllGeometry=2
+allgeom[0] name=LowerJugTan01:0
+allgeom[0] diffuse=textures/clutter/lowerclass/ceramicpitcher.dds normal=
+allgeom[0] verts=187 hash=14e7af34438cf638
+allgeom[0] norms=187 hash=6c0ee2a0ae257153
+allgeom[0] colors=187 hash=b7ffd573b00b3889
+allgeom[0] texcoords=187 hash=3c7195c7eefe540c
+allgeom[0] tris=356 hash=3f6e7415c3d4ad1c
+allgeom[0] bbox_min=c0de1130 c0de112f c18d9751 bbox_max=40de1130 40de1131 418d8e13
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+allgeom[1] name=LowerJugTan01:1
+allgeom[1] diffuse=textures/clutter/lowerclass/ceramiccupbottom.dds normal=
+allgeom[1] verts=236 hash=c428738d776f4e0a
+allgeom[1] norms=236 hash=56e4b2af8ba34826
+allgeom[1] colors=236 hash=1fd47e2d4666d981
+allgeom[1] texcoords=236 hash=fd0ead18895a23d6
+allgeom[1] tris=498 hash=cb71be3b6d273c3c
+allgeom[1] bbox_min=c0cc7690 c0cc768f c18d9751 bbox_max=40cc7690 40cc7691 418d9751
+allgeom[1] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f800000
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiNode
