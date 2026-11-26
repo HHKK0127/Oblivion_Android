@@ -2,7 +2,10 @@
 
 ## Tasks
 
-- [ ] **#188** 【承認待ち・中優先】追跡下 .bak 5 本の削除可否をユーザーが決める（.github/memory/session-memory.json.bak / .opencode/utf8-console.ts.retired-20261112.bak / docs/RE_ANALYSIS_ROADMAP.md.bak / loop-constraints.md.bak / tools/sync_memory_to_supermemory.py.bak）。.github/copilot-instructions.md:33 が「追跡下ファイルの削除はユーザー確認が必要」と明記。承認後に削除し、scripts/precheck.py の INTERMEDIATE_BASELINE を空にする。 `#approval` `#cleanup` `#precheck`
+- [ ] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip`
+
+- [x] **#189** 【判断待ち・中優先】WIP 上限警告（scripts/check_wip_limit.py / android.yml wip-limit ジョブ）の扱いを決める。実測 2026-11-26: 未マージブランチ=33（CI 注記は 18）・open PR=0・上限=3 で warn-only が常時鳴る。候補: (a) 指標を open PR 数へ変更（ただし現在 0 で常に緑＝死んだゲート） (b) 上限を 33 前後へ上げる（実質 no-op） (c) 未マージ枝の棚卸し（close/merge）を先に行い上限を変えずに維持する。policy 値のため人間が決定。 `#approval` `#gate` `#tooling` (2026-11-26)
+  > 完了 2026-11-26: ユーザー裁定は「active/stale 分離」。check_wip_limit.py に --active-days（既定 7）/ --stale-days（既定 30）を追加し、判定を active のみ・上限 5 へ。stale は常に一覧表示。open PR は併記のみ（gh があれば）。android.yml も --limit 5 へ（d200f94a）。実測ローカル: 未マージ 33 / active 9 / 中間 1 / stale 23 / open PR 0。--strict で exit 1、--limit 20 で exit 0。CI は fresh clone で origin 枝のみ＝active 9 本（全てローカル専用）は見えない。当面は warn-only で維持。
 
 - [ ] **#186** 【作製・高優先】AssetManager::extractEsmFromArchive の loose-file 読みが書き込み完了を待たない。1 Hz の maybeRetryGameDataLoad が cp 途中のファイルを開くと tellg() の部分サイズで read 成功→gameDataLoaded_=true で固定され、二度と読み直さない。実測 2026-11-25 (emulator-5554): push 277,504,985B の Oblivion.esm を後置き→ [OK] Extracted Oblivion.esm (148,828,160 bytes)（部分）→ Loading 1855 cells (0 worldspaces, main=0x00000000)。対策案: サイズ安定待ち（連続同サイズ）／一時ファイル+.tmp→rename／期待サイズ照合。app/src/main/cpp/assets/asset_manager.cpp:196-212。 `#161` `#assets` `#bug` `#esm`
 
@@ -1269,6 +1272,9 @@
 ---
 
 ## Archived Tasks
+- [x] **#188** 【承認待ち・中優先】追跡下 .bak 5 本の削除可否をユーザーが決める（.github/memory/session-memory.json.bak / .opencode/utf8-console.ts.retired-20261112.bak / docs/RE_ANALYSIS_ROADMAP.md.bak / loop-constraints.md.bak / tools/sync_memory_to_supermemory.py.bak）。.github/copilot-instructions.md:33 が「追跡下ファイルの削除はユーザー確認が必要」と明記。承認後に削除し、scripts/precheck.py の INTERMEDIATE_BASELINE を空にする。 `#approval` `#cleanup` `#precheck` (2026-11-26)
+  > 完了 2026-11-26: ユーザー承認のうえ追跡下 .bak 5 本を git rm（削除前に全 5 本が git cat-file -e HEAD:<path> を通ることを確認）。INTERMEDIATE_BASELINE を空にし検査 4 を本番ゲート化（e72942b4）。.gitignore に *.bak は無く未追跡経路は有効（git check-ignore exit 1）。陰性対照で staged 削除を残存と誤判定するバグを発見・修正（削除は除外＋os.path.exists で実在のみ対象）。未追跡 .bak/.orig は FAIL exit 2、削除で OK exit 0。
+  > Reason: completed 2026-11-26: 追跡下 .bak 5 本を git rm＋baseline 空化＋検査4 バグ修正（e72942b4）
 - [x] **#187** 【作製・高優先】precheck に構造 3 検査を移設する（AGENTS の散文→機構）: ①中間ファイル .bak/.orig/.rej/*~（追跡下＋未追跡、既知 5 本は削除承認待ち baseline）②変更された build.gradle の versionCode 単調増加（比較は常に HEAD）③Panel 所有ファイルと共用 renderer.cpp を WARN（--strict で FAIL）。各検査に陰性対照を通し、3 本そろって単独コミット。AGENTS の該当散文は緑になってから precheck 参照 1 行へ置換。 `#gate` `#precheck` `#tooling` (2026-11-25)
   > 完了 2026-11-25: scripts/precheck.py に検査 4-6 を実装（1e5935fe）。陰性対照は .bak=exit 2→削除で 0 / versionCode 999→2・1001→0・1000 復元→0 / Panel 空行→WARN 0・--strict→2・renderer.cpp 空行→WARN 0。AGENTS の precheck 節を 6 検査へ更新し、versionCode の散文を機構参照へ置換（962cfbca）。追跡下 .bak 5 本は #188 の承認待ち baseline。
   > Reason: completed 2026-11-25: precheck 構造 3 検査（1e5935fe）＋AGENTS 反映（962cfbca）、陰性対照済み
@@ -3742,11 +3748,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3770,4 +3771,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-25 19:29:49
+**ai-todo** | Last Updated: 2026-11-26 09:33:06
