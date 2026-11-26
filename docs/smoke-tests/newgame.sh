@@ -130,6 +130,14 @@ echo "adb: $ADB"
 sleep 3
 echo "display fixed: 1280x960 / 240dpi / rotation 1"
 
+# 撮影条件をサイドカーに残す（compare_golden.py が環境一致の検査に使う）。
+{
+  echo "# display conditions under which this smoke ran"
+  echo "wm_size=1280x960"
+  echo "density=240"
+  echo "rotation=1"
+} > "$OUT_DIR/smoke-newgame.env"
+
 if [ -n "$APK" ]; then
   if [ ! -s "$APK" ]; then
     echo "::error::APK が無いか空です: $APK"
