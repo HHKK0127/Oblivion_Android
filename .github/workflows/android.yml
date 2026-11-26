@@ -302,8 +302,10 @@ jobs:
 
       # 型被覆（オラクル検証済み型数）も同じジョブで回す。--min-oracle は
       # oracle_types ∩ corpus_types なので 20（NiKeyframeController は oracle に居るが
-      # コーパス外）。
+      # コーパス外）。`if: always()` は、上の dump 比較が落ちてもこちらを走らせて
+      # 片方の失敗がもう片方を隠さないようにするため。
       - name: Check oracle-verified type coverage (fixture oracle)
+        if: always()
         run: |
           set -euo pipefail
           python3 scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
