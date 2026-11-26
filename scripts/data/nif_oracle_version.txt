@@ -1,0 +1,4 @@
+# オラクル fixture の追加 NIF（B 相対パス）。nif_fixture_select.py --add で固定投入する。
+# バージョン軸: fixture（markers＋型被覆）に無い NIF バージョンの最小代表。
+# このファイルは scripts/nif_oracle_select.py が生成する（手で編集しない）。
+landscape/lod/181732.-32.-32.32.nif

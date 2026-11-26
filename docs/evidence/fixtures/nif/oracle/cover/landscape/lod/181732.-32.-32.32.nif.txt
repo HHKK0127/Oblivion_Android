@@ -1,0 +1,39 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.5
+version=0x14000005 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=2 unknown=11 numGroups=0
+creator= processScript= exportScript=
+blockTypes=2
+  bt[0]=NiTriStrips
+  bt[1]=NiTriStripsData
+blockTypeIndices=2 hash=3150e0a0869f4e0a
+blockDataOffset=106 fileSize=523
+blockCount=2
+nodes=2
+node[0] name= type=NiTriStrips typeIdx=0 parent=-1 children=0 hasGeom=1
+geom[0] name=
+geom[0] diffuse= normal=
+geom[0] verts=12 hash=ffec56ab791085c3
+geom[0] norms=0 hash=14650fb0739d0383
+geom[0] colors=0 hash=14650fb0739d0383
+geom[0] texcoords=12 hash=57fd2ccbf9151403
+geom[0] tris=20 hash=93ab408c0f818d6e
+geom[0] bbox_min=00000000 00000000 c4000000 bbox_max=48000000 48000000 c4000000
+geom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c8000000 c8000000 00000000 scale=3f800000
+node[1] name= type=NiTriStripsData typeIdx=1 parent=-1 children=0 hasGeom=0
+roots=2
+  root[0]=0
+  root[1]=1
+getNodeByName(first)=1
+extractAllGeometry=1
+allgeom[0] name=
+allgeom[0] diffuse= normal=
+allgeom[0] verts=12 hash=ffec56ab791085c3
+allgeom[0] norms=0 hash=14650fb0739d0383
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=12 hash=57fd2ccbf9151403
+allgeom[0] tris=20 hash=93ab408c0f818d6e
+allgeom[0] bbox_min=00000000 00000000 c4000000 bbox_max=48000000 48000000 c4000000
+allgeom[0] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=c8000000 c8000000 00000000 scale=3f800000
+hasNiNode=0 hasNiTriShape=0 hasNiTriStrips=1
+blockTypeName(0)=NiTriStrips

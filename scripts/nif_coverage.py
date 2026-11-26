@@ -24,11 +24,17 @@ check_imports.py（ttom795）と同じ発想で、対象が import ではなく�
 終了コード:
   0 = ok / 1 = スクリプト異常（引数・欠如・語彙 0）/ 2 = hard ゲート後退。
 
+軸ごとの floor（後退検知。軸を混ぜない）:
+  --min-oracle           型（種類）。soft（オラクルはローカル専用だった名残）。
+  --min-oracle-files     期待値ダンプの本数。hard。
+  --min-oracle-versions  コーパスの NIF バージョン種類数。hard。
+
 使い方:
   python scripts/nif_coverage.py --corpus meshes_extracted --oracle tmp/nif_oracle
   python scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
-      --oracle docs/evidence/fixtures/nif/oracle --min-impl 119 --max-missing 0 \
-      --max-stray 0 --min-oracle 119
+      --oracle docs/evidence/fixtures/nif/oracle --expect-corpus-types 119 \
+      --expect-corpus-files 104 --min-impl 119 --max-missing 0 --max-stray 0 \
+      --min-oracle 119 --min-oracle-files 104 --min-oracle-versions 10 --corpus-total 8032
   python scripts/nif_coverage.py --corpus meshes_extracted --show NiTriStrips
 """
 import argparse
@@ -148,6 +154,7 @@ def block_types(path):
 def scan_corpus(corpus):
     files = 0
     types = Counter()        # 型 -> 出現ファイル数
+    versions = Counter()     # NIF バージョン -> ファイル数
     errors = Counter()
     for root, _, names in os.walk(corpus):
         for name in sorted(names):
@@ -156,13 +163,14 @@ def scan_corpus(corpus):
             path = os.path.join(root, name)
             files += 1
             try:
-                _, ts = block_types(path)
+                ver, ts = block_types(path)
             except (EOFError, ValueError, OSError) as e:
                 errors[type(e).__name__] += 1
                 continue
+            versions[ver] += 1
             for t in set(ts):
                 types[t] += 1
-    return files, types, errors
+    return files, types, versions, errors
 
 
 def types_from_text(path):
@@ -186,12 +194,12 @@ def types_from_list(path):
 
 def load_types(args):
     if args.types_list:
-        return 0, types_from_list(args.types_list), Counter()
-    files, types, errors = scan_corpus(args.corpus)
+        return 0, types_from_list(args.types_list), Counter(), Counter()
+    files, types, versions, errors = scan_corpus(args.corpus)
     if args.types_from and not types:
-        # ディレクトリに NIF が無い場合はダンプから拾い直す。
-        return files, types_from_text(args.types_from), errors
-    return files, types, errors
+        # ディレクトリに NIF が無い場合はダンプから拾い直す（バージョンは取れない）。
+        return files, types_from_text(args.types_from), versions, errors
+    return files, types, versions, errors
 
 
 def count_oracle_dumps(oracle_dir):
@@ -300,6 +308,8 @@ def main():
                     help="oracle_verified がこれを下回ったら警告（soft ラチェット）")
     ap.add_argument("--min-oracle-files", type=int, default=None,
                     help="oracle の期待値ダンプ本数がこれを下回ったら exit 2（hard・第 2 軸）")
+    ap.add_argument("--min-oracle-versions", type=int, default=None,
+                    help="コーパスの NIF バージョン種類数がこれを下回ったら exit 2（hard・第 3 軸）")
     ap.add_argument("--corpus-total", type=int, default=None,
                     help="見出しのファイル分母（実コーパス B の本数。fixture 実行で 8032 など）")
     ap.add_argument("--top", type=int, default=10)
@@ -312,7 +322,7 @@ def main():
     if not os.path.isdir(args.impl):
         sys.exit("impl not found: %s" % args.impl)
 
-    files, types, errors = load_types(args)
+    files, types, versions, errors = load_types(args)
     if not types:
         sys.exit("no block types found under %s" % args.corpus)
 
@@ -358,6 +368,7 @@ def main():
     else:
         print("== corpus_types = %d（oracle 未指定。被覆はローカルで測る）==" % len(known))
     print("corpus_types    : %d distinct" % len(known))
+    print("corpus_versions : %d distinct" % len(versions))
     print("impl_covered    : %d (%.1f%%)"
           % (len(impl_covered), 100.0 * len(impl_covered) / len(known)))
     print("missing         : %d（コーパスにあるが handler が無い型）" % len(missing))
@@ -403,6 +414,10 @@ def main():
     if args.min_oracle_files is not None and n_oracle_files < args.min_oracle_files:
         print("\n::error:: oracle files %d < %d（オラクルのファイル被覆が後退）"
               % (n_oracle_files, args.min_oracle_files))
+        failed = 1
+    if args.min_oracle_versions is not None and len(versions) < args.min_oracle_versions:
+        print("\n::error:: versions %d < %d（NIF バージョン被覆が後退）"
+              % (len(versions), args.min_oracle_versions))
         failed = 1
     if args.expect_corpus_types is not None and len(known) != args.expect_corpus_types:
         print("\n::error:: corpus_types %d != %d（fixture が痩せた/増えた）"

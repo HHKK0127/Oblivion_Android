@@ -1,0 +1,2504 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=757 unknown=11 numGroups=0
+creator= processScript= exportScript=
+blockTypes=21
+  bt[0]=NiNode
+  bt[1]=BSBound
+  bt[2]=BSXFlags
+  bt[3]=NiStringExtraData
+  bt[4]=NiBSBoneLODController
+  bt[5]=NiTransformController
+  bt[6]=bhkBlendController
+  bt[7]=bhkSphereShape
+  bt[8]=bhkRigidBody
+  bt[9]=bhkBlendCollisionObject
+  bt[10]=bhkCapsuleShape
+  bt[11]=bhkRagdollConstraint
+  bt[12]=bhkLimitedHingeConstraint
+  bt[13]=bhkConvexVerticesShape
+  bt[14]=NiTriShape
+  bt[15]=NiTexturingProperty
+  bt[16]=NiSourceTexture
+  bt[17]=NiAlphaProperty
+  bt[18]=NiMaterialProperty
+  bt[19]=NiStencilProperty
+  bt[20]=NiTriShapeData
+blockTypeIndices=757 hash=d3cad50cd42e00ba
+blockDataOffset=2003 fileSize=286839
+blockCount=757
+nodes=757
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSBound typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=BSXFlags typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiBSBoneLODController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[9] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkSphereShape typeIdx=7 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[19] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[20] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[21] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[22] name= type=bhkRagdollConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[27] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[28] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[29] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[30] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[31] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[35] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[36] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[37] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[38] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[39] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[42] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[43] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[44] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[45] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[46] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[47] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[51] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[52] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[53] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[54] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[55] name=Bip01 headA:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[55] name=Bip01 headA:0
+geom[55] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[55] verts=421 hash=4e4e31d0933d45c5
+geom[55] norms=421 hash=09000fdb723c9a36
+geom[55] colors=0 hash=14650fb0739d0383
+geom[55] texcoords=421 hash=7f668a4e474684f9
+geom[55] tris=634 hash=0fa8b51caa0fc31c
+geom[55] bbox_min=c1764725 c0a4004a 4280046f bbox_max=4177176d 41e9969d 42c0d9e0
+geom[55] transform rot=[3f800000 3449a4d8 3418e995 b449a4d8 3f800000 b30451c2 b418e995 330451ba 3f800000 ] trans=3776c138 c06fc2f7 c2972104 scale=3f800004
+node[56] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiTexturingProperty typeIdx=15 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiSourceTexture typeIdx=16 parent=-1 children=0 hasGeom=0
+node[59] name= type=NiAlphaProperty typeIdx=17 parent=-1 children=0 hasGeom=0
+node[60] name= type=NiMaterialProperty typeIdx=18 parent=-1 children=0 hasGeom=0
+node[61] name= type=NiStencilProperty typeIdx=19 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[63] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[66] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[67] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[68] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[69] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[70] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[71] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[72] name= type=bhkRagdollConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[73] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[74] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[75] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[76] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[77] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[78] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[79] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[80] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[81] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[82] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[83] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[84] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[85] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[86] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[87] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[88] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[89] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[90] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[91] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[92] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[93] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[94] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[95] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[96] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[97] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[98] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[99] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[100] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[101] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[102] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[103] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[104] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[105] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[106] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[107] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[108] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[109] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[110] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[111] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[112] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[113] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[114] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[115] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[116] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[117] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[118] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[119] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[120] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[121] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[122] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[123] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[124] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[125] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[126] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[127] name=Rock L ForrArm:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[127] name=Rock L ForrArm:0
+geom[127] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[127] verts=112 hash=cbb496326a6e5e6c
+geom[127] norms=112 hash=ab41a03def73d608
+geom[127] colors=0 hash=14650fb0739d0383
+geom[127] texcoords=112 hash=a0ed4eb4b9632a62
+geom[127] tris=162 hash=d3646fc8e3993fa3
+geom[127] bbox_min=c2d38a72 c1b7a7d7 41f59a16 bbox_max=c27f1305 40ac4aaa 427170c3
+geom[127] transform rot=[bf71effa 3e79e1a2 be5eb3b1 be71489e bf783fd0 bd836149 be67fd43 bc19b490 3f79550b ] trans=c23982b3 c1bc4048 c281b1e0 scale=3f7fffff
+node[128] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[129] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[130] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[131] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[132] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[133] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[134] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[135] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[136] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[137] name=Rock L ForrArm A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[137] name=Rock L ForrArm A:0
+geom[137] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[137] verts=27 hash=90949e802ad4e53b
+geom[137] norms=27 hash=bb0b9e38a92a4aec
+geom[137] colors=0 hash=14650fb0739d0383
+geom[137] texcoords=27 hash=47ab11fe91a609b1
+geom[137] tris=38 hash=237ef9837653c381
+geom[137] bbox_min=c28e80a8 c1bf9651 41fff45e bbox_max=c25e2572 c0cc4e15 42468101
+geom[137] transform rot=[bf71effa 3e79e1a7 be5eb3ad be7148a5 bf783fd0 bd836148 be67fd3f bc19b486 3f79550b ] trans=c23982b9 c1bc404e c281b1df scale=3f800002
+node[138] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[139] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[140] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[141] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[142] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[143] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[144] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[145] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[146] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[147] name=Rock L ForrArm B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[147] name=Rock L ForrArm B:0
+geom[147] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[147] verts=27 hash=73da5673923bdb82
+geom[147] norms=27 hash=55d2fa2f2d93c267
+geom[147] colors=0 hash=14650fb0739d0383
+geom[147] texcoords=27 hash=136b900f60021315
+geom[147] tris=38 hash=583d781bf8bea5ee
+geom[147] bbox_min=c28df3ec c0dd64f3 422dd3a5 bbox_max=c2687d07 4096a867 426bcf25
+geom[147] transform rot=[bf71efb6 3e79e5d0 be5eb392 be714cb0 bf783f8c bd836331 be67fd6a bc19b432 3f795508 ] trans=c2398277 c1bc40e9 c281b21e scale=3f7ffffe
+node[148] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[149] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[150] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[151] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[152] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[153] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[154] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[155] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[156] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[157] name=Rock L Clavicle C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[157] name=Rock L Clavicle C:0
+geom[157] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[157] verts=27 hash=0cc0a7654d7519f4
+geom[157] norms=27 hash=e95c6e048ba28067
+geom[157] colors=0 hash=14650fb0739d0383
+geom[157] texcoords=27 hash=de8a93a709b8d022
+geom[157] tris=38 hash=9d73cbc3751097b0
+geom[157] bbox_min=c21bd60e c185e639 42622760 bbox_max=c1b66c66 40b77ef1 428a2c3c
+geom[157] transform rot=[bf6e664a be2ea2d8 bea4decf 3e106c12 bf7bc8c0 3de77715 beac0621 3d751482 3f70a18e ] trans=41428f1c c1280b76 c2841533 scale=3f800001
+node[158] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[159] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[160] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[161] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[162] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[163] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[164] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[165] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[166] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[167] name=Rock L Clavicle B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[167] name=Rock L Clavicle B:0
+geom[167] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[167] verts=63 hash=531334a6fa7a562f
+geom[167] norms=63 hash=f4f01e95b79e40c3
+geom[167] colors=0 hash=14650fb0739d0383
+geom[167] texcoords=63 hash=b22778bda2c5a28d
+geom[167] tris=96 hash=1c29c199d9c6f4cc
+geom[167] bbox_min=c1ef33c3 c1c68332 426a00a7 bbox_max=c0da5a94 4154086d 428e632b
+geom[167] transform rot=[bf6e664a be2ea2d8 bea4decf 3e106c12 bf7bc8c0 3de77715 beac0621 3d751482 3f70a18e ] trans=41428f1f c1280b78 c2841532 scale=3f800001
+node[168] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[169] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[170] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[171] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[172] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[173] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[174] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[175] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[176] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[177] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[178] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[179] name= type=bhkRagdollConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[180] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[181] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[182] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[183] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[184] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[185] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[186] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[187] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[188] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[189] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[190] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[191] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[192] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[193] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[194] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[195] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[196] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[197] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[198] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[199] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[200] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[201] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[202] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[203] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[204] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[205] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[206] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[207] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[208] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[209] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[210] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[211] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[212] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[213] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[214] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[215] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[216] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[217] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[218] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[219] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[220] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[221] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[222] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[223] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[224] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[225] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[226] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[227] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[228] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[229] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[230] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[231] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[232] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[233] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[234] name=Rock R ForeArm B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[234] name=Rock R ForeArm B:0
+geom[234] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[234] verts=27 hash=ce5912bb887bfe2c
+geom[234] norms=27 hash=324d5556932e090a
+geom[234] colors=0 hash=14650fb0739d0383
+geom[234] texcoords=27 hash=47ab11fe91a609b1
+geom[234] tris=38 hash=237ef9837653c381
+geom[234] bbox_min=42690010 c1b48214 42080d3b bbox_max=428af1b0 c141dd7a 4239329c
+geom[234] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b4 4281b219 scale=3f7fffff
+node[235] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[236] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[237] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[238] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[239] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[240] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[241] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[242] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[243] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[244] name=Rock R ForeArm C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[244] name=Rock R ForeArm C:0
+geom[244] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[244] verts=27 hash=9b779843fb8158f9
+geom[244] norms=27 hash=4c131fe5bc88af3e
+geom[244] colors=0 hash=14650fb0739d0383
+geom[244] texcoords=27 hash=47ab11fe91a609b1
+geom[244] tris=38 hash=237ef9837653c381
+geom[244] bbox_min=4260549b c14790c4 42073bcb bbox_max=428a8490 3f939bfc 423b6383
+geom[244] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b2 4281b218 scale=3f7fffff
+node[245] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[246] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[247] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[248] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[249] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[250] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[251] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[252] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[253] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[254] name=Rock R ForeArm A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[254] name=Rock R ForeArm A:0
+geom[254] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[254] verts=27 hash=5de24719d65714e5
+geom[254] norms=27 hash=faefc4bdbd161197
+geom[254] colors=0 hash=14650fb0739d0383
+geom[254] texcoords=27 hash=47ab11fe91a609b1
+geom[254] tris=38 hash=237ef9837653c381
+geom[254] bbox_min=4266c5b3 c18727f4 4235852c bbox_max=42908ec4 bf510d61 42716e22
+geom[254] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b2 4281b218 scale=3f7fffff
+node[255] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[256] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[257] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[258] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[259] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[260] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[261] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[262] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[263] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[264] name=Rock R Clavicle:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[264] name=Rock R Clavicle:0
+geom[264] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[264] verts=64 hash=b77eb18acef510bc
+geom[264] norms=64 hash=404379d889da11a2
+geom[264] colors=0 hash=14650fb0739d0383
+geom[264] texcoords=64 hash=7a7f3b7550e3245f
+geom[264] tris=96 hash=95672deefd2d4602
+geom[264] bbox_min=410fc719 c1db4ecd 425c783d bbox_max=420ad528 417dacb7 428e22de
+geom[264] transform rot=[3f6e664e be2ea237 bea4decf be106b65 bf7bc8c8 3de77724 beac061d bd75158b bf70a192 ] trans=41428f2e c1280b80 42841533 scale=3f800001
+node[265] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[266] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[267] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[268] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[269] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[270] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[271] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[272] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[273] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[274] name=Rock BL Spine1:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[274] name=Rock BL Spine1:0
+geom[274] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[274] verts=53 hash=757765bc27a91d6e
+geom[274] norms=53 hash=5c5231639a5725f9
+geom[274] colors=0 hash=14650fb0739d0383
+geom[274] texcoords=53 hash=be9f6a6a2c2fd1e5
+geom[274] tris=80 hash=43163d76d3cdf23b
+geom[274] bbox_min=c20a6ecb c1f31cab 4220f3ad bbox_max=c00f2c86 c0830e57 4281678e
+geom[274] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e4 378ab138 scale=3f800001
+node[275] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[276] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[277] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[278] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[279] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[280] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[281] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[282] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[283] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[284] name=Rock BR Spine1:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[284] name=Rock BR Spine1:0
+geom[284] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[284] verts=53 hash=d30c5165e70b819a
+geom[284] norms=53 hash=db804f27fb9a2eb8
+geom[284] colors=0 hash=14650fb0739d0383
+geom[284] texcoords=53 hash=02112410b17394c1
+geom[284] tris=80 hash=8b926e570c5992c3
+geom[284] bbox_min=3e8aafd0 c1ee3578 421cd41e bbox_max=421227d2 c05ee30c 42836e34
+geom[284] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f57 40a7a4e4 378bbbf1 scale=3f800001
+node[285] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[286] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[287] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[288] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[289] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[290] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[291] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[292] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[293] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[294] name=Rock FL Spine1:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[294] name=Rock FL Spine1:0
+geom[294] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[294] verts=64 hash=d8613fa1787981fc
+geom[294] norms=64 hash=1c3b0b7c89e1418d
+geom[294] colors=0 hash=14650fb0739d0383
+geom[294] texcoords=64 hash=a459584e86866590
+geom[294] tris=96 hash=674e2bff594bfb44
+geom[294] bbox_min=c20b5b02 c0b2f435 4212e708 bbox_max=3fa17a16 41aecb88 4281cfa0
+geom[294] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e1 378ec0b2 scale=3f800001
+node[295] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[296] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[297] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[298] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[299] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[300] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[301] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[302] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[303] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[304] name=Rock FR Spine1:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[304] name=Rock FR Spine1:0
+geom[304] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[304] verts=64 hash=6fbc1260601cb267
+geom[304] norms=64 hash=5e234fa5e7221645
+geom[304] colors=0 hash=14650fb0739d0383
+geom[304] texcoords=64 hash=69300100baee6a8c
+geom[304] tris=96 hash=29343b58ff8f359d
+geom[304] bbox_min=3f138ba3 c0b2f440 4216758a bbox_max=420cc80c 41aecb87 4280cacc
+geom[304] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e2 378eb776 scale=3f800001
+node[305] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[306] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[307] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[308] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[309] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[310] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[311] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[312] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[313] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[314] name=Rock Spine A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[314] name=Rock Spine A:0
+geom[314] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[314] verts=64 hash=3446014a24bbe879
+geom[314] norms=64 hash=e0fa2978b0505620
+geom[314] colors=0 hash=14650fb0739d0383
+geom[314] texcoords=64 hash=b2728256051266e7
+geom[314] tris=96 hash=ce6475cc9f990dd9
+geom[314] bbox_min=417ffeb3 c13a4741 41cbe7f4 bbox_max=4204620b 40edc435 423c87f2
+geom[314] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d28 3f9322a9 367fffdb scale=3f800000
+node[315] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[316] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[317] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[318] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[319] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[320] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[321] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[322] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[323] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[324] name=Rock Spine B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[324] name=Rock Spine B:0
+geom[324] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[324] verts=54 hash=9a354ca8bc5ed572
+geom[324] norms=54 hash=792941099893b1aa
+geom[324] colors=0 hash=14650fb0739d0383
+geom[324] texcoords=54 hash=e51fd78926b786e0
+geom[324] tris=80 hash=2e27c829880a35db
+geom[324] bbox_min=c04f397d 40991157 41ecd165 bbox_max=41c38ee4 41b0e6dc 4225f050
+geom[324] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f932297 363fffe6 scale=3f800000
+node[325] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[326] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[327] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[328] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[329] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[330] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[331] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[332] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[333] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[334] name=Rock Spine C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[334] name=Rock Spine C:0
+geom[334] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[334] verts=54 hash=48aa0a1426e133cc
+geom[334] norms=54 hash=6c9d1d3781d14f7e
+geom[334] colors=0 hash=14650fb0739d0383
+geom[334] texcoords=54 hash=a65125c3534de368
+geom[334] tris=80 hash=c208a394a96af0ec
+geom[334] bbox_min=c1bea7af 40991163 41e84e0d bbox_max=bfadbf2f 41b0e6de 421ff0ed
+geom[334] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f932297 357fff97 scale=3f800000
+node[335] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[336] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[337] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[338] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[339] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[340] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[341] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[342] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[343] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[344] name=Rock Spine D:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[344] name=Rock Spine D:0
+geom[344] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[344] verts=64 hash=b948b50198d09987
+geom[344] norms=64 hash=dd4500a753b65427
+geom[344] colors=0 hash=14650fb0739d0383
+geom[344] texcoords=64 hash=ec3b1e3800b848f2
+geom[344] tris=96 hash=674e2bff594bfb44
+geom[344] bbox_min=c200e560 c12a9658 41e6d813 bbox_max=c186b104 411d5c79 4237a577
+geom[344] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d28 3f9322a9 ad14f78c scale=3f800000
+node[345] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[346] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[347] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[348] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[349] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[350] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[351] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[352] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[353] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[354] name=Rock Spine E:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[354] name=Rock Spine E:0
+geom[354] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[354] verts=64 hash=e43f933cbb073ed6
+geom[354] norms=64 hash=6e45200bc3122415
+geom[354] colors=0 hash=14650fb0739d0383
+geom[354] texcoords=64 hash=70a7791ff71d127a
+geom[354] tris=96 hash=74e14bdb410769a3
+geom[354] bbox_min=c1b8e72b c1cd5bdb 413268a7 bbox_max=c0fb07c0 c05617b9 42255fdc
+geom[354] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d29 3f9322a7 357fff3a scale=3f800000
+node[355] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[356] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[357] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[358] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[359] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[360] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[361] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[362] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[363] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[364] name=Rock Spine F:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[364] name=Rock Spine F:0
+geom[364] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[364] verts=35 hash=a01a656ae663da93
+geom[364] norms=35 hash=e6872a1e675c0de3
+geom[364] colors=0 hash=14650fb0739d0383
+geom[364] texcoords=35 hash=0ca1a7dfc38f2e7d
+geom[364] tris=50 hash=f7023b822d97e540
+geom[364] bbox_min=c11513e0 c2039f69 41e49395 bbox_max=4117ce1d c18b21ca 422f3d1c
+geom[364] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f9322af 36127fc0 scale=3f800000
+node[365] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[366] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[367] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[368] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[369] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[370] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[371] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[372] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[373] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[374] name=Rock Spine G:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[374] name=Rock Spine G:0
+geom[374] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[374] verts=64 hash=9639ac82ea251c66
+geom[374] norms=64 hash=9fd6acb86832a8c0
+geom[374] colors=0 hash=14650fb0739d0383
+geom[374] texcoords=64 hash=ea47d913544eabcc
+geom[374] tris=96 hash=15addc8f9a55bca8
+geom[374] bbox_min=41484086 c1e4459c 41776e9f bbox_max=41e82fc0 c109142c 42248af5
+geom[374] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d27 3f9322af 367fffc1 scale=3f800000
+node[375] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[376] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[377] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[378] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[379] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[380] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[381] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[382] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[383] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[384] name=Rock Spine H:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[384] name=Rock Spine H:0
+geom[384] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[384] verts=52 hash=35952ab75993899e
+geom[384] norms=52 hash=6d2c907178b9299d
+geom[384] colors=0 hash=14650fb0739d0383
+geom[384] texcoords=52 hash=f195f024337aac9a
+geom[384] tris=80 hash=5b1a542917588f49
+geom[384] bbox_min=40bf8d50 40edbee6 40ff608e bbox_max=41a45bd7 418f55c3 4203c272
+geom[384] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d25 3f932297 363fffe5 scale=3f800000
+node[385] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[386] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[387] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[388] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[389] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[390] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[391] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[392] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[393] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[394] name=Rock Spine I:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[394] name=Rock Spine I:0
+geom[394] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[394] verts=53 hash=a2bbf61cde9d7842
+geom[394] norms=53 hash=f150f084f0e706c5
+geom[394] colors=0 hash=14650fb0739d0383
+geom[394] texcoords=53 hash=29d691c8132c7daa
+geom[394] tris=80 hash=047ec8612af3fc5d
+geom[394] bbox_min=c0f99c34 41601dde 4157da95 bbox_max=40512a43 41b12dbf 41f03b2b
+geom[394] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f93229f 357fff65 scale=3f800000
+node[395] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[396] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[397] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[398] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[399] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[400] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[401] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[402] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[403] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[404] name=Rock Spine J:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[404] name=Rock Spine J:0
+geom[404] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[404] verts=52 hash=67c26ac0389f8df6
+geom[404] norms=52 hash=8795e5752271ae45
+geom[404] colors=0 hash=14650fb0739d0383
+geom[404] texcoords=52 hash=2e236312bdfe3c56
+geom[404] tris=80 hash=c716f51f042290f8
+geom[404] bbox_min=c1997c9e 40edbef1 412bd9af bbox_max=c0de7a9f 418f55c6 41ffd08e
+geom[404] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d24 3f932297 357fff92 scale=3f800000
+node[405] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[406] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[407] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[408] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[409] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[410] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[411] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[412] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[413] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[414] name=Rock Spine K:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[414] name=Rock Spine K:0
+geom[414] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[414] verts=45 hash=8380c3bf8891e113
+geom[414] norms=45 hash=2cc48995d3c79019
+geom[414] colors=0 hash=14650fb0739d0383
+geom[414] texcoords=45 hash=c1eef7bd626964a7
+geom[414] tris=66 hash=9de6e5d7ef1f785b
+geom[414] bbox_min=c1738588 c1ddc3af 4183db65 bbox_max=41845b23 c15291aa 41f894fc
+geom[414] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d25 3f9322af 362fffbf scale=3f800000
+node[415] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[416] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[417] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[418] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[419] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[420] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[421] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[422] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[423] name= type=bhkRagdollConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[424] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[425] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[426] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[427] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[428] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[429] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[430] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[431] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[432] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[433] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[434] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[435] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[436] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[437] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[438] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[439] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[440] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[441] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[442] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[443] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[444] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[445] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[446] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[447] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[448] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[449] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[450] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[451] name=Rock LToe0:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[451] name=Rock LToe0:0
+geom[451] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[451] verts=57 hash=4d50a6a4221d76d6
+geom[451] norms=57 hash=cbc33498000039e0
+geom[451] colors=0 hash=14650fb0739d0383
+geom[451] texcoords=57 hash=4c74c46637de6263
+geom[451] tris=80 hash=be1a94424086cf11
+geom[451] bbox_min=c1d58526 bfebcc48 c2c08b11 bbox_max=c09c77fa 41d2b3a4 c29715b5
+geom[451] transform rot=[b5c00000 3f800000 00000000 00000000 00000000 3f800000 3f800000 35c00000 00000000 ] trans=3fdc37c2 42bd1218 419aa78e scale=3f7ffffd
+node[452] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[453] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[454] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[455] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[456] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[457] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[458] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[459] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[460] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[461] name=Rock L Foot B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[461] name=Rock L Foot B:0
+geom[461] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[461] verts=66 hash=9e9dfc8c61f5ad15
+geom[461] norms=66 hash=9559bf3be6dc71e4
+geom[461] colors=0 hash=14650fb0739d0383
+geom[461] texcoords=66 hash=1b49d5cc584781bd
+geom[461] tris=80 hash=89ec4a97a6a0b7d9
+geom[461] bbox_min=c1840e66 c14d197d c2b69569 bbox_max=c0967998 c0469a12 c2a67648
+geom[461] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 419aa78e scale=3f7ffffd
+node[462] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[463] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[464] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[465] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[466] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[467] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[468] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[469] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[470] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[471] name=Rock L Foot C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[471] name=Rock L Foot C:0
+geom[471] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[471] verts=66 hash=d92c94f7ffa6bdba
+geom[471] norms=66 hash=c39b7effc0b02cb7
+geom[471] colors=0 hash=14650fb0739d0383
+geom[471] texcoords=66 hash=1b49d5cc584781bd
+geom[471] tris=80 hash=89ec4a97a6a0b7d9
+geom[471] bbox_min=c1ce5aca c1861067 c2c0d9e1 bbox_max=c0e795e1 3f7288b6 c2a55575
+geom[471] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c7 4151d393 419aa78f scale=3f7ffffd
+node[472] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[473] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[474] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[475] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[476] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[477] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[478] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[479] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[480] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[481] name=Rock L Foot A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[481] name=Rock L Foot A:0
+geom[481] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[481] verts=23 hash=6bacfc12bb37bb4e
+geom[481] norms=23 hash=0623263c168cf587
+geom[481] colors=0 hash=14650fb0739d0383
+geom[481] texcoords=23 hash=44daf6f1cc954a9e
+geom[481] tris=30 hash=922fdf8f28f79e59
+geom[481] bbox_min=c1c7e25d c1de0684 c2c0578f bbox_max=c0f02f45 c170ee53 c2a40417
+geom[481] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 419aa78c scale=3f7ffffd
+node[482] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[483] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[484] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[485] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[486] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[487] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[488] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[489] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[490] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[491] name=Rock L Calf:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[491] name=Rock L Calf:0
+geom[491] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[491] verts=95 hash=90130dabbf5ab2f2
+geom[491] norms=95 hash=d92b40e06566f014
+geom[491] colors=0 hash=14650fb0739d0383
+geom[491] texcoords=95 hash=e185ac07f79f6974
+geom[491] tris=132 hash=ceb324bdbb7a8b38
+geom[491] bbox_min=c1e32a79 c1b576e3 c2a40ac0 bbox_max=c045b5d7 40e9107c c235ca23
+geom[491] transform rot=[34800000 be7c3c54 bf781cae b5be0000 3f781cad be7c3c54 3f800000 35c00000 b4000000 ] trans=c2382d66 c103ec33 419aa792 scale=3f7fffff
+node[492] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[493] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[494] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[495] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[496] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[497] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[498] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[499] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[500] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[501] name=Rock L Thigh A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[501] name=Rock L Thigh A:0
+geom[501] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[501] verts=27 hash=77df051f7105cd1b
+geom[501] norms=27 hash=18c7ac7c05a98f9b
+geom[501] colors=0 hash=14650fb0739d0383
+geom[501] texcoords=27 hash=859b2d54fd7fffd0
+geom[501] tris=38 hash=9aa5176e2636edeb
+geom[501] bbox_min=c1376227 c13c5668 c23c6331 bbox_max=c009ad6b 3fa5244f c2116485
+geom[501] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a3 419aa78e scale=3f7ffffe
+node[502] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[503] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[504] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[505] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[506] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[507] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[508] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[509] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[510] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[511] name=Rock L Thigh B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[511] name=Rock L Thigh B:0
+geom[511] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[511] verts=31 hash=f4fbcdb5cbc2211e
+geom[511] norms=31 hash=0ef81653a9914ebd
+geom[511] colors=0 hash=14650fb0739d0383
+geom[511] texcoords=31 hash=9d7e636a5b87266d
+geom[511] tris=38 hash=7a56d8f2da1b45a3
+geom[511] bbox_min=c1c1d3d9 c19a4098 c23a9c00 bbox_max=c0aa623f c0aac435 c204eb21
+geom[511] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a5 419aa78f scale=3f7ffffe
+node[512] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[513] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[514] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[515] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[516] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[517] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[518] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[519] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[520] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[521] name=Rock L Thigh C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[521] name=Rock L Thigh C:0
+geom[521] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[521] verts=31 hash=f87554bf69e55b68
+geom[521] norms=31 hash=aaeed982ed232a21
+geom[521] colors=0 hash=14650fb0739d0383
+geom[521] texcoords=31 hash=9d7e636a5b87266d
+geom[521] tris=38 hash=7a56d8f2da1b45a3
+geom[521] bbox_min=c1c4ac92 c0e29522 c244aec6 bbox_max=c108f819 4113fd99 c208366f
+geom[521] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c29f 419aa78f scale=3f7ffffe
+node[522] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[523] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[524] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[525] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[526] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[527] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[528] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[529] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[530] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[531] name=Rock L Thigh D:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[531] name=Rock L Thigh D:0
+geom[531] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[531] verts=27 hash=889a7416acbd91d8
+geom[531] norms=27 hash=baaca50111bee63d
+geom[531] colors=0 hash=14650fb0739d0383
+geom[531] texcoords=27 hash=48089d3d65a70948
+geom[531] tris=38 hash=ec950edcb60f0337
+geom[531] bbox_min=c1e2ad6e c13c5666 c2356b8b bbox_max=c1983205 3fa5245a c20a6cdf
+geom[531] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a3 419aa78f scale=3f7ffffe
+node[532] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[533] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[534] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[535] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[536] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[537] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[538] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[539] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[540] name= type=bhkRagdollConstraint typeIdx=11 parent=-1 children=0 hasGeom=0
+node[541] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[542] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[543] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[544] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[545] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[546] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[547] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[548] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[549] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[550] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[551] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[552] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[553] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[554] name= type=bhkCapsuleShape typeIdx=10 parent=-1 children=0 hasGeom=0
+node[555] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[556] name= type=bhkLimitedHingeConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[557] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[558] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[559] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[560] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[561] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[562] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[563] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[564] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[565] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[566] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[567] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[568] name=Rock R Toe0:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[568] name=Rock R Toe0:0
+geom[568] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[568] verts=57 hash=8ca9f543ca122d5a
+geom[568] norms=57 hash=f3e9729f74cfa34e
+geom[568] colors=0 hash=14650fb0739d0383
+geom[568] texcoords=57 hash=e93f700ea5654b9b
+geom[568] tris=80 hash=a511eead332f9387
+geom[568] bbox_min=40b8c443 bfebcc60 c2c08b11 bbox_max=41edd92b 41d2b3a3 c2a20f0d
+geom[568] transform rot=[b5c00000 3f800000 33c00000 00000000 b4800000 3f800000 3f800000 35b80000 00000000 ] trans=3fdc379f 42bd1216 c19aa78c scale=3f7ffffb
+node[569] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[570] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[571] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[572] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[573] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[574] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[575] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[576] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[577] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[578] name=Rock R Foot B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[578] name=Rock R Foot B:0
+geom[578] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[578] verts=23 hash=52b37f5087a91d3e
+geom[578] norms=23 hash=c91bbd24f4b73e86
+geom[578] colors=0 hash=14650fb0739d0383
+geom[578] texcoords=23 hash=c01417cf769ce97e
+geom[578] tris=30 hash=e16a8d8172a10528
+geom[578] bbox_min=41081be9 c1de0685 c2c0578f bbox_max=41cfe481 c170ee57 c2a40417
+geom[578] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 c19aa78e scale=3f7ffffd
+node[579] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[580] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[581] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[582] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[583] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[584] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[585] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[586] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[587] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[588] name=Rock R Foot A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[588] name=Rock R Foot A:0
+geom[588] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[588] verts=66 hash=b82fdcdcd6649a78
+geom[588] norms=66 hash=0dfb3ac505dbad9e
+geom[588] colors=0 hash=14650fb0739d0383
+geom[588] texcoords=66 hash=d254fc6f7dafe1fd
+geom[588] tris=80 hash=e64b1ff79edcbd73
+geom[588] bbox_min=40481f41 c14d197f c2ae6b78 bbox_max=416ee7d2 c0469a1c c299b408
+geom[588] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 c19aa78f scale=3f7ffffd
+node[589] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[590] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[591] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[592] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[593] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[594] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[595] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[596] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[597] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[598] name=Rock R Thigh A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[598] name=Rock R Thigh A:0
+geom[598] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[598] verts=115 hash=b2e2c62d75e13720
+geom[598] norms=115 hash=33adb9cf4d656390
+geom[598] colors=0 hash=14650fb0739d0383
+geom[598] texcoords=115 hash=513f21dccb0715b4
+geom[598] tris=144 hash=fdc71c1dec6cf437
+geom[598] bbox_min=3f5c4b56 c18811be c21193af bbox_max=420017c2 41b52c88 bff954ce
+geom[598] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3328 3fa5c2bf c19aa78f scale=3f7ffffe
+node[599] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[600] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[601] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[602] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[603] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[604] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[605] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[606] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[607] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[608] name=Rock R Thigh C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[608] name=Rock R Thigh C:0
+geom[608] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[608] verts=27 hash=a05b1a1fab50137a
+geom[608] norms=27 hash=630a5287577c7bdc
+geom[608] colors=0 hash=14650fb0739d0383
+geom[608] texcoords=27 hash=48089d3d65a70948
+geom[608] tris=38 hash=ec950edcb60f0337
+geom[608] bbox_min=4091e611 bfbfca45 c247cfc6 bbox_max=41bbb4cc 416d4ee5 c2108014
+geom[608] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b331e 3fa5c2c0 c19aa790 scale=3f7ffffe
+node[609] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[610] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[611] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[612] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[613] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[614] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[615] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[616] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[617] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[618] name=Rock R Thigh B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[618] name=Rock R Thigh B:0
+geom[618] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[618] verts=31 hash=007d0a1f74c28f8e
+geom[618] norms=31 hash=369f7ec449526f5c
+geom[618] colors=0 hash=14650fb0739d0383
+geom[618] texcoords=31 hash=3b3875f25dd7c1c1
+geom[618] tris=38 hash=0ebd4947b6a2ee6f
+geom[618] bbox_min=41370fd8 c18d7273 c2346481 bbox_max=41bc552b c102ef9e c20a945c
+geom[618] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3321 3fa5c2c0 c19aa78f scale=3f7ffffe
+node[619] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[620] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[621] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[622] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[623] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[624] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[625] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[626] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[627] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[628] name=Rock R Thigh D:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[628] name=Rock R Thigh D:0
+geom[628] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[628] verts=31 hash=d96294ca8e273ee7
+geom[628] norms=31 hash=168a1e3af88b0a3a
+geom[628] colors=0 hash=14650fb0739d0383
+geom[628] texcoords=31 hash=3b3875f25dd7c1c1
+geom[628] tris=38 hash=0ebd4947b6a2ee6f
+geom[628] bbox_min=bfc13340 c10acbc1 c2328c22 bbox_max=412ce512 401621d2 c20e7605
+geom[628] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3320 3fa5c2c2 c19aa78f scale=3f7ffffe
+node[629] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[630] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[631] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[632] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[633] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[634] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[635] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[636] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[637] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[638] name=Rock Pelvis A:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[638] name=Rock Pelvis A:0
+geom[638] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[638] verts=45 hash=40591ce6e9efc498
+geom[638] norms=45 hash=33e4029790147cc3
+geom[638] colors=0 hash=14650fb0739d0383
+geom[638] texcoords=45 hash=1f8dc7e38fd564f1
+geom[638] tris=66 hash=4827352a3589995d
+geom[638] bbox_min=c1a95bcb c1bd80fe c0b9bcff bbox_max=41ae970c bf8b5110 41ac1e87
+geom[638] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7f9e b70e8000 scale=3f7ffffd
+node[639] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[640] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[641] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[642] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[643] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[644] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[645] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[646] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[647] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[648] name=Rock Pelvis B:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[648] name=Rock Pelvis B:0
+geom[648] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[648] verts=54 hash=53beefbce0426250
+geom[648] norms=54 hash=b6f9340ddb4a0a67
+geom[648] colors=0 hash=14650fb0739d0383
+geom[648] texcoords=54 hash=caaa2885d6f20cca
+geom[648] tris=80 hash=ee78f10313a21fc1
+geom[648] bbox_min=4145236a c0bdc53e c08eb3b5 bbox_max=41e4ebda 41a12d36 41b4fa1e
+geom[648] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7fa6 b7200000 scale=3f7ffffd
+node[649] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[650] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[651] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[652] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[653] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[654] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[655] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[656] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[657] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[658] name=Rock Pelvis C:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[658] name=Rock Pelvis C:0
+geom[658] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[658] verts=54 hash=409c460fa02f2f26
+geom[658] norms=54 hash=14170026c1469ce5
+geom[658] colors=0 hash=14650fb0739d0383
+geom[658] texcoords=54 hash=dddc4fa7a0bb768e
+geom[658] tris=80 hash=902e03a0bf2d73de
+geom[658] bbox_min=c1ec40c0 c0e0c47a 3e14bb90 bbox_max=c1758a55 418f68c0 41e698aa
+geom[658] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a44 3f8f7fa2 b71fffff scale=3f7ffffd
+node[659] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[660] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[661] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[662] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[663] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[664] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[665] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[666] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[667] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[668] name=Rock Pelvis D:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[668] name=Rock Pelvis D:0
+geom[668] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[668] verts=43 hash=77a089cf11eeaaa8
+geom[668] norms=43 hash=8f5ad266e2314092
+geom[668] colors=0 hash=14650fb0739d0383
+geom[668] texcoords=43 hash=e60674b92a71013a
+geom[668] tris=66 hash=95348651d8a91301
+geom[668] bbox_min=c1a29c28 415b4c2c c0eaa70b bbox_max=419acc70 41bb96e0 4120a0f2
+geom[668] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7f9e b7088000 scale=3f7ffffd
+node[669] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[670] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[671] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[672] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[673] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[674] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[675] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[676] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[677] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[678] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[679] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[680] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[681] name=Rock_02:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[681] name=Rock_02:0
+geom[681] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[681] verts=53 hash=492850c3db6c6313
+geom[681] norms=53 hash=187d3cc2653e1fab
+geom[681] colors=0 hash=14650fb0739d0383
+geom[681] texcoords=53 hash=e584e8ef61bd0a5a
+geom[681] tris=80 hash=cabda6c99d4956bd
+geom[681] bbox_min=c09b6325 c0b535d9 c1564c73 bbox_max=40b08384 40bac7ff 41441aea
+geom[681] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[682] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[683] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[684] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[685] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[686] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[687] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[688] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[689] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[690] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[691] name=Rock_06:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[691] name=Rock_06:0
+geom[691] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[691] verts=53 hash=e5305bc35bc83595
+geom[691] norms=53 hash=b08ba732259e595d
+geom[691] colors=0 hash=14650fb0739d0383
+geom[691] texcoords=53 hash=e584e8ef61bd0a5a
+geom[691] tris=80 hash=cabda6c99d4956bd
+geom[691] bbox_min=c07ec48b c0b16ff5 c0e784eb bbox_max=40976642 40af9c86 40e7af74
+geom[691] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[692] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[693] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[694] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[695] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[696] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[697] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[698] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[699] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[700] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[701] name=Rock_01:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[701] name=Rock_01:0
+geom[701] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[701] verts=53 hash=b3db2f21f8ebb6e3
+geom[701] norms=53 hash=14b0b4758889f4ec
+geom[701] colors=0 hash=14650fb0739d0383
+geom[701] texcoords=53 hash=e584e8ef61bd0a5a
+geom[701] tris=80 hash=cabda6c99d4956bd
+geom[701] bbox_min=c0e77b26 c08af5a7 c0c0f0ad bbox_max=40dee445 40599d2c 40a70c49
+geom[701] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[702] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[703] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[704] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[705] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[706] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[707] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[708] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[709] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[710] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[711] name=Rock_07:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[711] name=Rock_07:0
+geom[711] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[711] verts=53 hash=f69e502d9da4071f
+geom[711] norms=53 hash=2830de6afe279a63
+geom[711] colors=0 hash=14650fb0739d0383
+geom[711] texcoords=53 hash=e584e8ef61bd0a5a
+geom[711] tris=80 hash=cabda6c99d4956bd
+geom[711] bbox_min=c1005fa5 c0c8f8b3 c118239f bbox_max=41205f58 410276ce 41183f95
+geom[711] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[712] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[713] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[714] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[715] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[716] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[717] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[718] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[719] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[720] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[721] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[722] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[723] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[724] name=Rock_00:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[724] name=Rock_00:0
+geom[724] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[724] verts=53 hash=ce5bd55c21a66d11
+geom[724] norms=53 hash=7dcf4e73cb28fd19
+geom[724] colors=0 hash=14650fb0739d0383
+geom[724] texcoords=53 hash=29d691c8132c7daa
+geom[724] tris=80 hash=047ec8612af3fc5d
+geom[724] bbox_min=c0b118ab c0823d85 c1044de2 bbox_max=40b118ab 40823dbd 41044dda
+geom[724] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[725] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[726] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[727] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[728] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[729] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[730] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[731] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[732] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[733] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[734] name=Rock_03:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[734] name=Rock_03:0
+geom[734] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[734] verts=53 hash=0c25f4d6e7851e7b
+geom[734] norms=53 hash=83ed2064c667df49
+geom[734] colors=0 hash=14650fb0739d0383
+geom[734] texcoords=53 hash=e584e8ef61bd0a5a
+geom[734] tris=80 hash=cabda6c99d4956bd
+geom[734] bbox_min=c0141211 c06b3ae2 c0936314 bbox_max=3ff3ac1c 406b42b7 40937e2b
+geom[734] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[735] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[736] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[737] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[738] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[739] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[740] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[741] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[742] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[743] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[744] name=Rock_05:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[744] name=Rock_05:0
+geom[744] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[744] verts=53 hash=e5212dd8e0cb3f78
+geom[744] norms=53 hash=c7bdcc2089b4f41b
+geom[744] colors=0 hash=14650fb0739d0383
+geom[744] texcoords=53 hash=29d691c8132c7daa
+geom[744] tris=80 hash=047ec8612af3fc5d
+geom[744] bbox_min=c0146af7 c07461d4 c0a873ad bbox_max=401504ef 407697fc 40a873a9
+geom[744] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[745] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[746] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+node[747] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[748] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[749] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[750] name= type=bhkBlendController typeIdx=6 parent=-1 children=0 hasGeom=0
+node[751] name= type=bhkConvexVerticesShape typeIdx=13 parent=-1 children=0 hasGeom=0
+node[752] name= type=bhkRigidBody typeIdx=8 parent=-1 children=0 hasGeom=0
+node[753] name= type=bhkBlendCollisionObject typeIdx=9 parent=-1 children=0 hasGeom=0
+node[754] name=Rock_04:0 type=NiTriShape typeIdx=14 parent=-1 children=0 hasGeom=1
+geom[754] name=Rock_04:0
+geom[754] diffuse=textures/creatures/stormatronach/texture.dds normal=
+geom[754] verts=53 hash=fbb412542149180d
+geom[754] norms=53 hash=efe0f34ef57ba1a2
+geom[754] colors=0 hash=14650fb0739d0383
+geom[754] texcoords=53 hash=e584e8ef61bd0a5a
+geom[754] tris=80 hash=cabda6c99d4956bd
+geom[754] bbox_min=c0cb024d c02e8621 c0c8899b bbox_max=40ccbac7 3ff5e3f9 40eb6aac
+geom[754] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+node[755] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[756] name= type=NiTriShapeData typeIdx=20 parent=-1 children=0 hasGeom=0
+roots=757
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+  root[89]=89
+  root[90]=90
+  root[91]=91
+  root[92]=92
+  root[93]=93
+  root[94]=94
+  root[95]=95
+  root[96]=96
+  root[97]=97
+  root[98]=98
+  root[99]=99
+  root[100]=100
+  root[101]=101
+  root[102]=102
+  root[103]=103
+  root[104]=104
+  root[105]=105
+  root[106]=106
+  root[107]=107
+  root[108]=108
+  root[109]=109
+  root[110]=110
+  root[111]=111
+  root[112]=112
+  root[113]=113
+  root[114]=114
+  root[115]=115
+  root[116]=116
+  root[117]=117
+  root[118]=118
+  root[119]=119
+  root[120]=120
+  root[121]=121
+  root[122]=122
+  root[123]=123
+  root[124]=124
+  root[125]=125
+  root[126]=126
+  root[127]=127
+  root[128]=128
+  root[129]=129
+  root[130]=130
+  root[131]=131
+  root[132]=132
+  root[133]=133
+  root[134]=134
+  root[135]=135
+  root[136]=136
+  root[137]=137
+  root[138]=138
+  root[139]=139
+  root[140]=140
+  root[141]=141
+  root[142]=142
+  root[143]=143
+  root[144]=144
+  root[145]=145
+  root[146]=146
+  root[147]=147
+  root[148]=148
+  root[149]=149
+  root[150]=150
+  root[151]=151
+  root[152]=152
+  root[153]=153
+  root[154]=154
+  root[155]=155
+  root[156]=156
+  root[157]=157
+  root[158]=158
+  root[159]=159
+  root[160]=160
+  root[161]=161
+  root[162]=162
+  root[163]=163
+  root[164]=164
+  root[165]=165
+  root[166]=166
+  root[167]=167
+  root[168]=168
+  root[169]=169
+  root[170]=170
+  root[171]=171
+  root[172]=172
+  root[173]=173
+  root[174]=174
+  root[175]=175
+  root[176]=176
+  root[177]=177
+  root[178]=178
+  root[179]=179
+  root[180]=180
+  root[181]=181
+  root[182]=182
+  root[183]=183
+  root[184]=184
+  root[185]=185
+  root[186]=186
+  root[187]=187
+  root[188]=188
+  root[189]=189
+  root[190]=190
+  root[191]=191
+  root[192]=192
+  root[193]=193
+  root[194]=194
+  root[195]=195
+  root[196]=196
+  root[197]=197
+  root[198]=198
+  root[199]=199
+  root[200]=200
+  root[201]=201
+  root[202]=202
+  root[203]=203
+  root[204]=204
+  root[205]=205
+  root[206]=206
+  root[207]=207
+  root[208]=208
+  root[209]=209
+  root[210]=210
+  root[211]=211
+  root[212]=212
+  root[213]=213
+  root[214]=214
+  root[215]=215
+  root[216]=216
+  root[217]=217
+  root[218]=218
+  root[219]=219
+  root[220]=220
+  root[221]=221
+  root[222]=222
+  root[223]=223
+  root[224]=224
+  root[225]=225
+  root[226]=226
+  root[227]=227
+  root[228]=228
+  root[229]=229
+  root[230]=230
+  root[231]=231
+  root[232]=232
+  root[233]=233
+  root[234]=234
+  root[235]=235
+  root[236]=236
+  root[237]=237
+  root[238]=238
+  root[239]=239
+  root[240]=240
+  root[241]=241
+  root[242]=242
+  root[243]=243
+  root[244]=244
+  root[245]=245
+  root[246]=246
+  root[247]=247
+  root[248]=248
+  root[249]=249
+  root[250]=250
+  root[251]=251
+  root[252]=252
+  root[253]=253
+  root[254]=254
+  root[255]=255
+  root[256]=256
+  root[257]=257
+  root[258]=258
+  root[259]=259
+  root[260]=260
+  root[261]=261
+  root[262]=262
+  root[263]=263
+  root[264]=264
+  root[265]=265
+  root[266]=266
+  root[267]=267
+  root[268]=268
+  root[269]=269
+  root[270]=270
+  root[271]=271
+  root[272]=272
+  root[273]=273
+  root[274]=274
+  root[275]=275
+  root[276]=276
+  root[277]=277
+  root[278]=278
+  root[279]=279
+  root[280]=280
+  root[281]=281
+  root[282]=282
+  root[283]=283
+  root[284]=284
+  root[285]=285
+  root[286]=286
+  root[287]=287
+  root[288]=288
+  root[289]=289
+  root[290]=290
+  root[291]=291
+  root[292]=292
+  root[293]=293
+  root[294]=294
+  root[295]=295
+  root[296]=296
+  root[297]=297
+  root[298]=298
+  root[299]=299
+  root[300]=300
+  root[301]=301
+  root[302]=302
+  root[303]=303
+  root[304]=304
+  root[305]=305
+  root[306]=306
+  root[307]=307
+  root[308]=308
+  root[309]=309
+  root[310]=310
+  root[311]=311
+  root[312]=312
+  root[313]=313
+  root[314]=314
+  root[315]=315
+  root[316]=316
+  root[317]=317
+  root[318]=318
+  root[319]=319
+  root[320]=320
+  root[321]=321
+  root[322]=322
+  root[323]=323
+  root[324]=324
+  root[325]=325
+  root[326]=326
+  root[327]=327
+  root[328]=328
+  root[329]=329
+  root[330]=330
+  root[331]=331
+  root[332]=332
+  root[333]=333
+  root[334]=334
+  root[335]=335
+  root[336]=336
+  root[337]=337
+  root[338]=338
+  root[339]=339
+  root[340]=340
+  root[341]=341
+  root[342]=342
+  root[343]=343
+  root[344]=344
+  root[345]=345
+  root[346]=346
+  root[347]=347
+  root[348]=348
+  root[349]=349
+  root[350]=350
+  root[351]=351
+  root[352]=352
+  root[353]=353
+  root[354]=354
+  root[355]=355
+  root[356]=356
+  root[357]=357
+  root[358]=358
+  root[359]=359
+  root[360]=360
+  root[361]=361
+  root[362]=362
+  root[363]=363
+  root[364]=364
+  root[365]=365
+  root[366]=366
+  root[367]=367
+  root[368]=368
+  root[369]=369
+  root[370]=370
+  root[371]=371
+  root[372]=372
+  root[373]=373
+  root[374]=374
+  root[375]=375
+  root[376]=376
+  root[377]=377
+  root[378]=378
+  root[379]=379
+  root[380]=380
+  root[381]=381
+  root[382]=382
+  root[383]=383
+  root[384]=384
+  root[385]=385
+  root[386]=386
+  root[387]=387
+  root[388]=388
+  root[389]=389
+  root[390]=390
+  root[391]=391
+  root[392]=392
+  root[393]=393
+  root[394]=394
+  root[395]=395
+  root[396]=396
+  root[397]=397
+  root[398]=398
+  root[399]=399
+  root[400]=400
+  root[401]=401
+  root[402]=402
+  root[403]=403
+  root[404]=404
+  root[405]=405
+  root[406]=406
+  root[407]=407
+  root[408]=408
+  root[409]=409
+  root[410]=410
+  root[411]=411
+  root[412]=412
+  root[413]=413
+  root[414]=414
+  root[415]=415
+  root[416]=416
+  root[417]=417
+  root[418]=418
+  root[419]=419
+  root[420]=420
+  root[421]=421
+  root[422]=422
+  root[423]=423
+  root[424]=424
+  root[425]=425
+  root[426]=426
+  root[427]=427
+  root[428]=428
+  root[429]=429
+  root[430]=430
+  root[431]=431
+  root[432]=432
+  root[433]=433
+  root[434]=434
+  root[435]=435
+  root[436]=436
+  root[437]=437
+  root[438]=438
+  root[439]=439
+  root[440]=440
+  root[441]=441
+  root[442]=442
+  root[443]=443
+  root[444]=444
+  root[445]=445
+  root[446]=446
+  root[447]=447
+  root[448]=448
+  root[449]=449
+  root[450]=450
+  root[451]=451
+  root[452]=452
+  root[453]=453
+  root[454]=454
+  root[455]=455
+  root[456]=456
+  root[457]=457
+  root[458]=458
+  root[459]=459
+  root[460]=460
+  root[461]=461
+  root[462]=462
+  root[463]=463
+  root[464]=464
+  root[465]=465
+  root[466]=466
+  root[467]=467
+  root[468]=468
+  root[469]=469
+  root[470]=470
+  root[471]=471
+  root[472]=472
+  root[473]=473
+  root[474]=474
+  root[475]=475
+  root[476]=476
+  root[477]=477
+  root[478]=478
+  root[479]=479
+  root[480]=480
+  root[481]=481
+  root[482]=482
+  root[483]=483
+  root[484]=484
+  root[485]=485
+  root[486]=486
+  root[487]=487
+  root[488]=488
+  root[489]=489
+  root[490]=490
+  root[491]=491
+  root[492]=492
+  root[493]=493
+  root[494]=494
+  root[495]=495
+  root[496]=496
+  root[497]=497
+  root[498]=498
+  root[499]=499
+  root[500]=500
+  root[501]=501
+  root[502]=502
+  root[503]=503
+  root[504]=504
+  root[505]=505
+  root[506]=506
+  root[507]=507
+  root[508]=508
+  root[509]=509
+  root[510]=510
+  root[511]=511
+  root[512]=512
+  root[513]=513
+  root[514]=514
+  root[515]=515
+  root[516]=516
+  root[517]=517
+  root[518]=518
+  root[519]=519
+  root[520]=520
+  root[521]=521
+  root[522]=522
+  root[523]=523
+  root[524]=524
+  root[525]=525
+  root[526]=526
+  root[527]=527
+  root[528]=528
+  root[529]=529
+  root[530]=530
+  root[531]=531
+  root[532]=532
+  root[533]=533
+  root[534]=534
+  root[535]=535
+  root[536]=536
+  root[537]=537
+  root[538]=538
+  root[539]=539
+  root[540]=540
+  root[541]=541
+  root[542]=542
+  root[543]=543
+  root[544]=544
+  root[545]=545
+  root[546]=546
+  root[547]=547
+  root[548]=548
+  root[549]=549
+  root[550]=550
+  root[551]=551
+  root[552]=552
+  root[553]=553
+  root[554]=554
+  root[555]=555
+  root[556]=556
+  root[557]=557
+  root[558]=558
+  root[559]=559
+  root[560]=560
+  root[561]=561
+  root[562]=562
+  root[563]=563
+  root[564]=564
+  root[565]=565
+  root[566]=566
+  root[567]=567
+  root[568]=568
+  root[569]=569
+  root[570]=570
+  root[571]=571
+  root[572]=572
+  root[573]=573
+  root[574]=574
+  root[575]=575
+  root[576]=576
+  root[577]=577
+  root[578]=578
+  root[579]=579
+  root[580]=580
+  root[581]=581
+  root[582]=582
+  root[583]=583
+  root[584]=584
+  root[585]=585
+  root[586]=586
+  root[587]=587
+  root[588]=588
+  root[589]=589
+  root[590]=590
+  root[591]=591
+  root[592]=592
+  root[593]=593
+  root[594]=594
+  root[595]=595
+  root[596]=596
+  root[597]=597
+  root[598]=598
+  root[599]=599
+  root[600]=600
+  root[601]=601
+  root[602]=602
+  root[603]=603
+  root[604]=604
+  root[605]=605
+  root[606]=606
+  root[607]=607
+  root[608]=608
+  root[609]=609
+  root[610]=610
+  root[611]=611
+  root[612]=612
+  root[613]=613
+  root[614]=614
+  root[615]=615
+  root[616]=616
+  root[617]=617
+  root[618]=618
+  root[619]=619
+  root[620]=620
+  root[621]=621
+  root[622]=622
+  root[623]=623
+  root[624]=624
+  root[625]=625
+  root[626]=626
+  root[627]=627
+  root[628]=628
+  root[629]=629
+  root[630]=630
+  root[631]=631
+  root[632]=632
+  root[633]=633
+  root[634]=634
+  root[635]=635
+  root[636]=636
+  root[637]=637
+  root[638]=638
+  root[639]=639
+  root[640]=640
+  root[641]=641
+  root[642]=642
+  root[643]=643
+  root[644]=644
+  root[645]=645
+  root[646]=646
+  root[647]=647
+  root[648]=648
+  root[649]=649
+  root[650]=650
+  root[651]=651
+  root[652]=652
+  root[653]=653
+  root[654]=654
+  root[655]=655
+  root[656]=656
+  root[657]=657
+  root[658]=658
+  root[659]=659
+  root[660]=660
+  root[661]=661
+  root[662]=662
+  root[663]=663
+  root[664]=664
+  root[665]=665
+  root[666]=666
+  root[667]=667
+  root[668]=668
+  root[669]=669
+  root[670]=670
+  root[671]=671
+  root[672]=672
+  root[673]=673
+  root[674]=674
+  root[675]=675
+  root[676]=676
+  root[677]=677
+  root[678]=678
+  root[679]=679
+  root[680]=680
+  root[681]=681
+  root[682]=682
+  root[683]=683
+  root[684]=684
+  root[685]=685
+  root[686]=686
+  root[687]=687
+  root[688]=688
+  root[689]=689
+  root[690]=690
+  root[691]=691
+  root[692]=692
+  root[693]=693
+  root[694]=694
+  root[695]=695
+  root[696]=696
+  root[697]=697
+  root[698]=698
+  root[699]=699
+  root[700]=700
+  root[701]=701
+  root[702]=702
+  root[703]=703
+  root[704]=704
+  root[705]=705
+  root[706]=706
+  root[707]=707
+  root[708]=708
+  root[709]=709
+  root[710]=710
+  root[711]=711
+  root[712]=712
+  root[713]=713
+  root[714]=714
+  root[715]=715
+  root[716]=716
+  root[717]=717
+  root[718]=718
+  root[719]=719
+  root[720]=720
+  root[721]=721
+  root[722]=722
+  root[723]=723
+  root[724]=724
+  root[725]=725
+  root[726]=726
+  root[727]=727
+  root[728]=728
+  root[729]=729
+  root[730]=730
+  root[731]=731
+  root[732]=732
+  root[733]=733
+  root[734]=734
+  root[735]=735
+  root[736]=736
+  root[737]=737
+  root[738]=738
+  root[739]=739
+  root[740]=740
+  root[741]=741
+  root[742]=742
+  root[743]=743
+  root[744]=744
+  root[745]=745
+  root[746]=746
+  root[747]=747
+  root[748]=748
+  root[749]=749
+  root[750]=750
+  root[751]=751
+  root[752]=752
+  root[753]=753
+  root[754]=754
+  root[755]=755
+  root[756]=756
+getNodeByName(first)=1
+extractAllGeometry=53
+allgeom[0] name=Bip01 headA:0
+allgeom[0] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[0] verts=421 hash=4e4e31d0933d45c5
+allgeom[0] norms=421 hash=09000fdb723c9a36
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=421 hash=7f668a4e474684f9
+allgeom[0] tris=634 hash=0fa8b51caa0fc31c
+allgeom[0] bbox_min=c1764725 c0a4004a 4280046f bbox_max=4177176d 41e9969d 42c0d9e0
+allgeom[0] transform rot=[3f800000 3449a4d8 3418e995 b449a4d8 3f800000 b30451c2 b418e995 330451ba 3f800000 ] trans=3776c138 c06fc2f7 c2972104 scale=3f800004
+allgeom[1] name=Rock L ForrArm:0
+allgeom[1] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[1] verts=112 hash=cbb496326a6e5e6c
+allgeom[1] norms=112 hash=ab41a03def73d608
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=112 hash=a0ed4eb4b9632a62
+allgeom[1] tris=162 hash=d3646fc8e3993fa3
+allgeom[1] bbox_min=c2d38a72 c1b7a7d7 41f59a16 bbox_max=c27f1305 40ac4aaa 427170c3
+allgeom[1] transform rot=[bf71effa 3e79e1a2 be5eb3b1 be71489e bf783fd0 bd836149 be67fd43 bc19b490 3f79550b ] trans=c23982b3 c1bc4048 c281b1e0 scale=3f7fffff
+allgeom[2] name=Rock L ForrArm A:0
+allgeom[2] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[2] verts=27 hash=90949e802ad4e53b
+allgeom[2] norms=27 hash=bb0b9e38a92a4aec
+allgeom[2] colors=0 hash=14650fb0739d0383
+allgeom[2] texcoords=27 hash=47ab11fe91a609b1
+allgeom[2] tris=38 hash=237ef9837653c381
+allgeom[2] bbox_min=c28e80a8 c1bf9651 41fff45e bbox_max=c25e2572 c0cc4e15 42468101
+allgeom[2] transform rot=[bf71effa 3e79e1a7 be5eb3ad be7148a5 bf783fd0 bd836148 be67fd3f bc19b486 3f79550b ] trans=c23982b9 c1bc404e c281b1df scale=3f800002
+allgeom[3] name=Rock L ForrArm B:0
+allgeom[3] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[3] verts=27 hash=73da5673923bdb82
+allgeom[3] norms=27 hash=55d2fa2f2d93c267
+allgeom[3] colors=0 hash=14650fb0739d0383
+allgeom[3] texcoords=27 hash=136b900f60021315
+allgeom[3] tris=38 hash=583d781bf8bea5ee
+allgeom[3] bbox_min=c28df3ec c0dd64f3 422dd3a5 bbox_max=c2687d07 4096a867 426bcf25
+allgeom[3] transform rot=[bf71efb6 3e79e5d0 be5eb392 be714cb0 bf783f8c bd836331 be67fd6a bc19b432 3f795508 ] trans=c2398277 c1bc40e9 c281b21e scale=3f7ffffe
+allgeom[4] name=Rock L Clavicle C:0
+allgeom[4] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[4] verts=27 hash=0cc0a7654d7519f4
+allgeom[4] norms=27 hash=e95c6e048ba28067
+allgeom[4] colors=0 hash=14650fb0739d0383
+allgeom[4] texcoords=27 hash=de8a93a709b8d022
+allgeom[4] tris=38 hash=9d73cbc3751097b0
+allgeom[4] bbox_min=c21bd60e c185e639 42622760 bbox_max=c1b66c66 40b77ef1 428a2c3c
+allgeom[4] transform rot=[bf6e664a be2ea2d8 bea4decf 3e106c12 bf7bc8c0 3de77715 beac0621 3d751482 3f70a18e ] trans=41428f1c c1280b76 c2841533 scale=3f800001
+allgeom[5] name=Rock L Clavicle B:0
+allgeom[5] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[5] verts=63 hash=531334a6fa7a562f
+allgeom[5] norms=63 hash=f4f01e95b79e40c3
+allgeom[5] colors=0 hash=14650fb0739d0383
+allgeom[5] texcoords=63 hash=b22778bda2c5a28d
+allgeom[5] tris=96 hash=1c29c199d9c6f4cc
+allgeom[5] bbox_min=c1ef33c3 c1c68332 426a00a7 bbox_max=c0da5a94 4154086d 428e632b
+allgeom[5] transform rot=[bf6e664a be2ea2d8 bea4decf 3e106c12 bf7bc8c0 3de77715 beac0621 3d751482 3f70a18e ] trans=41428f1f c1280b78 c2841532 scale=3f800001
+allgeom[6] name=Rock R ForeArm B:0
+allgeom[6] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[6] verts=27 hash=ce5912bb887bfe2c
+allgeom[6] norms=27 hash=324d5556932e090a
+allgeom[6] colors=0 hash=14650fb0739d0383
+allgeom[6] texcoords=27 hash=47ab11fe91a609b1
+allgeom[6] tris=38 hash=237ef9837653c381
+allgeom[6] bbox_min=42690010 c1b48214 42080d3b bbox_max=428af1b0 c141dd7a 4239329c
+allgeom[6] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b4 4281b219 scale=3f7fffff
+allgeom[7] name=Rock R ForeArm C:0
+allgeom[7] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[7] verts=27 hash=9b779843fb8158f9
+allgeom[7] norms=27 hash=4c131fe5bc88af3e
+allgeom[7] colors=0 hash=14650fb0739d0383
+allgeom[7] texcoords=27 hash=47ab11fe91a609b1
+allgeom[7] tris=38 hash=237ef9837653c381
+allgeom[7] bbox_min=4260549b c14790c4 42073bcb bbox_max=428a8490 3f939bfc 423b6383
+allgeom[7] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b2 4281b218 scale=3f7fffff
+allgeom[8] name=Rock R ForeArm A:0
+allgeom[8] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[8] verts=27 hash=5de24719d65714e5
+allgeom[8] norms=27 hash=faefc4bdbd161197
+allgeom[8] colors=0 hash=14650fb0739d0383
+allgeom[8] texcoords=27 hash=47ab11fe91a609b1
+allgeom[8] tris=38 hash=237ef9837653c381
+allgeom[8] bbox_min=4266c5b3 c18727f4 4235852c bbox_max=42908ec4 bf510d61 42716e22
+allgeom[8] transform rot=[3f71f051 3e79dc31 be5eb3cb 3e71435f bf784028 bd835e64 be67fcf5 3c19b1fc bf795510 ] trans=c239842f c1bc39b2 4281b218 scale=3f7fffff
+allgeom[9] name=Rock R Clavicle:0
+allgeom[9] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[9] verts=64 hash=b77eb18acef510bc
+allgeom[9] norms=64 hash=404379d889da11a2
+allgeom[9] colors=0 hash=14650fb0739d0383
+allgeom[9] texcoords=64 hash=7a7f3b7550e3245f
+allgeom[9] tris=96 hash=95672deefd2d4602
+allgeom[9] bbox_min=410fc719 c1db4ecd 425c783d bbox_max=420ad528 417dacb7 428e22de
+allgeom[9] transform rot=[3f6e664e be2ea237 bea4decf be106b65 bf7bc8c8 3de77724 beac061d bd75158b bf70a192 ] trans=41428f2e c1280b80 42841533 scale=3f800001
+allgeom[10] name=Rock BL Spine1:0
+allgeom[10] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[10] verts=53 hash=757765bc27a91d6e
+allgeom[10] norms=53 hash=5c5231639a5725f9
+allgeom[10] colors=0 hash=14650fb0739d0383
+allgeom[10] texcoords=53 hash=be9f6a6a2c2fd1e5
+allgeom[10] tris=80 hash=43163d76d3cdf23b
+allgeom[10] bbox_min=c20a6ecb c1f31cab 4220f3ad bbox_max=c00f2c86 c0830e57 4281678e
+allgeom[10] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e4 378ab138 scale=3f800001
+allgeom[11] name=Rock BR Spine1:0
+allgeom[11] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[11] verts=53 hash=d30c5165e70b819a
+allgeom[11] norms=53 hash=db804f27fb9a2eb8
+allgeom[11] colors=0 hash=14650fb0739d0383
+allgeom[11] texcoords=53 hash=02112410b17394c1
+allgeom[11] tris=80 hash=8b926e570c5992c3
+allgeom[11] bbox_min=3e8aafd0 c1ee3578 421cd41e bbox_max=421227d2 c05ee30c 42836e34
+allgeom[11] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f57 40a7a4e4 378bbbf1 scale=3f800001
+allgeom[12] name=Rock FL Spine1:0
+allgeom[12] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[12] verts=64 hash=d8613fa1787981fc
+allgeom[12] norms=64 hash=1c3b0b7c89e1418d
+allgeom[12] colors=0 hash=14650fb0739d0383
+allgeom[12] texcoords=64 hash=a459584e86866590
+allgeom[12] tris=96 hash=674e2bff594bfb44
+allgeom[12] bbox_min=c20b5b02 c0b2f435 4212e708 bbox_max=3fa17a16 41aecb88 4281cfa0
+allgeom[12] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e1 378ec0b2 scale=3f800001
+allgeom[13] name=Rock FR Spine1:0
+allgeom[13] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[13] verts=64 hash=6fbc1260601cb267
+allgeom[13] norms=64 hash=5e234fa5e7221645
+allgeom[13] colors=0 hash=14650fb0739d0383
+allgeom[13] texcoords=64 hash=69300100baee6a8c
+allgeom[13] tris=96 hash=29343b58ff8f359d
+allgeom[13] bbox_min=3f138ba3 c0b2f440 4216758a bbox_max=420cc80c 41aecb87 4280cacc
+allgeom[13] transform rot=[b4000000 3deb6c20 3f7e4d90 35be0000 3f7e4d90 bdeb6c20 bf800000 35ba0000 b4c00000 ] trans=c20d3f56 40a7a4e2 378eb776 scale=3f800001
+allgeom[14] name=Rock Spine A:0
+allgeom[14] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[14] verts=64 hash=3446014a24bbe879
+allgeom[14] norms=64 hash=e0fa2978b0505620
+allgeom[14] colors=0 hash=14650fb0739d0383
+allgeom[14] texcoords=64 hash=b2728256051266e7
+allgeom[14] tris=96 hash=ce6475cc9f990dd9
+allgeom[14] bbox_min=417ffeb3 c13a4741 41cbe7f4 bbox_max=4204620b 40edc435 423c87f2
+allgeom[14] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d28 3f9322a9 367fffdb scale=3f800000
+allgeom[15] name=Rock Spine B:0
+allgeom[15] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[15] verts=54 hash=9a354ca8bc5ed572
+allgeom[15] norms=54 hash=792941099893b1aa
+allgeom[15] colors=0 hash=14650fb0739d0383
+allgeom[15] texcoords=54 hash=e51fd78926b786e0
+allgeom[15] tris=80 hash=2e27c829880a35db
+allgeom[15] bbox_min=c04f397d 40991157 41ecd165 bbox_max=41c38ee4 41b0e6dc 4225f050
+allgeom[15] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f932297 363fffe6 scale=3f800000
+allgeom[16] name=Rock Spine C:0
+allgeom[16] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[16] verts=54 hash=48aa0a1426e133cc
+allgeom[16] norms=54 hash=6c9d1d3781d14f7e
+allgeom[16] colors=0 hash=14650fb0739d0383
+allgeom[16] texcoords=54 hash=a65125c3534de368
+allgeom[16] tris=80 hash=c208a394a96af0ec
+allgeom[16] bbox_min=c1bea7af 40991163 41e84e0d bbox_max=bfadbf2f 41b0e6de 421ff0ed
+allgeom[16] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f932297 357fff97 scale=3f800000
+allgeom[17] name=Rock Spine D:0
+allgeom[17] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[17] verts=64 hash=b948b50198d09987
+allgeom[17] norms=64 hash=dd4500a753b65427
+allgeom[17] colors=0 hash=14650fb0739d0383
+allgeom[17] texcoords=64 hash=ec3b1e3800b848f2
+allgeom[17] tris=96 hash=674e2bff594bfb44
+allgeom[17] bbox_min=c200e560 c12a9658 41e6d813 bbox_max=c186b104 411d5c79 4237a577
+allgeom[17] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d28 3f9322a9 ad14f78c scale=3f800000
+allgeom[18] name=Rock Spine E:0
+allgeom[18] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[18] verts=64 hash=e43f933cbb073ed6
+allgeom[18] norms=64 hash=6e45200bc3122415
+allgeom[18] colors=0 hash=14650fb0739d0383
+allgeom[18] texcoords=64 hash=70a7791ff71d127a
+allgeom[18] tris=96 hash=74e14bdb410769a3
+allgeom[18] bbox_min=c1b8e72b c1cd5bdb 413268a7 bbox_max=c0fb07c0 c05617b9 42255fdc
+allgeom[18] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d29 3f9322a7 357fff3a scale=3f800000
+allgeom[19] name=Rock Spine F:0
+allgeom[19] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[19] verts=35 hash=a01a656ae663da93
+allgeom[19] norms=35 hash=e6872a1e675c0de3
+allgeom[19] colors=0 hash=14650fb0739d0383
+allgeom[19] texcoords=35 hash=0ca1a7dfc38f2e7d
+allgeom[19] tris=50 hash=f7023b822d97e540
+allgeom[19] bbox_min=c11513e0 c2039f69 41e49395 bbox_max=4117ce1d c18b21ca 422f3d1c
+allgeom[19] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f9322af 36127fc0 scale=3f800000
+allgeom[20] name=Rock Spine G:0
+allgeom[20] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[20] verts=64 hash=9639ac82ea251c66
+allgeom[20] norms=64 hash=9fd6acb86832a8c0
+allgeom[20] colors=0 hash=14650fb0739d0383
+allgeom[20] texcoords=64 hash=ea47d913544eabcc
+allgeom[20] tris=96 hash=15addc8f9a55bca8
+allgeom[20] bbox_min=41484086 c1e4459c 41776e9f bbox_max=41e82fc0 c109142c 42248af5
+allgeom[20] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d27 3f9322af 367fffc1 scale=3f800000
+allgeom[21] name=Rock Spine H:0
+allgeom[21] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[21] verts=52 hash=35952ab75993899e
+allgeom[21] norms=52 hash=6d2c907178b9299d
+allgeom[21] colors=0 hash=14650fb0739d0383
+allgeom[21] texcoords=52 hash=f195f024337aac9a
+allgeom[21] tris=80 hash=5b1a542917588f49
+allgeom[21] bbox_min=40bf8d50 40edbee6 40ff608e bbox_max=41a45bd7 418f55c3 4203c272
+allgeom[21] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d25 3f932297 363fffe5 scale=3f800000
+allgeom[22] name=Rock Spine I:0
+allgeom[22] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[22] verts=53 hash=a2bbf61cde9d7842
+allgeom[22] norms=53 hash=f150f084f0e706c5
+allgeom[22] colors=0 hash=14650fb0739d0383
+allgeom[22] texcoords=53 hash=29d691c8132c7daa
+allgeom[22] tris=80 hash=047ec8612af3fc5d
+allgeom[22] bbox_min=c0f99c34 41601dde 4157da95 bbox_max=40512a43 41b12dbf 41f03b2b
+allgeom[22] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d26 3f93229f 357fff65 scale=3f800000
+allgeom[23] name=Rock Spine J:0
+allgeom[23] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[23] verts=52 hash=67c26ac0389f8df6
+allgeom[23] norms=52 hash=8795e5752271ae45
+allgeom[23] colors=0 hash=14650fb0739d0383
+allgeom[23] texcoords=52 hash=2e236312bdfe3c56
+allgeom[23] tris=80 hash=c716f51f042290f8
+allgeom[23] bbox_min=c1997c9e 40edbef1 412bd9af bbox_max=c0de7a9f 418f55c6 41ffd08e
+allgeom[23] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d24 3f932297 357fff92 scale=3f800000
+allgeom[24] name=Rock Spine K:0
+allgeom[24] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[24] verts=45 hash=8380c3bf8891e113
+allgeom[24] norms=45 hash=2cc48995d3c79019
+allgeom[24] colors=0 hash=14650fb0739d0383
+allgeom[24] texcoords=45 hash=c1eef7bd626964a7
+allgeom[24] tris=66 hash=9de6e5d7ef1f785b
+allgeom[24] bbox_min=c1738588 c1ddc3af 4183db65 bbox_max=41845b23 c15291aa 41f894fc
+allgeom[24] transform rot=[00000000 3a50ba21 3f7ffffb 35bcce00 3f7ffffb ba50ba21 bf800000 35bcce00 00000000 ] trans=c1647d25 3f9322af 362fffbf scale=3f800000
+allgeom[25] name=Rock LToe0:0
+allgeom[25] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[25] verts=57 hash=4d50a6a4221d76d6
+allgeom[25] norms=57 hash=cbc33498000039e0
+allgeom[25] colors=0 hash=14650fb0739d0383
+allgeom[25] texcoords=57 hash=4c74c46637de6263
+allgeom[25] tris=80 hash=be1a94424086cf11
+allgeom[25] bbox_min=c1d58526 bfebcc48 c2c08b11 bbox_max=c09c77fa 41d2b3a4 c29715b5
+allgeom[25] transform rot=[b5c00000 3f800000 00000000 00000000 00000000 3f800000 3f800000 35c00000 00000000 ] trans=3fdc37c2 42bd1218 419aa78e scale=3f7ffffd
+allgeom[26] name=Rock L Foot B:0
+allgeom[26] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[26] verts=66 hash=9e9dfc8c61f5ad15
+allgeom[26] norms=66 hash=9559bf3be6dc71e4
+allgeom[26] colors=0 hash=14650fb0739d0383
+allgeom[26] texcoords=66 hash=1b49d5cc584781bd
+allgeom[26] tris=80 hash=89ec4a97a6a0b7d9
+allgeom[26] bbox_min=c1840e66 c14d197d c2b69569 bbox_max=c0967998 c0469a12 c2a67648
+allgeom[26] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 419aa78e scale=3f7ffffd
+allgeom[27] name=Rock L Foot C:0
+allgeom[27] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[27] verts=66 hash=d92c94f7ffa6bdba
+allgeom[27] norms=66 hash=c39b7effc0b02cb7
+allgeom[27] colors=0 hash=14650fb0739d0383
+allgeom[27] texcoords=66 hash=1b49d5cc584781bd
+allgeom[27] tris=80 hash=89ec4a97a6a0b7d9
+allgeom[27] bbox_min=c1ce5aca c1861067 c2c0d9e1 bbox_max=c0e795e1 3f7288b6 c2a55575
+allgeom[27] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c7 4151d393 419aa78f scale=3f7ffffd
+allgeom[28] name=Rock L Foot A:0
+allgeom[28] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[28] verts=23 hash=6bacfc12bb37bb4e
+allgeom[28] norms=23 hash=0623263c168cf587
+allgeom[28] colors=0 hash=14650fb0739d0383
+allgeom[28] texcoords=23 hash=44daf6f1cc954a9e
+allgeom[28] tris=30 hash=922fdf8f28f79e59
+allgeom[28] bbox_min=c1c7e25d c1de0684 c2c0578f bbox_max=c0f02f45 c170ee53 c2a40417
+allgeom[28] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 419aa78c scale=3f7ffffd
+allgeom[29] name=Rock L Calf:0
+allgeom[29] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[29] verts=95 hash=90130dabbf5ab2f2
+allgeom[29] norms=95 hash=d92b40e06566f014
+allgeom[29] colors=0 hash=14650fb0739d0383
+allgeom[29] texcoords=95 hash=e185ac07f79f6974
+allgeom[29] tris=132 hash=ceb324bdbb7a8b38
+allgeom[29] bbox_min=c1e32a79 c1b576e3 c2a40ac0 bbox_max=c045b5d7 40e9107c c235ca23
+allgeom[29] transform rot=[34800000 be7c3c54 bf781cae b5be0000 3f781cad be7c3c54 3f800000 35c00000 b4000000 ] trans=c2382d66 c103ec33 419aa792 scale=3f7fffff
+allgeom[30] name=Rock L Thigh A:0
+allgeom[30] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[30] verts=27 hash=77df051f7105cd1b
+allgeom[30] norms=27 hash=18c7ac7c05a98f9b
+allgeom[30] colors=0 hash=14650fb0739d0383
+allgeom[30] texcoords=27 hash=859b2d54fd7fffd0
+allgeom[30] tris=38 hash=9aa5176e2636edeb
+allgeom[30] bbox_min=c1376227 c13c5668 c23c6331 bbox_max=c009ad6b 3fa5244f c2116485
+allgeom[30] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a3 419aa78e scale=3f7ffffe
+allgeom[31] name=Rock L Thigh B:0
+allgeom[31] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[31] verts=31 hash=f4fbcdb5cbc2211e
+allgeom[31] norms=31 hash=0ef81653a9914ebd
+allgeom[31] colors=0 hash=14650fb0739d0383
+allgeom[31] texcoords=31 hash=9d7e636a5b87266d
+allgeom[31] tris=38 hash=7a56d8f2da1b45a3
+allgeom[31] bbox_min=c1c1d3d9 c19a4098 c23a9c00 bbox_max=c0aa623f c0aac435 c204eb21
+allgeom[31] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a5 419aa78f scale=3f7ffffe
+allgeom[32] name=Rock L Thigh C:0
+allgeom[32] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[32] verts=31 hash=f87554bf69e55b68
+allgeom[32] norms=31 hash=aaeed982ed232a21
+allgeom[32] colors=0 hash=14650fb0739d0383
+allgeom[32] texcoords=31 hash=9d7e636a5b87266d
+allgeom[32] tris=38 hash=7a56d8f2da1b45a3
+allgeom[32] bbox_min=c1c4ac92 c0e29522 c244aec6 bbox_max=c108f819 4113fd99 c208366f
+allgeom[32] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c29f 419aa78f scale=3f7ffffe
+allgeom[33] name=Rock L Thigh D:0
+allgeom[33] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[33] verts=27 hash=889a7416acbd91d8
+allgeom[33] norms=27 hash=baaca50111bee63d
+allgeom[33] colors=0 hash=14650fb0739d0383
+allgeom[33] texcoords=27 hash=48089d3d65a70948
+allgeom[33] tris=38 hash=ec950edcb60f0337
+allgeom[33] bbox_min=c1e2ad6e c13c5666 c2356b8b bbox_max=c1983205 3fa5245a c20a6cdf
+allgeom[33] transform rot=[b4800000 bd342fae bf7fc08f b5c48000 3f7fc08f bd342fae 3f800000 35c34000 b4c00000 ] trans=407b330b 3fa5c2a3 419aa78f scale=3f7ffffe
+allgeom[34] name=Rock R Toe0:0
+allgeom[34] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[34] verts=57 hash=8ca9f543ca122d5a
+allgeom[34] norms=57 hash=f3e9729f74cfa34e
+allgeom[34] colors=0 hash=14650fb0739d0383
+allgeom[34] texcoords=57 hash=e93f700ea5654b9b
+allgeom[34] tris=80 hash=a511eead332f9387
+allgeom[34] bbox_min=40b8c443 bfebcc60 c2c08b11 bbox_max=41edd92b 41d2b3a3 c2a20f0d
+allgeom[34] transform rot=[b5c00000 3f800000 33c00000 00000000 b4800000 3f800000 3f800000 35b80000 00000000 ] trans=3fdc379f 42bd1216 c19aa78c scale=3f7ffffb
+allgeom[35] name=Rock R Foot B:0
+allgeom[35] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[35] verts=23 hash=52b37f5087a91d3e
+allgeom[35] norms=23 hash=c91bbd24f4b73e86
+allgeom[35] colors=0 hash=14650fb0739d0383
+allgeom[35] texcoords=23 hash=c01417cf769ce97e
+allgeom[35] tris=30 hash=e16a8d8172a10528
+allgeom[35] bbox_min=41081be9 c1de0685 c2c0578f bbox_max=41cfe481 c170ee57 c2a40417
+allgeom[35] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 c19aa78e scale=3f7ffffd
+allgeom[36] name=Rock R Foot A:0
+allgeom[36] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[36] verts=66 hash=b82fdcdcd6649a78
+allgeom[36] norms=66 hash=0dfb3ac505dbad9e
+allgeom[36] colors=0 hash=14650fb0739d0383
+allgeom[36] texcoords=66 hash=d254fc6f7dafe1fd
+allgeom[36] tris=80 hash=e64b1ff79edcbd73
+allgeom[36] bbox_min=40481f41 c14d197f c2ae6b78 bbox_max=416ee7d2 c0469a1c c299b408
+allgeom[36] transform rot=[00000000 33d53fd0 bf800000 b5b777a8 3f800000 33d53fd0 3f800000 35b777a8 00000000 ] trans=c2aa24c6 4151d394 c19aa78f scale=3f7ffffd
+allgeom[37] name=Rock R Thigh A:0
+allgeom[37] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[37] verts=115 hash=b2e2c62d75e13720
+allgeom[37] norms=115 hash=33adb9cf4d656390
+allgeom[37] colors=0 hash=14650fb0739d0383
+allgeom[37] texcoords=115 hash=513f21dccb0715b4
+allgeom[37] tris=144 hash=fdc71c1dec6cf437
+allgeom[37] bbox_min=3f5c4b56 c18811be c21193af bbox_max=420017c2 41b52c88 bff954ce
+allgeom[37] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3328 3fa5c2bf c19aa78f scale=3f7ffffe
+allgeom[38] name=Rock R Thigh C:0
+allgeom[38] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[38] verts=27 hash=a05b1a1fab50137a
+allgeom[38] norms=27 hash=630a5287577c7bdc
+allgeom[38] colors=0 hash=14650fb0739d0383
+allgeom[38] texcoords=27 hash=48089d3d65a70948
+allgeom[38] tris=38 hash=ec950edcb60f0337
+allgeom[38] bbox_min=4091e611 bfbfca45 c247cfc6 bbox_max=41bbb4cc 416d4ee5 c2108014
+allgeom[38] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b331e 3fa5c2c0 c19aa790 scale=3f7ffffe
+allgeom[39] name=Rock R Thigh B:0
+allgeom[39] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[39] verts=31 hash=007d0a1f74c28f8e
+allgeom[39] norms=31 hash=369f7ec449526f5c
+allgeom[39] colors=0 hash=14650fb0739d0383
+allgeom[39] texcoords=31 hash=3b3875f25dd7c1c1
+allgeom[39] tris=38 hash=0ebd4947b6a2ee6f
+allgeom[39] bbox_min=41370fd8 c18d7273 c2346481 bbox_max=41bc552b c102ef9e c20a945c
+allgeom[39] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3321 3fa5c2c0 c19aa78f scale=3f7ffffe
+allgeom[40] name=Rock R Thigh D:0
+allgeom[40] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[40] verts=31 hash=d96294ca8e273ee7
+allgeom[40] norms=31 hash=168a1e3af88b0a3a
+allgeom[40] colors=0 hash=14650fb0739d0383
+allgeom[40] texcoords=31 hash=3b3875f25dd7c1c1
+allgeom[40] tris=38 hash=0ebd4947b6a2ee6f
+allgeom[40] bbox_min=bfc13340 c10acbc1 c2328c22 bbox_max=412ce512 401621d2 c20e7605
+allgeom[40] transform rot=[b4800000 bd342fb2 bf7fc08f b5c2c000 3f7fc08f bd342fb2 3f800000 35c18000 b4c00000 ] trans=407b3320 3fa5c2c2 c19aa78f scale=3f7ffffe
+allgeom[41] name=Rock Pelvis A:0
+allgeom[41] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[41] verts=45 hash=40591ce6e9efc498
+allgeom[41] norms=45 hash=33e4029790147cc3
+allgeom[41] colors=0 hash=14650fb0739d0383
+allgeom[41] texcoords=45 hash=1f8dc7e38fd564f1
+allgeom[41] tris=66 hash=4827352a3589995d
+allgeom[41] bbox_min=c1a95bcb c1bd80fe c0b9bcff bbox_max=41ae970c bf8b5110 41ac1e87
+allgeom[41] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7f9e b70e8000 scale=3f7ffffd
+allgeom[42] name=Rock Pelvis B:0
+allgeom[42] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[42] verts=54 hash=53beefbce0426250
+allgeom[42] norms=54 hash=b6f9340ddb4a0a67
+allgeom[42] colors=0 hash=14650fb0739d0383
+allgeom[42] texcoords=54 hash=caaa2885d6f20cca
+allgeom[42] tris=80 hash=ee78f10313a21fc1
+allgeom[42] bbox_min=4145236a c0bdc53e c08eb3b5 bbox_max=41e4ebda 41a12d36 41b4fa1e
+allgeom[42] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7fa6 b7200000 scale=3f7ffffd
+allgeom[43] name=Rock Pelvis C:0
+allgeom[43] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[43] verts=54 hash=409c460fa02f2f26
+allgeom[43] norms=54 hash=14170026c1469ce5
+allgeom[43] colors=0 hash=14650fb0739d0383
+allgeom[43] texcoords=54 hash=dddc4fa7a0bb768e
+allgeom[43] tris=80 hash=902e03a0bf2d73de
+allgeom[43] bbox_min=c1ec40c0 c0e0c47a 3e14bb90 bbox_max=c1758a55 418f68c0 41e698aa
+allgeom[43] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a44 3f8f7fa2 b71fffff scale=3f7ffffd
+allgeom[44] name=Rock Pelvis D:0
+allgeom[44] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[44] verts=43 hash=77a089cf11eeaaa8
+allgeom[44] norms=43 hash=8f5ad266e2314092
+allgeom[44] colors=0 hash=14650fb0739d0383
+allgeom[44] texcoords=43 hash=e60674b92a71013a
+allgeom[44] tris=66 hash=95348651d8a91301
+allgeom[44] bbox_min=c1a29c28 415b4c2c c0eaa70b bbox_max=419acc70 41bb96e0 4120a0f2
+allgeom[44] transform rot=[35b00000 00000000 3f800000 b638cce3 3f800000 00000000 bf800000 b638cce4 35b00000 ] trans=c07e9a40 3f8f7f9e b7088000 scale=3f7ffffd
+allgeom[45] name=Rock_02:0
+allgeom[45] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[45] verts=53 hash=492850c3db6c6313
+allgeom[45] norms=53 hash=187d3cc2653e1fab
+allgeom[45] colors=0 hash=14650fb0739d0383
+allgeom[45] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[45] tris=80 hash=cabda6c99d4956bd
+allgeom[45] bbox_min=c09b6325 c0b535d9 c1564c73 bbox_max=40b08384 40bac7ff 41441aea
+allgeom[45] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[46] name=Rock_06:0
+allgeom[46] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[46] verts=53 hash=e5305bc35bc83595
+allgeom[46] norms=53 hash=b08ba732259e595d
+allgeom[46] colors=0 hash=14650fb0739d0383
+allgeom[46] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[46] tris=80 hash=cabda6c99d4956bd
+allgeom[46] bbox_min=c07ec48b c0b16ff5 c0e784eb bbox_max=40976642 40af9c86 40e7af74
+allgeom[46] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[47] name=Rock_01:0
+allgeom[47] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[47] verts=53 hash=b3db2f21f8ebb6e3
+allgeom[47] norms=53 hash=14b0b4758889f4ec
+allgeom[47] colors=0 hash=14650fb0739d0383
+allgeom[47] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[47] tris=80 hash=cabda6c99d4956bd
+allgeom[47] bbox_min=c0e77b26 c08af5a7 c0c0f0ad bbox_max=40dee445 40599d2c 40a70c49
+allgeom[47] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[48] name=Rock_07:0
+allgeom[48] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[48] verts=53 hash=f69e502d9da4071f
+allgeom[48] norms=53 hash=2830de6afe279a63
+allgeom[48] colors=0 hash=14650fb0739d0383
+allgeom[48] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[48] tris=80 hash=cabda6c99d4956bd
+allgeom[48] bbox_min=c1005fa5 c0c8f8b3 c118239f bbox_max=41205f58 410276ce 41183f95
+allgeom[48] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[49] name=Rock_00:0
+allgeom[49] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[49] verts=53 hash=ce5bd55c21a66d11
+allgeom[49] norms=53 hash=7dcf4e73cb28fd19
+allgeom[49] colors=0 hash=14650fb0739d0383
+allgeom[49] texcoords=53 hash=29d691c8132c7daa
+allgeom[49] tris=80 hash=047ec8612af3fc5d
+allgeom[49] bbox_min=c0b118ab c0823d85 c1044de2 bbox_max=40b118ab 40823dbd 41044dda
+allgeom[49] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[50] name=Rock_03:0
+allgeom[50] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[50] verts=53 hash=0c25f4d6e7851e7b
+allgeom[50] norms=53 hash=83ed2064c667df49
+allgeom[50] colors=0 hash=14650fb0739d0383
+allgeom[50] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[50] tris=80 hash=cabda6c99d4956bd
+allgeom[50] bbox_min=c0141211 c06b3ae2 c0936314 bbox_max=3ff3ac1c 406b42b7 40937e2b
+allgeom[50] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[51] name=Rock_05:0
+allgeom[51] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[51] verts=53 hash=e5212dd8e0cb3f78
+allgeom[51] norms=53 hash=c7bdcc2089b4f41b
+allgeom[51] colors=0 hash=14650fb0739d0383
+allgeom[51] texcoords=53 hash=29d691c8132c7daa
+allgeom[51] tris=80 hash=047ec8612af3fc5d
+allgeom[51] bbox_min=c0146af7 c07461d4 c0a873ad bbox_max=401504ef 407697fc 40a873a9
+allgeom[51] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+allgeom[52] name=Rock_04:0
+allgeom[52] diffuse=textures/creatures/stormatronach/texture.dds normal=
+allgeom[52] verts=53 hash=fbb412542149180d
+allgeom[52] norms=53 hash=efe0f34ef57ba1a2
+allgeom[52] colors=0 hash=14650fb0739d0383
+allgeom[52] texcoords=53 hash=e584e8ef61bd0a5a
+allgeom[52] tris=80 hash=cabda6c99d4956bd
+allgeom[52] bbox_min=c0cb024d c02e8621 c0c8899b bbox_max=40ccbac7 3ff5e3f9 40eb6aac
+allgeom[52] transform rot=[3f800000 00000000 00000000 00000000 3f800000 b2eefd1c 00000000 32eefd1c 3f800000 ] trans=00000000 00000000 00000000 scale=3f7ffffa
+hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=0
+blockTypeName(0)=NiNode

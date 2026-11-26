@@ -1,0 +1,23 @@
+# オラクル fixture の追加 NIF（B 相対パス）。nif_fixture_select.py --add で固定投入する。
+# nobj 軸: num_objects のスケールを踏む。全体最大 nobj の 1 本は必ず、
+# 残りは 307200 B 以下の高 nobj を上位から 19 本まで。
+# このファイルは scripts/nif_oracle_select.py が生成する（手で編集しない）。
+oblivion/gate/obliviongate_forming.nif
+creatures/stormatronach/skeleton.nif
+creatures/ghost/skeleton.nif
+oblivion/gate/obgatemini01.nif
+magiceffects/restoration.nif
+magiceffects/soultrap.nif
+creatures/willothewisp/skeleton.nif
+magiceffects/destruction.nif
+creatures/spiderdaedra/skeleton.nif
+creatures/mehrunesdagon/skeleton.nif
+magiceffects/mysticism.nif
+characters/_male/skeletonbeast.nif
+creatures/wraith/skeleton.nif
+creatures/xivilai/skeleton.nif
+characters/_male/skeleton.nif
+oblivion/gate/flashglow01.nif
+creatures/imp/skeleton.nif
+magiceffects/illusion.nif
+oblivion/sigil/sigilstone01.nif

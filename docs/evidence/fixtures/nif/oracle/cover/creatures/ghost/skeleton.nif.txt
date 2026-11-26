@@ -1,0 +1,1762 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=752 unknown=11 numGroups=0
+creator= processScript= exportScript=
+blockTypes=45
+  bt[0]=NiNode
+  bt[1]=BSBound
+  bt[2]=BSXFlags
+  bt[3]=NiStringExtraData
+  bt[4]=NiBSBoneLODController
+  bt[5]=NiTransformController
+  bt[6]=NiTransformInterpolator
+  bt[7]=NiTransformData
+  bt[8]=NiVisController
+  bt[9]=NiBoolInterpolator
+  bt[10]=NiBoolData
+  bt[11]=NiZBufferProperty
+  bt[12]=NiParticleSystem
+  bt[13]=NiPSysModifierActiveCtlr
+  bt[14]=NiPSysEmitterInitialRadiusCtlr
+  bt[15]=NiPSysEmitterCtlr
+  bt[16]=NiPSysUpdateCtlr
+  bt[17]=NiFloatInterpolator
+  bt[18]=NiFloatData
+  bt[19]=NiBoolTimelineInterpolator
+  bt[20]=NiTexturingProperty
+  bt[21]=NiSourceTexture
+  bt[22]=NiAlphaProperty
+  bt[23]=NiVertexColorProperty
+  bt[24]=NiMaterialProperty
+  bt[25]=NiPSysData
+  bt[26]=NiPSysAgeDeathModifier
+  bt[27]=NiPSysMeshEmitter
+  bt[28]=NiPSysSpawnModifier
+  bt[29]=NiPSysGrowFadeModifier
+  bt[30]=NiPSysColorModifier
+  bt[31]=NiColorData
+  bt[32]=BSParentVelocityModifier
+  bt[33]=NiPSysGravityModifier
+  bt[34]=NiPSysPositionModifier
+  bt[35]=NiPSysBoundUpdateModifier
+  bt[36]=NiTriShape
+  bt[37]=NiTriShapeData
+  bt[38]=NiPSysEmitterSpeedCtlr
+  bt[39]=bhkBoxShape
+  bt[40]=bhkRigidBodyT
+  bt[41]=bhkCollisionObject
+  bt[42]=NiGeomMorpherController
+  bt[43]=NiMorphData
+  bt[44]=NiAlphaController
+blockTypeIndices=752 hash=c1c7b9302d768758
+blockDataOffset=2528 fileSize=145006
+blockCount=752
+nodes=752
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSBound typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=BSXFlags typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiBSBoneLODController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[10] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[11] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[12] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[13] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[20] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[23] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[24] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[25] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[26] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[29] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[32] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[33] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[34] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[35] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[38] name= type=NiTransformData typeIdx=7 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[41] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[42] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[43] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[44] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[45] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[46] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[47] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[51] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[52] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[53] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[54] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[55] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[56] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[58] name= type=NiZBufferProperty typeIdx=11 parent=-1 children=0 hasGeom=0
+node[59] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[60] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[61] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[63] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[66] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[67] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[68] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[69] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[70] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[71] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[72] name= type=NiTexturingProperty typeIdx=20 parent=-1 children=0 hasGeom=0
+node[73] name= type=NiSourceTexture typeIdx=21 parent=-1 children=0 hasGeom=0
+node[74] name= type=NiAlphaProperty typeIdx=22 parent=-1 children=0 hasGeom=0
+node[75] name= type=NiVertexColorProperty typeIdx=23 parent=-1 children=0 hasGeom=0
+node[76] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[77] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[78] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[79] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[80] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[81] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[82] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[83] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[84] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[85] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[86] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[87] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[88] name=BodyBoxHead:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[88] name=BodyBoxHead:0
+geom[88] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[88] verts=39 hash=e29c32b2e56b1341
+geom[88] norms=39 hash=35c8a6a013e237a3
+geom[88] colors=0 hash=14650fb0739d0383
+geom[88] texcoords=39 hash=05b53dd18e4412af
+geom[88] tris=50 hash=64eab1d7a4acc5f6
+geom[88] bbox_min=c120d9c7 c1c3b154 c2f6276f bbox_max=41227481 c063abf3 c2d488b2
+geom[88] transform rot=[35b00000 be7a8e6d bf7837e5 b3800000 bf7837e4 3e7a8e6d bf7fffff b4880000 b5a00000 ] trans=c2da5344 417c5eb3 bb6db7bb scale=3f800000
+node[89] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[90] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[91] name= type=NiTexturingProperty typeIdx=20 parent=-1 children=0 hasGeom=0
+node[92] name= type=NiSourceTexture typeIdx=21 parent=-1 children=0 hasGeom=0
+node[93] name= type=NiAlphaProperty typeIdx=22 parent=-1 children=0 hasGeom=0
+node[94] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[95] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[96] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[97] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[98] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[99] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[100] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[101] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[102] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[103] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[104] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[105] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[106] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[107] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[108] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[109] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[110] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[111] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[112] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[113] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[114] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[115] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[116] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[117] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[118] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[119] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[120] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[121] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[122] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[123] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[124] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[125] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[126] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[127] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[128] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[129] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[130] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[131] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[132] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[133] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[134] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[135] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[136] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[137] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[138] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[139] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[140] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[141] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[142] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[143] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[144] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[145] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[146] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[147] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[148] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[149] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[150] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[151] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[152] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[153] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[154] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[155] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[156] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[157] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[158] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[159] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[160] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[161] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[162] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[163] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[164] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[165] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[166] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[167] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[168] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[169] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[170] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[171] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[172] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[173] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[174] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[175] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[176] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[177] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[178] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[179] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[180] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[181] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[182] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[183] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[184] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[185] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[186] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[187] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[188] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[189] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[190] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[191] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[192] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[193] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[194] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[195] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[196] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[197] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[198] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[199] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[200] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[201] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[202] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[203] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[204] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[205] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[206] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[207] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[208] name=BodyBoxLeftHand:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[208] name=BodyBoxLeftHand:0
+geom[208] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[208] verts=23 hash=f3cee8d6beb180d0
+geom[208] norms=23 hash=9ca7a6eb2c84c71e
+geom[208] colors=0 hash=14650fb0739d0383
+geom[208] texcoords=23 hash=9977544b793b7dee
+geom[208] tris=20 hash=cec7b8de1875bf77
+geom[208] bbox_min=c1ad15e5 4213906a 42caceea bbox_max=c16938d7 42434d4e 42d67308
+geom[208] transform rot=[be01dc48 3f74982b 3e8876c2 3edcabf2 3e97158c bf5a4d19 bf64b5a1 3bdca180 bee60008 ] trans=c2805e64 42a981e5 41ee0c19 scale=3f7fffff
+node[209] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[210] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[211] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[212] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[213] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[214] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[215] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[216] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[217] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[218] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[219] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[220] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[221] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[222] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[223] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[224] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[225] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[226] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[227] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[228] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[229] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[230] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[231] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[232] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[233] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[234] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[235] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[236] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[237] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[238] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[239] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[240] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[241] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[242] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[243] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[244] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[245] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[246] name=BodyBoxLeftForeArm:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[246] name=BodyBoxLeftForeArm:0
+geom[246] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[246] verts=14 hash=23c1fffa217e21d2
+geom[246] norms=14 hash=e7ffa39506a3d68f
+geom[246] colors=0 hash=14650fb0739d0383
+geom[246] texcoords=14 hash=71ff3e8dae46b302
+geom[246] tris=15 hash=ec42c055c86e6f49
+geom[246] bbox_min=c1b9fb52 c212da30 c2cff06a bbox_max=c171df02 c1bd1a47 c2b3caef
+geom[246] transform rot=[3e25e518 bf407944 bf239d64 bef44b39 bf2069dc 3f1dbed7 bf5d1fe0 3e520b05 beeba608 ] trans=c294445b 42003647 c25e0274 scale=3f800000
+node[247] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[248] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[249] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[250] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[251] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[252] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[253] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[254] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[255] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[256] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[257] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[258] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[259] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[260] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[261] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[262] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[263] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[264] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[265] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[266] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[267] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[268] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[269] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[270] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[271] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[272] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[273] name= type=NiPSysEmitterSpeedCtlr typeIdx=38 parent=-1 children=0 hasGeom=0
+node[274] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[275] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[276] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[277] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[278] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[279] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[280] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[281] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[282] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[283] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[284] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[285] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[286] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[287] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[288] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[289] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[290] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[291] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[292] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[293] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[294] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[295] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[296] name=BodyBoxLeftUpperArm:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[296] name=BodyBoxLeftUpperArm:0
+geom[296] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[296] verts=16 hash=c436cf7be798b72d
+geom[296] norms=16 hash=5b8b4882f2b31f5a
+geom[296] colors=0 hash=14650fb0739d0383
+geom[296] texcoords=16 hash=b92a18bd9301fdaa
+geom[296] tris=16 hash=47e8de404ab4e1a5
+geom[296] bbox_min=c1b5f714 c1c6a822 c2dc974e bbox_max=c108bba8 c0af2e09 c2b3caf3
+geom[296] transform rot=[beef0774 bf2b6331 3f13ea0b be422a14 3f36c52d 3f2c8dc5 bf5d1fdf 3e520b10 beeba614 ] trans=42471b28 4297c28e c25e0273 scale=3f800000
+node[297] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[298] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[299] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[300] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[301] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[302] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[303] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[304] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[305] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[306] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[307] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[308] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[309] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[310] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[311] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[312] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[313] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[314] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[315] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[316] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[317] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[318] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[319] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[320] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[321] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[322] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[323] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[324] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[325] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[326] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[327] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[328] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[329] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[330] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[331] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[332] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[333] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[334] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[335] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[336] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[337] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[338] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[339] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[340] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[341] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[342] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[343] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[344] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[345] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[346] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[347] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[348] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[349] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[350] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[351] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[352] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[353] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[354] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[355] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[356] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[357] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[358] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[359] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[360] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[361] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[362] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[363] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[364] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[365] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[366] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[367] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[368] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[369] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[370] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[371] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[372] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[373] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[374] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[375] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[376] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[377] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[378] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[379] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[380] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[381] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[382] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[383] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[384] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[385] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[386] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[387] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[388] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[389] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[390] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[391] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[392] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[393] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[394] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[395] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[396] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[397] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[398] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[399] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[400] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[401] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[402] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[403] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[404] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[405] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[406] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[407] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[408] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[409] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[410] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[411] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[412] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[413] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[414] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[415] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[416] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[417] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[418] name=BodyBoxRIghtHand:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[418] name=BodyBoxRIghtHand:0
+geom[418] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[418] verts=20 hash=26768564b89567c2
+geom[418] norms=20 hash=47644346231951b6
+geom[418] colors=0 hash=14650fb0739d0383
+geom[418] texcoords=20 hash=13d1d2e696522ced
+geom[418] tris=20 hash=0ab02c4c568ff500
+geom[418] bbox_min=415e08df 4213970c 42cacee8 bbox_max=41ac9482 424215d0 42d67306
+geom[418] transform rot=[3e01db84 3f749831 3e8876c2 bedcac0a 3e971564 bf5a4d1a bf64b5a1 bbdcb700 3ee5fffe ] trans=c2805ded 42a9805b c1ee18e8 scale=3f800000
+node[419] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[420] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[421] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[422] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[423] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[424] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[425] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[426] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[427] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[428] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[429] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[430] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[431] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[432] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[433] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[434] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[435] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[436] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[437] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[438] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[439] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[440] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[441] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[442] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[443] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[444] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[445] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[446] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[447] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[448] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[449] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[450] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[451] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[452] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[453] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[454] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[455] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[456] name=BodyBoxRightForeArm:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[456] name=BodyBoxRightForeArm:0
+geom[456] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[456] verts=14 hash=b3ec21077ba81667
+geom[456] norms=14 hash=848f98c243e67374
+geom[456] colors=0 hash=14650fb0739d0383
+geom[456] texcoords=14 hash=228f2dd69a704919
+geom[456] tris=16 hash=62c86bee912463b5
+geom[456] bbox_min=417389c5 c20feb5e c2cedb45 bbox_max=41b9fb55 c1bd1a49 c2b20bb0
+geom[456] transform rot=[be25e5c0 bf40793f bf239d5f 3ef44afe bf2069f2 3f1dbed8 bf5d1fe9 be520a49 3eeba614 ] trans=c29444ed 420039b6 425dfc46 scale=3f800000
+node[457] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[458] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[459] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[460] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[461] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[462] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[463] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[464] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[465] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[466] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[467] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[468] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[469] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[470] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[471] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[472] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[473] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[474] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[475] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[476] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[477] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[478] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[479] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[480] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[481] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[482] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[483] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[484] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[485] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[486] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[487] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[488] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[489] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[490] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[491] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[492] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[493] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[494] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[495] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[496] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[497] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[498] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[499] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[500] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[501] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[502] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[503] name=BodyBoxRightUpperArm:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[503] name=BodyBoxRightUpperArm:0
+geom[503] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[503] verts=14 hash=3f4048c872845fd9
+geom[503] norms=14 hash=54b90973e6fd2e53
+geom[503] colors=0 hash=14650fb0739d0383
+geom[503] texcoords=14 hash=4b01571f8f556c3d
+geom[503] tris=15 hash=e87f2818b6083a8e
+geom[503] bbox_min=4108bba5 c1c6a81e c2dbc128 bbox_max=41b9fb57 c0af2df2 c2b20bb0
+geom[503] transform rot=[3eef0720 bf2b6348 3f13ea11 3e422a9a 3f36c526 3f2c8dc4 bf5d1fed be520a51 3eeba604 ] trans=42471e89 4297c339 425dfc40 scale=3f800000
+node[504] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[505] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[506] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[507] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[508] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[509] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[510] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[511] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[512] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[513] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[514] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[515] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[516] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[517] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[518] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[519] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[520] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[521] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[522] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[523] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[524] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[525] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[526] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[527] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[528] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[529] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[530] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[531] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[532] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[533] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[534] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[535] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[536] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[537] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[538] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[539] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[540] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[541] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[542] name= type=NiPSysEmitterSpeedCtlr typeIdx=38 parent=-1 children=0 hasGeom=0
+node[543] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[544] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[545] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[546] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[547] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[548] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[549] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[550] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[551] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[552] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[553] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[554] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[555] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[556] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[557] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[558] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[559] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[560] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[561] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[562] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[563] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[564] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[565] name=BodyBoxTop:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[565] name=BodyBoxTop:0
+geom[565] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[565] verts=30 hash=56f815835a5a1ea1
+geom[565] norms=30 hash=4312cb0ac3250f43
+geom[565] colors=0 hash=14650fb0739d0383
+geom[565] texcoords=30 hash=63f99ce0b885eb80
+geom[565] tris=26 hash=376c03f8f46fdfc6
+geom[565] bbox_min=c149cdbe c1b0a49f c2dd30e9 bbox_max=4149cdbe 407c89d8 c2a5a03d
+geom[565] transform rot=[35c00000 bec4a4c4 bf6c5daa b4880000 bf6c5da8 3ec4a4c5 bf800000 b4a00000 b5c00000 ] trans=c2ac0792 41fe15ef bb6e6792 scale=3f800000
+node[566] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[567] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[568] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[569] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[570] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[571] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[572] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[573] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[574] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[575] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[576] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[577] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[578] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[579] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[580] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[581] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[582] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[583] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[584] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[585] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[586] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[587] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[588] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[589] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[590] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[591] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[592] name= type=NiPSysModifierActiveCtlr typeIdx=13 parent=-1 children=0 hasGeom=0
+node[593] name= type=NiPSysEmitterInitialRadiusCtlr typeIdx=14 parent=-1 children=0 hasGeom=0
+node[594] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[595] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[596] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[597] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[598] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[599] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[600] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[601] name= type=NiBoolTimelineInterpolator typeIdx=19 parent=-1 children=0 hasGeom=0
+node[602] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[603] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[604] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[605] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[606] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[607] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[608] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[609] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[610] name= type=BSParentVelocityModifier typeIdx=32 parent=-1 children=0 hasGeom=0
+node[611] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[612] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[613] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[614] name=BodyBoxBase:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[614] name=BodyBoxBase:0
+geom[614] diffuse=textures/creatures/ghost/invisible.dds normal=
+geom[614] verts=16 hash=6605c999172a82aa
+geom[614] norms=16 hash=6b3c2ecaf2d30d3f
+geom[614] colors=0 hash=14650fb0739d0383
+geom[614] texcoords=16 hash=89119a9b17a87d87
+geom[614] tris=16 hash=4dccf32cb308531b
+geom[614] bbox_min=c137c54a c11da91e c2bc804b bbox_max=4139de53 41154808 c28abdcd
+geom[614] transform rot=[35c00000 beaf7f44 bf707dd7 b4c80000 bf707dd8 3eaf7f44 bf800000 b4300000 b5d00000 ] trans=c29cd092 41df3f4e bb6e6cdc scale=3f800000
+node[615] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[616] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[617] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[618] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[619] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[620] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[621] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[622] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[623] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[624] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[625] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[626] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[627] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[628] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[629] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[630] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[631] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[632] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[633] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[634] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[635] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[636] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[637] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[638] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[639] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[640] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[641] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[642] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[643] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[644] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[645] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[646] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[647] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[648] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[649] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[650] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[651] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[652] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[653] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[654] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[655] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[656] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[657] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[658] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[659] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[660] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[661] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[662] name= type=bhkBoxShape typeIdx=39 parent=-1 children=0 hasGeom=0
+node[663] name= type=bhkRigidBodyT typeIdx=40 parent=-1 children=0 hasGeom=0
+node[664] name= type=bhkCollisionObject typeIdx=41 parent=-1 children=0 hasGeom=0
+node[665] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[666] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[667] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[668] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[669] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[670] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[671] name= type=NiParticleSystem typeIdx=12 parent=-1 children=0 hasGeom=0
+node[672] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[673] name= type=NiPSysEmitterCtlr typeIdx=15 parent=-1 children=0 hasGeom=0
+node[674] name= type=NiPSysUpdateCtlr typeIdx=16 parent=-1 children=0 hasGeom=0
+node[675] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[676] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[677] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[678] name= type=NiPSysData typeIdx=25 parent=-1 children=0 hasGeom=0
+node[679] name= type=NiPSysAgeDeathModifier typeIdx=26 parent=-1 children=0 hasGeom=0
+node[680] name= type=NiPSysMeshEmitter typeIdx=27 parent=-1 children=0 hasGeom=0
+node[681] name= type=NiPSysSpawnModifier typeIdx=28 parent=-1 children=0 hasGeom=0
+node[682] name= type=NiPSysGrowFadeModifier typeIdx=29 parent=-1 children=0 hasGeom=0
+node[683] name= type=NiPSysColorModifier typeIdx=30 parent=-1 children=0 hasGeom=0
+node[684] name= type=NiColorData typeIdx=31 parent=-1 children=0 hasGeom=0
+node[685] name= type=NiPSysGravityModifier typeIdx=33 parent=-1 children=0 hasGeom=0
+node[686] name= type=NiPSysPositionModifier typeIdx=34 parent=-1 children=0 hasGeom=0
+node[687] name= type=NiPSysBoundUpdateModifier typeIdx=35 parent=-1 children=0 hasGeom=0
+node[688] name=Bip01 ectoplasm:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[688] name=Bip01 ectoplasm:0
+geom[688] diffuse=textures/creatures/ghost/Ghost03.dds normal=
+geom[688] verts=47 hash=85a904fa9f915488
+geom[688] norms=47 hash=62da37657e9ba84b
+geom[688] colors=0 hash=14650fb0739d0383
+geom[688] texcoords=47 hash=af062e208d4cb375
+geom[688] tris=90 hash=d0a7793bca66ed21
+geom[688] bbox_min=c193c4cb c196d4c8 c0773a3a bbox_max=41902f23 418c3f76 40114233
+geom[688] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f11e5e6
+node[689] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[690] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[691] name= type=NiGeomMorpherController typeIdx=42 parent=-1 children=0 hasGeom=0
+node[692] name= type=NiMorphData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[693] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[694] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[695] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[696] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[697] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[698] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[699] name= type=NiTexturingProperty typeIdx=20 parent=-1 children=0 hasGeom=0
+node[700] name= type=NiSourceTexture typeIdx=21 parent=-1 children=0 hasGeom=0
+node[701] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[702] name= type=NiAlphaController typeIdx=44 parent=-1 children=0 hasGeom=0
+node[703] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[704] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[705] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[706] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[707] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[708] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[709] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[710] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[711] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[712] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[713] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[714] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[715] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[716] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[717] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[718] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[719] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[720] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[721] name= type=NiVisController typeIdx=8 parent=-1 children=0 hasGeom=0
+node[722] name= type=NiBoolInterpolator typeIdx=9 parent=-1 children=0 hasGeom=0
+node[723] name= type=NiBoolData typeIdx=10 parent=-1 children=0 hasGeom=0
+node[724] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[725] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[726] name=Shrinker:0 type=NiTriShape typeIdx=36 parent=-1 children=0 hasGeom=1
+geom[726] name=Shrinker:0
+geom[726] diffuse=textures/creatures/ghost/GhostTop02.dds normal=
+geom[726] verts=478 hash=d658bfab5ddb2f55
+geom[726] norms=478 hash=9ce87eadc6760481
+geom[726] colors=0 hash=14650fb0739d0383
+geom[726] texcoords=478 hash=044acb64ea70d0a8
+geom[726] tris=659 hash=0eaf489ba587c272
+geom[726] bbox_min=c2323cd2 426622c5 c2e9cad2 bbox_max=4208a3ab 42d5ca75 c2888aca
+geom[726] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=40a6649b c2a46ded 42b92ace scale=3f800000
+node[727] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[728] name= type=NiGeomMorpherController typeIdx=42 parent=-1 children=0 hasGeom=0
+node[729] name= type=NiMorphData typeIdx=43 parent=-1 children=0 hasGeom=0
+node[730] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[731] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[732] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[733] name= type=NiTexturingProperty typeIdx=20 parent=-1 children=0 hasGeom=0
+node[734] name= type=NiSourceTexture typeIdx=21 parent=-1 children=0 hasGeom=0
+node[735] name= type=NiMaterialProperty typeIdx=24 parent=-1 children=0 hasGeom=0
+node[736] name= type=NiAlphaController typeIdx=44 parent=-1 children=0 hasGeom=0
+node[737] name= type=NiFloatInterpolator typeIdx=17 parent=-1 children=0 hasGeom=0
+node[738] name= type=NiFloatData typeIdx=18 parent=-1 children=0 hasGeom=0
+node[739] name= type=NiTriShapeData typeIdx=37 parent=-1 children=0 hasGeom=0
+node[740] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[741] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[742] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[743] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[744] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[745] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[746] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[747] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[748] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[749] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[750] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[751] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+roots=752
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+  root[89]=89
+  root[90]=90
+  root[91]=91
+  root[92]=92
+  root[93]=93
+  root[94]=94
+  root[95]=95
+  root[96]=96
+  root[97]=97
+  root[98]=98
+  root[99]=99
+  root[100]=100
+  root[101]=101
+  root[102]=102
+  root[103]=103
+  root[104]=104
+  root[105]=105
+  root[106]=106
+  root[107]=107
+  root[108]=108
+  root[109]=109
+  root[110]=110
+  root[111]=111
+  root[112]=112
+  root[113]=113
+  root[114]=114
+  root[115]=115
+  root[116]=116
+  root[117]=117
+  root[118]=118
+  root[119]=119
+  root[120]=120
+  root[121]=121
+  root[122]=122
+  root[123]=123
+  root[124]=124
+  root[125]=125
+  root[126]=126
+  root[127]=127
+  root[128]=128
+  root[129]=129
+  root[130]=130
+  root[131]=131
+  root[132]=132
+  root[133]=133
+  root[134]=134
+  root[135]=135
+  root[136]=136
+  root[137]=137
+  root[138]=138
+  root[139]=139
+  root[140]=140
+  root[141]=141
+  root[142]=142
+  root[143]=143
+  root[144]=144
+  root[145]=145
+  root[146]=146
+  root[147]=147
+  root[148]=148
+  root[149]=149
+  root[150]=150
+  root[151]=151
+  root[152]=152
+  root[153]=153
+  root[154]=154
+  root[155]=155
+  root[156]=156
+  root[157]=157
+  root[158]=158
+  root[159]=159
+  root[160]=160
+  root[161]=161
+  root[162]=162
+  root[163]=163
+  root[164]=164
+  root[165]=165
+  root[166]=166
+  root[167]=167
+  root[168]=168
+  root[169]=169
+  root[170]=170
+  root[171]=171
+  root[172]=172
+  root[173]=173
+  root[174]=174
+  root[175]=175
+  root[176]=176
+  root[177]=177
+  root[178]=178
+  root[179]=179
+  root[180]=180
+  root[181]=181
+  root[182]=182
+  root[183]=183
+  root[184]=184
+  root[185]=185
+  root[186]=186
+  root[187]=187
+  root[188]=188
+  root[189]=189
+  root[190]=190
+  root[191]=191
+  root[192]=192
+  root[193]=193
+  root[194]=194
+  root[195]=195
+  root[196]=196
+  root[197]=197
+  root[198]=198
+  root[199]=199
+  root[200]=200
+  root[201]=201
+  root[202]=202
+  root[203]=203
+  root[204]=204
+  root[205]=205
+  root[206]=206
+  root[207]=207
+  root[208]=208
+  root[209]=209
+  root[210]=210
+  root[211]=211
+  root[212]=212
+  root[213]=213
+  root[214]=214
+  root[215]=215
+  root[216]=216
+  root[217]=217
+  root[218]=218
+  root[219]=219
+  root[220]=220
+  root[221]=221
+  root[222]=222
+  root[223]=223
+  root[224]=224
+  root[225]=225
+  root[226]=226
+  root[227]=227
+  root[228]=228
+  root[229]=229
+  root[230]=230
+  root[231]=231
+  root[232]=232
+  root[233]=233
+  root[234]=234
+  root[235]=235
+  root[236]=236
+  root[237]=237
+  root[238]=238
+  root[239]=239
+  root[240]=240
+  root[241]=241
+  root[242]=242
+  root[243]=243
+  root[244]=244
+  root[245]=245
+  root[246]=246
+  root[247]=247
+  root[248]=248
+  root[249]=249
+  root[250]=250
+  root[251]=251
+  root[252]=252
+  root[253]=253
+  root[254]=254
+  root[255]=255
+  root[256]=256
+  root[257]=257
+  root[258]=258
+  root[259]=259
+  root[260]=260
+  root[261]=261
+  root[262]=262
+  root[263]=263
+  root[264]=264
+  root[265]=265
+  root[266]=266
+  root[267]=267
+  root[268]=268
+  root[269]=269
+  root[270]=270
+  root[271]=271
+  root[272]=272
+  root[273]=273
+  root[274]=274
+  root[275]=275
+  root[276]=276
+  root[277]=277
+  root[278]=278
+  root[279]=279
+  root[280]=280
+  root[281]=281
+  root[282]=282
+  root[283]=283
+  root[284]=284
+  root[285]=285
+  root[286]=286
+  root[287]=287
+  root[288]=288
+  root[289]=289
+  root[290]=290
+  root[291]=291
+  root[292]=292
+  root[293]=293
+  root[294]=294
+  root[295]=295
+  root[296]=296
+  root[297]=297
+  root[298]=298
+  root[299]=299
+  root[300]=300
+  root[301]=301
+  root[302]=302
+  root[303]=303
+  root[304]=304
+  root[305]=305
+  root[306]=306
+  root[307]=307
+  root[308]=308
+  root[309]=309
+  root[310]=310
+  root[311]=311
+  root[312]=312
+  root[313]=313
+  root[314]=314
+  root[315]=315
+  root[316]=316
+  root[317]=317
+  root[318]=318
+  root[319]=319
+  root[320]=320
+  root[321]=321
+  root[322]=322
+  root[323]=323
+  root[324]=324
+  root[325]=325
+  root[326]=326
+  root[327]=327
+  root[328]=328
+  root[329]=329
+  root[330]=330
+  root[331]=331
+  root[332]=332
+  root[333]=333
+  root[334]=334
+  root[335]=335
+  root[336]=336
+  root[337]=337
+  root[338]=338
+  root[339]=339
+  root[340]=340
+  root[341]=341
+  root[342]=342
+  root[343]=343
+  root[344]=344
+  root[345]=345
+  root[346]=346
+  root[347]=347
+  root[348]=348
+  root[349]=349
+  root[350]=350
+  root[351]=351
+  root[352]=352
+  root[353]=353
+  root[354]=354
+  root[355]=355
+  root[356]=356
+  root[357]=357
+  root[358]=358
+  root[359]=359
+  root[360]=360
+  root[361]=361
+  root[362]=362
+  root[363]=363
+  root[364]=364
+  root[365]=365
+  root[366]=366
+  root[367]=367
+  root[368]=368
+  root[369]=369
+  root[370]=370
+  root[371]=371
+  root[372]=372
+  root[373]=373
+  root[374]=374
+  root[375]=375
+  root[376]=376
+  root[377]=377
+  root[378]=378
+  root[379]=379
+  root[380]=380
+  root[381]=381
+  root[382]=382
+  root[383]=383
+  root[384]=384
+  root[385]=385
+  root[386]=386
+  root[387]=387
+  root[388]=388
+  root[389]=389
+  root[390]=390
+  root[391]=391
+  root[392]=392
+  root[393]=393
+  root[394]=394
+  root[395]=395
+  root[396]=396
+  root[397]=397
+  root[398]=398
+  root[399]=399
+  root[400]=400
+  root[401]=401
+  root[402]=402
+  root[403]=403
+  root[404]=404
+  root[405]=405
+  root[406]=406
+  root[407]=407
+  root[408]=408
+  root[409]=409
+  root[410]=410
+  root[411]=411
+  root[412]=412
+  root[413]=413
+  root[414]=414
+  root[415]=415
+  root[416]=416
+  root[417]=417
+  root[418]=418
+  root[419]=419
+  root[420]=420
+  root[421]=421
+  root[422]=422
+  root[423]=423
+  root[424]=424
+  root[425]=425
+  root[426]=426
+  root[427]=427
+  root[428]=428
+  root[429]=429
+  root[430]=430
+  root[431]=431
+  root[432]=432
+  root[433]=433
+  root[434]=434
+  root[435]=435
+  root[436]=436
+  root[437]=437
+  root[438]=438
+  root[439]=439
+  root[440]=440
+  root[441]=441
+  root[442]=442
+  root[443]=443
+  root[444]=444
+  root[445]=445
+  root[446]=446
+  root[447]=447
+  root[448]=448
+  root[449]=449
+  root[450]=450
+  root[451]=451
+  root[452]=452
+  root[453]=453
+  root[454]=454
+  root[455]=455
+  root[456]=456
+  root[457]=457
+  root[458]=458
+  root[459]=459
+  root[460]=460
+  root[461]=461
+  root[462]=462
+  root[463]=463
+  root[464]=464
+  root[465]=465
+  root[466]=466
+  root[467]=467
+  root[468]=468
+  root[469]=469
+  root[470]=470
+  root[471]=471
+  root[472]=472
+  root[473]=473
+  root[474]=474
+  root[475]=475
+  root[476]=476
+  root[477]=477
+  root[478]=478
+  root[479]=479
+  root[480]=480
+  root[481]=481
+  root[482]=482
+  root[483]=483
+  root[484]=484
+  root[485]=485
+  root[486]=486
+  root[487]=487
+  root[488]=488
+  root[489]=489
+  root[490]=490
+  root[491]=491
+  root[492]=492
+  root[493]=493
+  root[494]=494
+  root[495]=495
+  root[496]=496
+  root[497]=497
+  root[498]=498
+  root[499]=499
+  root[500]=500
+  root[501]=501
+  root[502]=502
+  root[503]=503
+  root[504]=504
+  root[505]=505
+  root[506]=506
+  root[507]=507
+  root[508]=508
+  root[509]=509
+  root[510]=510
+  root[511]=511
+  root[512]=512
+  root[513]=513
+  root[514]=514
+  root[515]=515
+  root[516]=516
+  root[517]=517
+  root[518]=518
+  root[519]=519
+  root[520]=520
+  root[521]=521
+  root[522]=522
+  root[523]=523
+  root[524]=524
+  root[525]=525
+  root[526]=526
+  root[527]=527
+  root[528]=528
+  root[529]=529
+  root[530]=530
+  root[531]=531
+  root[532]=532
+  root[533]=533
+  root[534]=534
+  root[535]=535
+  root[536]=536
+  root[537]=537
+  root[538]=538
+  root[539]=539
+  root[540]=540
+  root[541]=541
+  root[542]=542
+  root[543]=543
+  root[544]=544
+  root[545]=545
+  root[546]=546
+  root[547]=547
+  root[548]=548
+  root[549]=549
+  root[550]=550
+  root[551]=551
+  root[552]=552
+  root[553]=553
+  root[554]=554
+  root[555]=555
+  root[556]=556
+  root[557]=557
+  root[558]=558
+  root[559]=559
+  root[560]=560
+  root[561]=561
+  root[562]=562
+  root[563]=563
+  root[564]=564
+  root[565]=565
+  root[566]=566
+  root[567]=567
+  root[568]=568
+  root[569]=569
+  root[570]=570
+  root[571]=571
+  root[572]=572
+  root[573]=573
+  root[574]=574
+  root[575]=575
+  root[576]=576
+  root[577]=577
+  root[578]=578
+  root[579]=579
+  root[580]=580
+  root[581]=581
+  root[582]=582
+  root[583]=583
+  root[584]=584
+  root[585]=585
+  root[586]=586
+  root[587]=587
+  root[588]=588
+  root[589]=589
+  root[590]=590
+  root[591]=591
+  root[592]=592
+  root[593]=593
+  root[594]=594
+  root[595]=595
+  root[596]=596
+  root[597]=597
+  root[598]=598
+  root[599]=599
+  root[600]=600
+  root[601]=601
+  root[602]=602
+  root[603]=603
+  root[604]=604
+  root[605]=605
+  root[606]=606
+  root[607]=607
+  root[608]=608
+  root[609]=609
+  root[610]=610
+  root[611]=611
+  root[612]=612
+  root[613]=613
+  root[614]=614
+  root[615]=615
+  root[616]=616
+  root[617]=617
+  root[618]=618
+  root[619]=619
+  root[620]=620
+  root[621]=621
+  root[622]=622
+  root[623]=623
+  root[624]=624
+  root[625]=625
+  root[626]=626
+  root[627]=627
+  root[628]=628
+  root[629]=629
+  root[630]=630
+  root[631]=631
+  root[632]=632
+  root[633]=633
+  root[634]=634
+  root[635]=635
+  root[636]=636
+  root[637]=637
+  root[638]=638
+  root[639]=639
+  root[640]=640
+  root[641]=641
+  root[642]=642
+  root[643]=643
+  root[644]=644
+  root[645]=645
+  root[646]=646
+  root[647]=647
+  root[648]=648
+  root[649]=649
+  root[650]=650
+  root[651]=651
+  root[652]=652
+  root[653]=653
+  root[654]=654
+  root[655]=655
+  root[656]=656
+  root[657]=657
+  root[658]=658
+  root[659]=659
+  root[660]=660
+  root[661]=661
+  root[662]=662
+  root[663]=663
+  root[664]=664
+  root[665]=665
+  root[666]=666
+  root[667]=667
+  root[668]=668
+  root[669]=669
+  root[670]=670
+  root[671]=671
+  root[672]=672
+  root[673]=673
+  root[674]=674
+  root[675]=675
+  root[676]=676
+  root[677]=677
+  root[678]=678
+  root[679]=679
+  root[680]=680
+  root[681]=681
+  root[682]=682
+  root[683]=683
+  root[684]=684
+  root[685]=685
+  root[686]=686
+  root[687]=687
+  root[688]=688
+  root[689]=689
+  root[690]=690
+  root[691]=691
+  root[692]=692
+  root[693]=693
+  root[694]=694
+  root[695]=695
+  root[696]=696
+  root[697]=697
+  root[698]=698
+  root[699]=699
+  root[700]=700
+  root[701]=701
+  root[702]=702
+  root[703]=703
+  root[704]=704
+  root[705]=705
+  root[706]=706
+  root[707]=707
+  root[708]=708
+  root[709]=709
+  root[710]=710
+  root[711]=711
+  root[712]=712
+  root[713]=713
+  root[714]=714
+  root[715]=715
+  root[716]=716
+  root[717]=717
+  root[718]=718
+  root[719]=719
+  root[720]=720
+  root[721]=721
+  root[722]=722
+  root[723]=723
+  root[724]=724
+  root[725]=725
+  root[726]=726
+  root[727]=727
+  root[728]=728
+  root[729]=729
+  root[730]=730
+  root[731]=731
+  root[732]=732
+  root[733]=733
+  root[734]=734
+  root[735]=735
+  root[736]=736
+  root[737]=737
+  root[738]=738
+  root[739]=739
+  root[740]=740
+  root[741]=741
+  root[742]=742
+  root[743]=743
+  root[744]=744
+  root[745]=745
+  root[746]=746
+  root[747]=747
+  root[748]=748
+  root[749]=749
+  root[750]=750
+  root[751]=751
+getNodeByName(first)=1
+extractAllGeometry=11
+allgeom[0] name=BodyBoxHead:0
+allgeom[0] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[0] verts=39 hash=e29c32b2e56b1341
+allgeom[0] norms=39 hash=35c8a6a013e237a3
+allgeom[0] colors=0 hash=14650fb0739d0383
+allgeom[0] texcoords=39 hash=05b53dd18e4412af
+allgeom[0] tris=50 hash=64eab1d7a4acc5f6
+allgeom[0] bbox_min=c120d9c7 c1c3b154 c2f6276f bbox_max=41227481 c063abf3 c2d488b2
+allgeom[0] transform rot=[35b00000 be7a8e6d bf7837e5 b3800000 bf7837e4 3e7a8e6d bf7fffff b4880000 b5a00000 ] trans=c2da5344 417c5eb3 bb6db7bb scale=3f800000
+allgeom[1] name=BodyBoxLeftHand:0
+allgeom[1] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[1] verts=23 hash=f3cee8d6beb180d0
+allgeom[1] norms=23 hash=9ca7a6eb2c84c71e
+allgeom[1] colors=0 hash=14650fb0739d0383
+allgeom[1] texcoords=23 hash=9977544b793b7dee
+allgeom[1] tris=20 hash=cec7b8de1875bf77
+allgeom[1] bbox_min=c1ad15e5 4213906a 42caceea bbox_max=c16938d7 42434d4e 42d67308
+allgeom[1] transform rot=[be01dc48 3f74982b 3e8876c2 3edcabf2 3e97158c bf5a4d19 bf64b5a1 3bdca180 bee60008 ] trans=c2805e64 42a981e5 41ee0c19 scale=3f7fffff
+allgeom[2] name=BodyBoxLeftForeArm:0
+allgeom[2] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[2] verts=14 hash=23c1fffa217e21d2
+allgeom[2] norms=14 hash=e7ffa39506a3d68f
+allgeom[2] colors=0 hash=14650fb0739d0383
+allgeom[2] texcoords=14 hash=71ff3e8dae46b302
+allgeom[2] tris=15 hash=ec42c055c86e6f49
+allgeom[2] bbox_min=c1b9fb52 c212da30 c2cff06a bbox_max=c171df02 c1bd1a47 c2b3caef
+allgeom[2] transform rot=[3e25e518 bf407944 bf239d64 bef44b39 bf2069dc 3f1dbed7 bf5d1fe0 3e520b05 beeba608 ] trans=c294445b 42003647 c25e0274 scale=3f800000
+allgeom[3] name=BodyBoxLeftUpperArm:0
+allgeom[3] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[3] verts=16 hash=c436cf7be798b72d
+allgeom[3] norms=16 hash=5b8b4882f2b31f5a
+allgeom[3] colors=0 hash=14650fb0739d0383
+allgeom[3] texcoords=16 hash=b92a18bd9301fdaa
+allgeom[3] tris=16 hash=47e8de404ab4e1a5
+allgeom[3] bbox_min=c1b5f714 c1c6a822 c2dc974e bbox_max=c108bba8 c0af2e09 c2b3caf3
+allgeom[3] transform rot=[beef0774 bf2b6331 3f13ea0b be422a14 3f36c52d 3f2c8dc5 bf5d1fdf 3e520b10 beeba614 ] trans=42471b28 4297c28e c25e0273 scale=3f800000
+allgeom[4] name=BodyBoxRIghtHand:0
+allgeom[4] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[4] verts=20 hash=26768564b89567c2
+allgeom[4] norms=20 hash=47644346231951b6
+allgeom[4] colors=0 hash=14650fb0739d0383
+allgeom[4] texcoords=20 hash=13d1d2e696522ced
+allgeom[4] tris=20 hash=0ab02c4c568ff500
+allgeom[4] bbox_min=415e08df 4213970c 42cacee8 bbox_max=41ac9482 424215d0 42d67306
+allgeom[4] transform rot=[3e01db84 3f749831 3e8876c2 bedcac0a 3e971564 bf5a4d1a bf64b5a1 bbdcb700 3ee5fffe ] trans=c2805ded 42a9805b c1ee18e8 scale=3f800000
+allgeom[5] name=BodyBoxRightForeArm:0
+allgeom[5] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[5] verts=14 hash=b3ec21077ba81667
+allgeom[5] norms=14 hash=848f98c243e67374
+allgeom[5] colors=0 hash=14650fb0739d0383
+allgeom[5] texcoords=14 hash=228f2dd69a704919
+allgeom[5] tris=16 hash=62c86bee912463b5
+allgeom[5] bbox_min=417389c5 c20feb5e c2cedb45 bbox_max=41b9fb55 c1bd1a49 c2b20bb0
+allgeom[5] transform rot=[be25e5c0 bf40793f bf239d5f 3ef44afe bf2069f2 3f1dbed8 bf5d1fe9 be520a49 3eeba614 ] trans=c29444ed 420039b6 425dfc46 scale=3f800000
+allgeom[6] name=BodyBoxRightUpperArm:0
+allgeom[6] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[6] verts=14 hash=3f4048c872845fd9
+allgeom[6] norms=14 hash=54b90973e6fd2e53
+allgeom[6] colors=0 hash=14650fb0739d0383
+allgeom[6] texcoords=14 hash=4b01571f8f556c3d
+allgeom[6] tris=15 hash=e87f2818b6083a8e
+allgeom[6] bbox_min=4108bba5 c1c6a81e c2dbc128 bbox_max=41b9fb57 c0af2df2 c2b20bb0
+allgeom[6] transform rot=[3eef0720 bf2b6348 3f13ea11 3e422a9a 3f36c526 3f2c8dc4 bf5d1fed be520a51 3eeba604 ] trans=42471e89 4297c339 425dfc40 scale=3f800000
+allgeom[7] name=BodyBoxTop:0
+allgeom[7] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[7] verts=30 hash=56f815835a5a1ea1
+allgeom[7] norms=30 hash=4312cb0ac3250f43
+allgeom[7] colors=0 hash=14650fb0739d0383
+allgeom[7] texcoords=30 hash=63f99ce0b885eb80
+allgeom[7] tris=26 hash=376c03f8f46fdfc6
+allgeom[7] bbox_min=c149cdbe c1b0a49f c2dd30e9 bbox_max=4149cdbe 407c89d8 c2a5a03d
+allgeom[7] transform rot=[35c00000 bec4a4c4 bf6c5daa b4880000 bf6c5da8 3ec4a4c5 bf800000 b4a00000 b5c00000 ] trans=c2ac0792 41fe15ef bb6e6792 scale=3f800000
+allgeom[8] name=BodyBoxBase:0
+allgeom[8] diffuse=textures/creatures/ghost/invisible.dds normal=
+allgeom[8] verts=16 hash=6605c999172a82aa
+allgeom[8] norms=16 hash=6b3c2ecaf2d30d3f
+allgeom[8] colors=0 hash=14650fb0739d0383
+allgeom[8] texcoords=16 hash=89119a9b17a87d87
+allgeom[8] tris=16 hash=4dccf32cb308531b
+allgeom[8] bbox_min=c137c54a c11da91e c2bc804b bbox_max=4139de53 41154808 c28abdcd
+allgeom[8] transform rot=[35c00000 beaf7f44 bf707dd7 b4c80000 bf707dd8 3eaf7f44 bf800000 b4300000 b5d00000 ] trans=c29cd092 41df3f4e bb6e6cdc scale=3f800000
+allgeom[9] name=Bip01 ectoplasm:0
+allgeom[9] diffuse=textures/creatures/ghost/Ghost03.dds normal=
+allgeom[9] verts=47 hash=85a904fa9f915488
+allgeom[9] norms=47 hash=62da37657e9ba84b
+allgeom[9] colors=0 hash=14650fb0739d0383
+allgeom[9] texcoords=47 hash=af062e208d4cb375
+allgeom[9] tris=90 hash=d0a7793bca66ed21
+allgeom[9] bbox_min=c193c4cb c196d4c8 c0773a3a bbox_max=41902f23 418c3f76 40114233
+allgeom[9] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=00000000 00000000 00000000 scale=3f11e5e6
+allgeom[10] name=Shrinker:0
+allgeom[10] diffuse=textures/creatures/ghost/GhostTop02.dds normal=
+allgeom[10] verts=478 hash=d658bfab5ddb2f55
+allgeom[10] norms=478 hash=9ce87eadc6760481
+allgeom[10] colors=0 hash=14650fb0739d0383
+allgeom[10] texcoords=478 hash=044acb64ea70d0a8
+allgeom[10] tris=659 hash=0eaf489ba587c272
+allgeom[10] bbox_min=c2323cd2 426622c5 c2e9cad2 bbox_max=4208a3ab 42d5ca75 c2888aca
+allgeom[10] transform rot=[3f800000 00000000 00000000 00000000 3f800000 00000000 00000000 00000000 3f800000 ] trans=40a6649b c2a46ded 42b92ace scale=3f800000
+hasNiNode=1 hasNiTriShape=1 hasNiTriStrips=0
+blockTypeName(0)=NiNode

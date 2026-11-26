@@ -1,0 +1,882 @@
+parse=1
+magic=Gamebryo File Format, Version 20.0.0.4
+version=0x14000004 endian=1 hasEndianByte=1 legacyNetImmerse=0 hasBlockTypeTable=1
+userVersion=11 numObjects=426 unknown=11 numGroups=0
+creator= processScript= exportScript=
+blockTypes=15
+  bt[0]=NiNode
+  bt[1]=BSBound
+  bt[2]=BSXFlags
+  bt[3]=NiStringExtraData
+  bt[4]=NiBSBoneLODController
+  bt[5]=NiTransformController
+  bt[6]=NiTransformInterpolator
+  bt[7]=bhkBlendController
+  bt[8]=bhkSphereShape
+  bt[9]=bhkRigidBody
+  bt[10]=bhkBlendCollisionObject
+  bt[11]=bhkCapsuleShape
+  bt[12]=bhkMalleableConstraint
+  bt[13]=bhkRagdollConstraint
+  bt[14]=bhkConvexVerticesShape
+blockTypeIndices=426 hash=e78db7b1ec77649d
+blockDataOffset=1229 fileSize=34404
+blockCount=426
+nodes=426
+node[0] name=Scene Root type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[1] name= type=BSBound typeIdx=1 parent=-1 children=0 hasGeom=0
+node[2] name= type=BSXFlags typeIdx=2 parent=-1 children=0 hasGeom=0
+node[3] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[4] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[5] name= type=NiBSBoneLODController typeIdx=4 parent=-1 children=0 hasGeom=0
+node[6] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[7] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[8] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[9] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[10] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[11] name= type=bhkSphereShape typeIdx=8 parent=-1 children=0 hasGeom=0
+node[12] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[13] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[14] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[15] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[16] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[17] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[18] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[19] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[20] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[21] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[22] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[23] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[24] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[25] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[26] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[27] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[28] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[29] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[30] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[31] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[32] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[33] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[34] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[35] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[36] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[37] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[38] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[39] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[40] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[41] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[42] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[43] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[44] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[45] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[46] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[47] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[48] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[49] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[50] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[51] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[52] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[53] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[54] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[55] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[56] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[57] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[58] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[59] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[60] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[61] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[62] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[63] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[64] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[65] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[66] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[67] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[68] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[69] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[70] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[71] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[72] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[73] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[74] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[75] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[76] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[77] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[78] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[79] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[80] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[81] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[82] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[83] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[84] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[85] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[86] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[87] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[88] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[89] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[90] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[91] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[92] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[93] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[94] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[95] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[96] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[97] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[98] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[99] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[100] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[101] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[102] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[103] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[104] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[105] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[106] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[107] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[108] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[109] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[110] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[111] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[112] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[113] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[114] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[115] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[116] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[117] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[118] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[119] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[120] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[121] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[122] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[123] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[124] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[125] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[126] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[127] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[128] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[129] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[130] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[131] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[132] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[133] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[134] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[135] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[136] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[137] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[138] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[139] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[140] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[141] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[142] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[143] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[144] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[145] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[146] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[147] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[148] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[149] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[150] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[151] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[152] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[153] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[154] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[155] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[156] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[157] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[158] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[159] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[160] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[161] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[162] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[163] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[164] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[165] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[166] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[167] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[168] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[169] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[170] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[171] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[172] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[173] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[174] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[175] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[176] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[177] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[178] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[179] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[180] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[181] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[182] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[183] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[184] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[185] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[186] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[187] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[188] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[189] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[190] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[191] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[192] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[193] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[194] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[195] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[196] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[197] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[198] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[199] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[200] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[201] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[202] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[203] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[204] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[205] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[206] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[207] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[208] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[209] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[210] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[211] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[212] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[213] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[214] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[215] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[216] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[217] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[218] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[219] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[220] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[221] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[222] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[223] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[224] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[225] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[226] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[227] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[228] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[229] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[230] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[231] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[232] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[233] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[234] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[235] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[236] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[237] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[238] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[239] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[240] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[241] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[242] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[243] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[244] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[245] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[246] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[247] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[248] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[249] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[250] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[251] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[252] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[253] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[254] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[255] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[256] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[257] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[258] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[259] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[260] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[261] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[262] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[263] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[264] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[265] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[266] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[267] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[268] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[269] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[270] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[271] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[272] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[273] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[274] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[275] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[276] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[277] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[278] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[279] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[280] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[281] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[282] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[283] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[284] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[285] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[286] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[287] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[288] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[289] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[290] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[291] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[292] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[293] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[294] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[295] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[296] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[297] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[298] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[299] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[300] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[301] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[302] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[303] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[304] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[305] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[306] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[307] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[308] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[309] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[310] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[311] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[312] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[313] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[314] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[315] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[316] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[317] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[318] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[319] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[320] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[321] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[322] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[323] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[324] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[325] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[326] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[327] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[328] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[329] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[330] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[331] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[332] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[333] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[334] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[335] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[336] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[337] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[338] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[339] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[340] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[341] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[342] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[343] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[344] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[345] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[346] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[347] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[348] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[349] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[350] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[351] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[352] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[353] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[354] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[355] name= type=bhkMalleableConstraint typeIdx=12 parent=-1 children=0 hasGeom=0
+node[356] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[357] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[358] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[359] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[360] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[361] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[362] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[363] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[364] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[365] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[366] name= type=bhkConvexVerticesShape typeIdx=14 parent=-1 children=0 hasGeom=0
+node[367] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[368] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[369] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[370] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[371] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[372] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[373] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[374] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[375] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[376] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[377] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[378] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[379] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[380] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[381] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[382] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[383] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[384] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[385] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[386] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[387] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[388] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[389] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[390] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[391] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[392] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[393] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[394] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[395] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[396] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[397] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[398] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[399] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[400] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[401] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[402] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[403] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[404] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[405] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[406] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[407] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[408] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[409] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[410] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[411] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[412] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[413] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[414] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[415] name= type=bhkBlendController typeIdx=7 parent=-1 children=0 hasGeom=0
+node[416] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[417] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+node[418] name= type=bhkCapsuleShape typeIdx=11 parent=-1 children=0 hasGeom=0
+node[419] name= type=bhkRigidBody typeIdx=9 parent=-1 children=0 hasGeom=0
+node[420] name= type=bhkRagdollConstraint typeIdx=13 parent=-1 children=0 hasGeom=0
+node[421] name= type=bhkBlendCollisionObject typeIdx=10 parent=-1 children=0 hasGeom=0
+node[422] name= type=NiNode typeIdx=0 parent=-1 children=0 hasGeom=0
+node[423] name= type=NiStringExtraData typeIdx=3 parent=-1 children=0 hasGeom=0
+node[424] name= type=NiTransformController typeIdx=5 parent=-1 children=0 hasGeom=0
+node[425] name= type=NiTransformInterpolator typeIdx=6 parent=-1 children=0 hasGeom=0
+roots=426
+  root[0]=0
+  root[1]=1
+  root[2]=2
+  root[3]=3
+  root[4]=4
+  root[5]=5
+  root[6]=6
+  root[7]=7
+  root[8]=8
+  root[9]=9
+  root[10]=10
+  root[11]=11
+  root[12]=12
+  root[13]=13
+  root[14]=14
+  root[15]=15
+  root[16]=16
+  root[17]=17
+  root[18]=18
+  root[19]=19
+  root[20]=20
+  root[21]=21
+  root[22]=22
+  root[23]=23
+  root[24]=24
+  root[25]=25
+  root[26]=26
+  root[27]=27
+  root[28]=28
+  root[29]=29
+  root[30]=30
+  root[31]=31
+  root[32]=32
+  root[33]=33
+  root[34]=34
+  root[35]=35
+  root[36]=36
+  root[37]=37
+  root[38]=38
+  root[39]=39
+  root[40]=40
+  root[41]=41
+  root[42]=42
+  root[43]=43
+  root[44]=44
+  root[45]=45
+  root[46]=46
+  root[47]=47
+  root[48]=48
+  root[49]=49
+  root[50]=50
+  root[51]=51
+  root[52]=52
+  root[53]=53
+  root[54]=54
+  root[55]=55
+  root[56]=56
+  root[57]=57
+  root[58]=58
+  root[59]=59
+  root[60]=60
+  root[61]=61
+  root[62]=62
+  root[63]=63
+  root[64]=64
+  root[65]=65
+  root[66]=66
+  root[67]=67
+  root[68]=68
+  root[69]=69
+  root[70]=70
+  root[71]=71
+  root[72]=72
+  root[73]=73
+  root[74]=74
+  root[75]=75
+  root[76]=76
+  root[77]=77
+  root[78]=78
+  root[79]=79
+  root[80]=80
+  root[81]=81
+  root[82]=82
+  root[83]=83
+  root[84]=84
+  root[85]=85
+  root[86]=86
+  root[87]=87
+  root[88]=88
+  root[89]=89
+  root[90]=90
+  root[91]=91
+  root[92]=92
+  root[93]=93
+  root[94]=94
+  root[95]=95
+  root[96]=96
+  root[97]=97
+  root[98]=98
+  root[99]=99
+  root[100]=100
+  root[101]=101
+  root[102]=102
+  root[103]=103
+  root[104]=104
+  root[105]=105
+  root[106]=106
+  root[107]=107
+  root[108]=108
+  root[109]=109
+  root[110]=110
+  root[111]=111
+  root[112]=112
+  root[113]=113
+  root[114]=114
+  root[115]=115
+  root[116]=116
+  root[117]=117
+  root[118]=118
+  root[119]=119
+  root[120]=120
+  root[121]=121
+  root[122]=122
+  root[123]=123
+  root[124]=124
+  root[125]=125
+  root[126]=126
+  root[127]=127
+  root[128]=128
+  root[129]=129
+  root[130]=130
+  root[131]=131
+  root[132]=132
+  root[133]=133
+  root[134]=134
+  root[135]=135
+  root[136]=136
+  root[137]=137
+  root[138]=138
+  root[139]=139
+  root[140]=140
+  root[141]=141
+  root[142]=142
+  root[143]=143
+  root[144]=144
+  root[145]=145
+  root[146]=146
+  root[147]=147
+  root[148]=148
+  root[149]=149
+  root[150]=150
+  root[151]=151
+  root[152]=152
+  root[153]=153
+  root[154]=154
+  root[155]=155
+  root[156]=156
+  root[157]=157
+  root[158]=158
+  root[159]=159
+  root[160]=160
+  root[161]=161
+  root[162]=162
+  root[163]=163
+  root[164]=164
+  root[165]=165
+  root[166]=166
+  root[167]=167
+  root[168]=168
+  root[169]=169
+  root[170]=170
+  root[171]=171
+  root[172]=172
+  root[173]=173
+  root[174]=174
+  root[175]=175
+  root[176]=176
+  root[177]=177
+  root[178]=178
+  root[179]=179
+  root[180]=180
+  root[181]=181
+  root[182]=182
+  root[183]=183
+  root[184]=184
+  root[185]=185
+  root[186]=186
+  root[187]=187
+  root[188]=188
+  root[189]=189
+  root[190]=190
+  root[191]=191
+  root[192]=192
+  root[193]=193
+  root[194]=194
+  root[195]=195
+  root[196]=196
+  root[197]=197
+  root[198]=198
+  root[199]=199
+  root[200]=200
+  root[201]=201
+  root[202]=202
+  root[203]=203
+  root[204]=204
+  root[205]=205
+  root[206]=206
+  root[207]=207
+  root[208]=208
+  root[209]=209
+  root[210]=210
+  root[211]=211
+  root[212]=212
+  root[213]=213
+  root[214]=214
+  root[215]=215
+  root[216]=216
+  root[217]=217
+  root[218]=218
+  root[219]=219
+  root[220]=220
+  root[221]=221
+  root[222]=222
+  root[223]=223
+  root[224]=224
+  root[225]=225
+  root[226]=226
+  root[227]=227
+  root[228]=228
+  root[229]=229
+  root[230]=230
+  root[231]=231
+  root[232]=232
+  root[233]=233
+  root[234]=234
+  root[235]=235
+  root[236]=236
+  root[237]=237
+  root[238]=238
+  root[239]=239
+  root[240]=240
+  root[241]=241
+  root[242]=242
+  root[243]=243
+  root[244]=244
+  root[245]=245
+  root[246]=246
+  root[247]=247
+  root[248]=248
+  root[249]=249
+  root[250]=250
+  root[251]=251
+  root[252]=252
+  root[253]=253
+  root[254]=254
+  root[255]=255
+  root[256]=256
+  root[257]=257
+  root[258]=258
+  root[259]=259
+  root[260]=260
+  root[261]=261
+  root[262]=262
+  root[263]=263
+  root[264]=264
+  root[265]=265
+  root[266]=266
+  root[267]=267
+  root[268]=268
+  root[269]=269
+  root[270]=270
+  root[271]=271
+  root[272]=272
+  root[273]=273
+  root[274]=274
+  root[275]=275
+  root[276]=276
+  root[277]=277
+  root[278]=278
+  root[279]=279
+  root[280]=280
+  root[281]=281
+  root[282]=282
+  root[283]=283
+  root[284]=284
+  root[285]=285
+  root[286]=286
+  root[287]=287
+  root[288]=288
+  root[289]=289
+  root[290]=290
+  root[291]=291
+  root[292]=292
+  root[293]=293
+  root[294]=294
+  root[295]=295
+  root[296]=296
+  root[297]=297
+  root[298]=298
+  root[299]=299
+  root[300]=300
+  root[301]=301
+  root[302]=302
+  root[303]=303
+  root[304]=304
+  root[305]=305
+  root[306]=306
+  root[307]=307
+  root[308]=308
+  root[309]=309
+  root[310]=310
+  root[311]=311
+  root[312]=312
+  root[313]=313
+  root[314]=314
+  root[315]=315
+  root[316]=316
+  root[317]=317
+  root[318]=318
+  root[319]=319
+  root[320]=320
+  root[321]=321
+  root[322]=322
+  root[323]=323
+  root[324]=324
+  root[325]=325
+  root[326]=326
+  root[327]=327
+  root[328]=328
+  root[329]=329
+  root[330]=330
+  root[331]=331
+  root[332]=332
+  root[333]=333
+  root[334]=334
+  root[335]=335
+  root[336]=336
+  root[337]=337
+  root[338]=338
+  root[339]=339
+  root[340]=340
+  root[341]=341
+  root[342]=342
+  root[343]=343
+  root[344]=344
+  root[345]=345
+  root[346]=346
+  root[347]=347
+  root[348]=348
+  root[349]=349
+  root[350]=350
+  root[351]=351
+  root[352]=352
+  root[353]=353
+  root[354]=354
+  root[355]=355
+  root[356]=356
+  root[357]=357
+  root[358]=358
+  root[359]=359
+  root[360]=360
+  root[361]=361
+  root[362]=362
+  root[363]=363
+  root[364]=364
+  root[365]=365
+  root[366]=366
+  root[367]=367
+  root[368]=368
+  root[369]=369
+  root[370]=370
+  root[371]=371
+  root[372]=372
+  root[373]=373
+  root[374]=374
+  root[375]=375
+  root[376]=376
+  root[377]=377
+  root[378]=378
+  root[379]=379
+  root[380]=380
+  root[381]=381
+  root[382]=382
+  root[383]=383
+  root[384]=384
+  root[385]=385
+  root[386]=386
+  root[387]=387
+  root[388]=388
+  root[389]=389
+  root[390]=390
+  root[391]=391
+  root[392]=392
+  root[393]=393
+  root[394]=394
+  root[395]=395
+  root[396]=396
+  root[397]=397
+  root[398]=398
+  root[399]=399
+  root[400]=400
+  root[401]=401
+  root[402]=402
+  root[403]=403
+  root[404]=404
+  root[405]=405
+  root[406]=406
+  root[407]=407
+  root[408]=408
+  root[409]=409
+  root[410]=410
+  root[411]=411
+  root[412]=412
+  root[413]=413
+  root[414]=414
+  root[415]=415
+  root[416]=416
+  root[417]=417
+  root[418]=418
+  root[419]=419
+  root[420]=420
+  root[421]=421
+  root[422]=422
+  root[423]=423
+  root[424]=424
+  root[425]=425
+getNodeByName(first)=1
+extractAllGeometry=0
+hasNiNode=1 hasNiTriShape=0 hasNiTriStrips=0
+blockTypeName(0)=NiNode
