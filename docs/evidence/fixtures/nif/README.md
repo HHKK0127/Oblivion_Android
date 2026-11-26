@@ -76,7 +76,17 @@ bash scripts/build_nif_oracle.sh      # harness（dump_rust）を作る
 python scripts/nif_oracle_check.py    # 不一致・欠落で exit 2。--update で焼き直し
 ```
 
-`nif_coverage.py --oracle docs/evidence/fixtures/nif/oracle` の `--min-oracle` は
-**119**（fixture oracle が corpus_types の 119 型をすべて供給する）。
+`nif_coverage.py --oracle docs/evidence/fixtures/nif/oracle` の見出しは**2 軸**です。
+型が満点でもファイル被覆は別軸で、100% だけ出すと「実コーパス全体を比較した」と誤読されます:
+
+```
+oracle types = 119 / 119 (100.0%)  |  oracle files = 58 / 58 (100.0%)   # fixture 内
+oracle types = 20 / 119  (16.8%)   |  oracle files = 127 / 8032 (1.6%)  # 実コーパス B 全体
+```
+
+- `--min-oracle 119`: 型（種類）のラチェット。上限に達しているので、今後は動かない。
+- `--min-oracle-files 58`: **ファイル本数のラチェット（第 2 軸）**。オラクルを本数で広げる
+  ときはこちらを上げる。型が満点でもファイル被覆は増やせる。
+
 `NiKeyframeController` は oracle に居るがこの meshes コーパスには無い（`known_out_of_corpus.txt`）。
 残り型・供給元の対応は `manifest.txt` の supply map を参照。

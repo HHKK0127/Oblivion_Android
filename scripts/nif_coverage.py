@@ -194,6 +194,22 @@ def load_types(args):
     return files, types, errors
 
 
+def count_oracle_dumps(oracle_dir):
+    """オラクルが比較する期待値ダンプの本数。
+
+    コミット済み fixture は `<dir>/{markers,cover}/…/*.nif.txt`。ローカルの
+    `tmp/nif_oracle` は `out_orig/*.nif.txt`（`out_rust` は生成物なので数えない）。
+    """
+    if not os.path.isdir(oracle_dir):
+        return 0
+    out_orig = os.path.join(oracle_dir, "out_orig")
+    root = out_orig if os.path.isdir(out_orig) else oracle_dir
+    n = 0
+    for _dp, _dirs, names in os.walk(root):
+        n += sum(1 for x in names if x.endswith(".nif.txt"))
+    return n
+
+
 def load_oracle_types(oracle_dir):
     """差分オラクルがバイト検証した型集合。
 
@@ -282,6 +298,8 @@ def main():
                     help="読めた .nif 数がこれと一致しなければ exit 2（fixture のファイル数が変わった）")
     ap.add_argument("--min-oracle", type=int, default=None,
                     help="oracle_verified がこれを下回ったら警告（soft ラチェット）")
+    ap.add_argument("--min-oracle-files", type=int, default=None,
+                    help="oracle の期待値ダンプ本数がこれを下回ったら exit 2（hard・第 2 軸）")
     ap.add_argument("--top", type=int, default=10)
     ap.add_argument("--show", default=None, metavar="SUBSTR")
     ap.add_argument("--json", default=None)
@@ -307,6 +325,7 @@ def main():
     oracle_types = load_oracle_types(args.oracle) if args.oracle else set()
     oracle_verified = known & oracle_types
     unverified = known - oracle_types
+    n_oracle_files = count_oracle_dumps(args.oracle) if args.oracle else 0
 
     if args.show:
         for t in sorted(n for n in known if args.show in n):
@@ -321,11 +340,15 @@ def main():
           % ("-" if args.types_list else files, sum(errors.values())))
     for k, v in errors.most_common():
         print("            %-12s %d" % (k, v))
-    # 見出しはオラクル被覆（本当の穴）。impl_covered は補助。
+    # 見出しは 2 軸: 型（種類）とファイル（本数）。型が満点でもファイル被覆は別軸で、
+    # 100% だけ出すと「実コーパス全体を比較した」と誤読される。
     if args.oracle:
-        print("== oracle_verified / corpus_types = %d / %d (%.1f%%) =="
+        n_corpus = "-" if args.types_list else files
+        file_pct = 100.0 * n_oracle_files / files if files else 0.0
+        print("== oracle types = %d / %d (%.1f%%)  |  oracle files = %d / %s (%.1f%%) =="
               % (len(oracle_verified), len(known),
-                 100.0 * len(oracle_verified) / len(known) if known else 0.0))
+                 100.0 * len(oracle_verified) / len(known) if known else 0.0,
+                 n_oracle_files, n_corpus, file_pct))
     else:
         print("== corpus_types = %d（oracle 未指定。被覆はローカルで測る）==" % len(known))
     print("corpus_types    : %d distinct" % len(known))
@@ -370,6 +393,10 @@ def main():
     if args.max_missing is not None and len(missing) > args.max_missing:
         print("\n::error:: missing %d > %d（handler の無い型が増えた）"
               % (len(missing), args.max_missing))
+        failed = 1
+    if args.min_oracle_files is not None and n_oracle_files < args.min_oracle_files:
+        print("\n::error:: oracle files %d < %d（オラクルのファイル被覆が後退）"
+              % (n_oracle_files, args.min_oracle_files))
         failed = 1
     if args.expect_corpus_types is not None and len(known) != args.expect_corpus_types:
         print("\n::error:: corpus_types %d != %d（fixture が痩せた/増えた）"
