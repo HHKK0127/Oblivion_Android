@@ -1,0 +1,25 @@
+# 実装（walk_block_body の最外 match 腕）にあるが、Oblivion の meshes コーパスに
+# 出てこない型。typo ではなく実在の Gamebryo / NiBSpline 系で、Oblivion の meshes が
+# 使わないだけ。nif_coverage の stray から除外する。
+#
+# このリストに無い型が stray に出れば、それは typo か死んだ腕（本来の狙い）。
+# 1 行 1 型。# 以降はコメント。追加時は「実在型である根拠」を 1 行添えること。
+#
+# 2026-11-26 実測: tools/BSAFileExtractor/extracted/meshes（8032 files / 119 types）
+# に対して stray 16 種。いずれも walk.rs の match 腕にある。
+NiBSplineBasisData
+NiBSplineCompFloatInterpolator
+NiBSplineCompPoint3Interpolator
+NiBSplineCompTransformInterpolator
+NiBSplineData
+NiBSplineFloatInterpolator
+NiBSplineInterpolator
+NiBSplinePoint3Interpolator
+NiBSplineTransformInterpolator
+NiBlendColorInterpolator
+NiBlendQuaternionInterpolator
+NiKeyframeController
+NiPointLight
+NiSpotLight
+bhkPackedNiTriStripsShape
+hkPackedNiTriStripsData
