@@ -271,6 +271,10 @@ def main():
                     help="stray がこれを上回ったら exit 2（hard）")
     ap.add_argument("--max-missing", type=int, default=None,
                     help="missing（コーパスにあるが handler の無い型）がこれを上回ったら exit 2（hard）")
+    ap.add_argument("--expect-corpus-types", type=int, default=None,
+                    help="corpus_types がこれと一致しなければ exit 2（fixture が痩せた検知）")
+    ap.add_argument("--expect-corpus-files", type=int, default=None,
+                    help="読めた .nif 数がこれと一致しなければ exit 2（fixture のファイル数が変わった）")
     ap.add_argument("--min-oracle", type=int, default=None,
                     help="oracle_verified がこれを下回ったら警告（soft ラチェット）")
     ap.add_argument("--top", type=int, default=10)
@@ -313,9 +317,12 @@ def main():
     for k, v in errors.most_common():
         print("            %-12s %d" % (k, v))
     # 見出しはオラクル被覆（本当の穴）。impl_covered は補助。
-    print("== oracle_verified / corpus_types = %d / %d (%.1f%%) =="
-          % (len(oracle_verified), len(known),
-             100.0 * len(oracle_verified) / len(known) if known else 0.0))
+    if args.oracle:
+        print("== oracle_verified / corpus_types = %d / %d (%.1f%%) =="
+              % (len(oracle_verified), len(known),
+                 100.0 * len(oracle_verified) / len(known) if known else 0.0))
+    else:
+        print("== corpus_types = %d（oracle 未指定。被覆はローカルで測る）==" % len(known))
     print("corpus_types    : %d distinct" % len(known))
     print("impl_covered    : %d (%.1f%%)"
           % (len(impl_covered), 100.0 * len(impl_covered) / len(known)))
@@ -358,6 +365,14 @@ def main():
     if args.max_missing is not None and len(missing) > args.max_missing:
         print("\n::error:: missing %d > %d（handler の無い型が増えた）"
               % (len(missing), args.max_missing))
+        failed = 1
+    if args.expect_corpus_types is not None and len(known) != args.expect_corpus_types:
+        print("\n::error:: corpus_types %d != %d（fixture が痩せた/増えた）"
+              % (len(known), args.expect_corpus_types))
+        failed = 1
+    if args.expect_corpus_files is not None and files != args.expect_corpus_files:
+        print("\n::error:: corpus files %d != %d（fixture のファイル数が変わった）"
+              % (files, args.expect_corpus_files))
         failed = 1
     if args.min_oracle is not None and len(oracle_verified) < args.min_oracle:
         # soft ラチェット: オラクルは local-only なので警告に留める。

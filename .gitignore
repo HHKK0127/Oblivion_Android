@@ -33,6 +33,11 @@ Launcher/
 !docs/evidence/fixtures/*.dds
 !docs/evidence/fixtures/*.nif
 !docs/evidence/fixtures/*.bsa
+
+# 実物 NIF の被覆 fixture（docs/evidence/fixtures/nif/）。Oblivion - Meshes.bsa の
+# 最小抜粋で、型被覆のためだけに置く（上の合成 fixture とは別系統）。ゲーム資産
+# 本体は含まない。*.nif はサブディレクトリにも効くので ** で再包含する。
+!docs/evidence/fixtures/nif/**/*.nif
 *.lod
 textures_extracted/
 meshes_extracted/

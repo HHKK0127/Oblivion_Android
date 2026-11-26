@@ -254,6 +254,26 @@ jobs:
       - name: Check unmerged branch count
         run: python3 scripts/check_wip_limit.py --base origin/master --limit 5 --block-limit 10 --overlap
 
+  # 実物 NIF fixture でブロック型被覆ゲートを回す。fixture は
+  # docs/evidence/fixtures/nif/（Oblivion - Meshes.bsa の最小抜粋・型被覆用）。
+  # ゲート値は fixture 側の実測（119 型 / 58 files）。B 全体（8032 files）での計測は
+  # ローカルで回し、CI の数字と混ぜない。詳細は docs/evidence/fixtures/nif/README.md。
+  nif-coverage:
+    name: NIF block-type coverage (fixture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check NIF block-type coverage
+        run: |
+          set -euo pipefail
+          python3 scripts/nif_coverage.py --corpus docs/evidence/fixtures/nif \
+            --expect-corpus-types 119 --expect-corpus-files 58 \
+            --min-impl 119 --max-missing 0 --max-stray 0
+
   # 既定経路の実機検証（headless emulator）。build が作った APK を起動し、
   # スモーク（docs/smoke-tests/newgame.sh）とゴールデン比較
   # （scripts/compare_golden.py）を通す。2026-11 の停滞の主因は「既定経路の
