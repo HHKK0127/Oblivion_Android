@@ -22,8 +22,9 @@
   > 進捗 2026-11-26: ①regex 修正（e31f6583）— HANDLER_RE を本体全体から match 腕パターン（ARM_RE・全深さ・複数行対応）へ。本体リテラル（byte/float/string/Vector3/Color4）を拾わなくなり、stray 21→0（known_out_of_corpus.txt に実在型 16 を理由付き除外）。impl_covered 119 / missing 0。②型被覆 fixture（2b14422b）— CI にコーパスが無い（両コーパス gitignore 済み）ため、Oblivion - Meshes.bsa の最小抜粋 58 本 / 5.01MB を docs/evidence/fixtures/nif/ に固定（markers 27 + cover 31・全 119 型）。nif_fixture_select.py が決定的に選択（gain/sqrt(bytes)・supply map 出力）。android.yml に nif-coverage ジョブ。外せない 4 本＝minotaurold / snow / rainlight / blackwoodpump01（7 型の唯一の供給元）。ゲート --min-impl 119 --max-missing 0 --max-stray 0 --expect-corpus-types 119 --expect-corpus-files 58 -> exit 0。③オラクル拡張の順番（未着手）: NiWireframeProperty を扱う marker 8 本 → 外せない 4 本（粒子・キーフレーム）→ 頻度順（bhkCollisionObject 6401 → NiNode 7896）。見出しは oracle_verified/corpus_types = 2/119 (1.7%)。
   > 進捗 2026-11-26（オラクル拡張）: ①regex 修正（e31f6583）②型被覆 fixture（2b14422b）③オラクル期待値を固定し CI で比較（481dbc6e）— tools/nif_oracle/ の driver ＋ scripts/build_nif_oracle.sh ＋ scripts/nif_oracle_check.py（fixture 27 本を dump_rust に通し docs/evidence/fixtures/nif/oracle/ の固定期待値と 1 バイト比較・不一致 exit 2）＋ android.yml の nif-oracle ジョブ。期待値は marker 27 本の dump_orig 出力。再ビルド dump_orig は旧版と 27/27 一致。oracle_verified は 20（NiKeyframeController は oracle に居るがコーパス外なので 21 にならない。--min-oracle 20 で凍結）。途中で nif-ffi の block_type_count 実バグを発見・修正した（cc556a80）。
 
-- [ ] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke`
+- [x] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke` (2026-11-26)
   > 2026-11-25 時点で blocked: 並行レーンが docs/evidence/golden/newgame-no-esm-prefix.json / docs/smoke-tests/newgame.sh / scripts/compare_golden.py を未コミットで編集中。--update すると相手の WIP を上書きするため、相手の landing 待ち。再開時は事前に差分画像を目視（赤は正常）。
+  > 再採取 済 2026-11-26（commit 2c46b359）。手順: 並行レーンの未コミット WIP 3 ファイル（mtime 31h・停滞）を wip/golden-lane=1f575195 に保全 → master 復帰 → レビューで退行を発見（WIP の compare_golden.py が CI 依存の JSON 比較経路 compare_json/load_json/json_differences/.json ディスパッチを欠落）→ 復元して feature を 22a295df で着地 → golden 再採取。実測: 旧 golden vs 新 PNG = mean=3.01 changed=60/576 (10.4%)（#161 後で赤・想定どおり）、新 golden は run2/run3 とも mean=0.00 changed=0/576 (0.0%) の 2 run 連続一致。差分画像を目視: 変化は背景の地形エッジ（上段 rows2-9・右 columns10-31 の斜め帯、上段59/下段1）に集中しパネル領域（左の Player/Race/Face/Hair）ではない＝『パネル以外』。実機 emulator-5554 / 1280x960 / 240dpi / rotation 1、Git Bash で smoke、APK app-debug.apk(14:01)。残: newgame-no-esm.json への改名は V-664 完了後（未実施）。限界: この golden を比較する CI ジョブは hosted runner に hypervisor 無しで skip のため 2 run 一致はローカル証拠のみ。
 
 - [ ] **#182** 【作製・中優先】Panel の race 名が描画されない: パネル Main で Player/Race/Face/Hair のラベルは出るが、種族名（ESM 由来）がプレースホルダのまま描画されない。BSA とは無関係（run 2 でも直らない）。実機スクショ artifacts/161-with-panel.png で確認。独立した描画欠陥。 `#chargen` `#fix` `#render` `#ui`
 
@@ -3759,6 +3760,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3782,4 +3788,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-26 14:58:13
+**ai-todo** | Last Updated: 2026-11-26 18:56:48

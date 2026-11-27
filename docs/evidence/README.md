@@ -34,6 +34,22 @@
 
 ファイル名の `-no-esm-prefix` は、この 2 つの前提（ESM 不在・プレースホルダ）を忘れないため。
 
+### ローカル専用（CI では走らない）・実行の契機
+
+この golden を比較する CI ジョブ `Default path smoke (headless emulator)` は hosted runner に
+hypervisor が無く **skip** する。よって golden の検証は**ローカル専用**で、CI の緑は golden の
+正しさを保証しない。
+
+- **実行の契機**: 既定経路（タイトル → chargen）に触る修正を land したとき。
+  `bash docs/smoke-tests/newgame.sh --no-esm`（APK パスも可）で条件を再現し、`--update` →
+  **2 run 連続一致**を確認してから固定する（1 run はその run の揺れを焼き込む）。
+- **条件は手作業で作らない**: `--no-esm` がアプリ data dir の loose ゲームデータ
+  （*.esm/*.esp/*.bsa）を `run-as` で一時退避し、終了時に戻す。サイドカーに `esm=absent` を書き、
+  `compare_golden.py --require esm=absent` が条件違いを落とす。golden の `meta.esm` にも記録される
+  （2026-11-26 に ESM 有りで採った画面を no-ESM の基準として焼く事故を起こしたため）。
+- **`--no-esm` の実行コードは Git Bash**（`C:\Program Files\Git\bin\bash.exe`）。`bash` が WSL
+  （`system32\bash.exe`）に解決されると `LOCALAPPDATA` 未定義で即落ちする。
+
 ### 来歴（meta）— 画素差と環境差を混同しないため
 
 golden の JSON には撮影条件を埋める（PNG はアセットで未コミットなので、JSON から実行を辿れる必要がある）:
