@@ -5182,10 +5182,6 @@ void Renderer::render(float deltaTime) {
             uiPauseMenu->setFadeAlpha(menuFade.getAlpha(kPauseMenuFadeKey, true));
             uiPauseMenu->render();
         }
-if (uiMessageBox && uiMessageBox->isVisible()) {
-            uiMessageBox->render();
-        }
-
         // Character creation overlay on top of title screen
         if (isLegacyChargenActive()) {
             characterCreationUI->update(deltaTime);
@@ -5195,6 +5191,9 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
             raceSexPanel->update(deltaTime);
             raceSexPanel->render();
         }
+
+        // Modal overlays last, from the shared tail (#194).
+        drawModalOverlays();
 
         // Skip frame rate control for quick return
         if (performanceMonitor) {
@@ -5826,7 +5825,16 @@ if (uiMessageBox && uiMessageBox->isVisible()) {
         gameConsole->render();
     }
 
-    // MessageMenu (0x3e9): modal, so it is drawn after everything else.
+    // Modal overlays last, from the shared tail (#194).
+    drawModalOverlays();
+}
+
+void Renderer::drawModalOverlays() {
+    // MessageMenu (0x3e9) is modal, so it is drawn after everything else. Both
+    // render() paths (title and game) call this as their last draw, so the order
+    // cannot drift between them: drawing it inside the title branch put the
+    // dialog UNDER the chargen panel for the one frame that runs that branch
+    // after New Game (#194). Future modal overlays belong here too.
     if (uiMessageBox && uiMessageBox->isVisible()) {
         uiMessageBox->render();
     }

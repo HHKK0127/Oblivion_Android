@@ -2,6 +2,13 @@
 
 Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
 
+## 2026-11-27 — #194 描画順: modal overlay を末尾 1 箇所に（一過性フレームの本体修正）
+
+- **原因**: タイトル分岐が message box を chargen パネルより**先**に描いていたため、New Game を処理した 1 フレームだけダイアログがパネルの下に隠れ、次のフレーム（ゲーム分岐）で戻る**一過性**ができていた。ゲーム分岐は既に「MessageMenu は modal、最後に描く」で正しく、**タイトル分岐だけが反していた**。
+- **z 順の確定**: **背景 → パネル → modal overlay（常に最前面）**。描画コードを `Renderer::drawModalOverlays()` に集約し、**両経路の末尾から呼ぶ**（定義 1 箇所で順序が決まる）。タイトル分岐は早期 return するため、literal な単一呼び出し点にはゲーム分岐 620 行の再インデントが要るので採らない。
+- **検証（emulator-5554 / 1280x960 / 240dpi / rotation 1 / `--no-esm`）**: chargen 直後の連続 6 枚を golden と比較 — **#194 前: b2=943235(76.8%)**（一過性を捕捉）/ **#194 後: b1=3567(0.29%)・b2..b6=0**（一過性が消えた）。通常 smoke は `settled: 3 連続同一`・golden `mean=0.02 / changed=0/576` で一致。閾値を `0.01` に締めても収束（余裕が 7 倍→数百倍）。`syntax_check_ui: OK`。
+- **settle は不要にならない**: 消えたのは 70% 級の一過性で、ステータスバーの時計は動き続ける。狙いは「閾値の余裕」（gotcha #11）。
+
 ## 2026-11-27 — #186 loose ESM の部分読みレースを塞いだ（landing）
 
 - **症状**: 1 Hz の `maybeRetryGameDataLoad` が回っている間に loose `Oblivion.esm` を書き込むと、**書き込み途中のファイルを受理**して壊れた世界が静かに立ち上がり、`gameDataLoaded_` が立って二度と直らない。パーサは切り詰めを検出しない（`index_records` は不足時に `break` して `Ok` を返す）。実測: 1024B(0.4%)・50%・98.8% の切り詰めすべて受理。

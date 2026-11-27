@@ -677,6 +677,11 @@ private:
     void createTestScenario();
     void ensureScenarioBuilt();
 
+    // Modal overlays (MessageMenu 0x3e9, ...) are drawn last, from one place, so
+    // the order cannot drift between the title path and the game path (#194).
+    // Both render() paths call this as their last draw.
+    void drawModalOverlays();
+
     // Placeholder rendering for entities without meshes
     void renderPlaceholderEntities();
     void renderSphere(glm::vec3 position, float radius, glm::vec4 color);
