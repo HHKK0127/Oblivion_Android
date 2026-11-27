@@ -2,6 +2,15 @@
 
 Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
 
+## 2026-11-27 — #196 RACE ATTR を実測 16B でパース（V-664-2 の decode 部分・commit 071b34e1）
+
+- **実装**: `RaceData.attr*`（宣言のみ・常に 0）を実測レイアウトに。ATTR 16B = 男性 8u8 + 女性 8u8、AttrIndex 順 Strength..Luck。`std::array<uint8_t,8> attrMale/attrFemale` ＋ 単一アクセサ `attr(AttrIndex, bool female)`。enum 直上に「この並び＝ATTR のバイト順」、直後に `static_assert(kAttrCount == 8)`。male 固定名（`attrStrength` 等）は残さない。
+- **decode**: `decodeRace` が ATTR を populate。16B 未満は破損として **ATTR 全体を無視（両性 0、部分充填しない）**、16B 超は先頭 16B のみ。フィールドは全てタグ経由（`findSubRecord`）なので、ATTR の消費量を変えても後続フィールドのオフセットはずれない。
+- **呼び出し**: `NpcManager::initializePlayerFromESM` の 7 行直書き → `{AttrIndex, 名前}` の**対応表 8 行**（Luck を追加）。性別は `NPC::isFemale`。`setAttr` の `bonus > 0` / `+=` は不変。
+- **検証**: host `RaceDecodeTests` **29/29 PASSED**、`HOST RUNNER: ALL GREEN (0 suite(s) failed)`。実データ Imperial/Argonian（corpus）＋合成 Distinct（全 8 値が男女で異なる＝入れ替え検出）＋ 15B/17B/なし guard ＋ ATTR 後続（FULL/DESC/MNAM/SPLO/DATA）固定。
+- **証拠の範囲（重要）**: `initializePlayerFromESM` は**呼び出し元 0 件の死コード**で、書き込み先は `NPC::status.attributes`（map）。smoke JSON が読む `Player::attributes`（構造体）とは別物なので **blocking golden は回していない**。挙動の証拠はユニットテストのみ・実機未確認。
+- **残**: `V-664-2` の Player 適用段（`Player` に `status` が無いため `applyRaceToPlayer` は別設計）、`V-664-3`（health）、別チケット（死コード掃除／`setAttr` の `bonus` リネーム＝ATTR は base 値）。
+
 ## 2026-11-27 — #194 描画順: modal overlay を末尾 1 箇所に（一過性フレームの本体修正）
 
 - **原因**: タイトル分岐が message box を chargen パネルより**先**に描いていたため、New Game を処理した 1 フレームだけダイアログがパネルの下に隠れ、次のフレーム（ゲーム分岐）で戻る**一過性**ができていた。ゲーム分岐は既に「MessageMenu は modal、最後に描く」で正しく、**タイトル分岐だけが反していた**。
