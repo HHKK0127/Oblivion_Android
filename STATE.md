@@ -2,6 +2,16 @@
 
 Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
 
+## 2026-11-27 — #204 race の ATTR 属性を Player に適用（V-664-2 適用段・landing）
+
+- **裁定（#203）**: ATTR の 30-50 は **base** で bonus ではない。`applyRace` は `resetAttributes()`（全 40）の後、`race->attr(kX, gender)` を `attributes.*` へ**代入**する。`BASE_ATTRIBUTE=40` は race 不在／ATTR 無しのフォールバック。根拠: `renderer.cpp:942-944` の Legacy 経路が既に代入、UESP の race 属性表は初期値。
+- **hasAttr**: decoder は ATTR 不在・15B を 0 で返すので、`RaceData::hasAttr`（`>= 16` のときだけ true）で判定。0 を値として使わない（0 が正当な race で嘘になる）。
+- **写像**: `RaceBonus` に `hasAttr`＋`attrs[8]`（性別選択済み、ESM 非依存）。性別の選択は `applyRaceToPlayer` で 1 回だけ（`Player::isFemale()`）。
+- **gender 順序**: `applyRaceToPlayer` が `player.gender` で ATTR 行を選ぶため、`chargen::commit` は gender を race の**前**に書く。**gender 単独変更でも race を再適用**（`raceChanged || genderApplied`。無いと男性行が残る）。
+- **検証**: host **ALL GREEN**、`RaceSexPanelTests` **98/98**（新規 6 件＝代入・再適用・ATTR 無し・race 切替・`isFemale`・gender 単独変更の ATTR 行切替）。smoke golden が `attributes` **40→1..8**（fixture TestRaceA に ATTR M`1..8`/F`11..18` を追加。blocking golden が写像を 1:1 固定）。platform 一致: 旧 golden（CI linux-gnu）と win-gnu の smoke 出力が**完全一致**。
+- **証拠の範囲**: 実機確認は別途（V-631-1b の条件を「gender 切替で str/end が入れ替わる」まで強化）。
+- **残**: health（`V-664-3`・#200 待ち）、race 未選択時の戻り（#205）、死コード掃除（#202）。
+
 ## 2026-11-27 — #196 RACE ATTR を実測 16B でパース（V-664-2 の decode 部分・commit 071b34e1）
 
 - **実装**: `RaceData.attr*`（宣言のみ・常に 0）を実測レイアウトに。ATTR 16B = 男性 8u8 + 女性 8u8、AttrIndex 順 Strength..Luck。`std::array<uint8_t,8> attrMale/attrFemale` ＋ 単一アクセサ `attr(AttrIndex, bool female)`。enum 直上に「この並び＝ATTR のバイト順」、直後に `static_assert(kAttrCount == 8)`。male 固定名（`attrStrength` 等）は残さない。
