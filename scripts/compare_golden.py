@@ -17,11 +17,16 @@
   アセットなので未コミットであり、JSON から実行を辿れるようにしておく必要がある。
 
     {"meta": {"taken_at", "commit", "app_version",
-              "wm_size", "density", "rotation", "source_png_sha256"},
+              "wm_size", "density", "rotation", "esm", "source_png_sha256"},
      "grid_w": 32, "grid_h": 18, "cells": [...]}
 
-  `--require` は wm_size/density/rotation が現環境と違えば **環境不一致** として、
+  `esm` は撮影時のゲームデータ条件（present/absent）。CI の smoke は実データを積まない
+  ので golden は **absent** を要求する。条件を golden に書かないと、ESM 有りで採った画面を
+  no-ESM の基準として焼いてしまう（2026-11-26 に実際に踏んだ）。
+
+  `--require` は wm_size/density/rotation/esm が現環境と違えば **環境不一致** として、
   画素差とは別のメッセージで落とす（密度が変わっただけの赤を延々と追わないため）。
+  `--require esm=absent` のように条件を値で渡すと、現環境側もその条件を満たすか検査する。
 
 使い方:
   # 基準を承認（人がレビューしてからコミットする）
@@ -38,7 +43,8 @@
 
 終了コード:
   0 = 一致（または --update 成功）
-  2 = ゲート失敗（hard）: 閾値超過 / 環境不一致 / JSON 相違 / --require で基準が無い / 形状不一致
+  2 = ゲート失敗（hard）: 閾値超過 / 環境不一致 / JSON 相違 / --require で基準が無い /
+      --require の条件不一致 / 形状不一致
   1 = ツール異常: 候補（画像/JSON）が無い・解析できない・依存（Pillow/numpy）が無い
 """
 import argparse
@@ -147,7 +153,7 @@ def json_differences(golden, cand, path="$"):
     return out
 
 
-def compare_json(args):
+def compare_json(args, require_golden):
     """ホスト smoke の JSON 出力（newgame_smoke）の完全一致比較。
 
     画面（PNG）のグリッド比較とは別系統。meta の環境チェックは撮影条件の話なので
@@ -175,7 +181,7 @@ def compare_json(args):
                "ホスト smoke を 1 度回し、"
                "`python scripts/compare_golden.py <out.json> --update` で作成してコミットすること。"
                % args.golden)
-        if args.require:
+        if require_golden:
             print("::error::" + msg)
             return 2
         print("::warning::" + msg)
@@ -212,6 +218,7 @@ def effective_env(args):
         "wm_size": args.wm_size or side.get("wm_size") or "unknown",
         "density": args.density or side.get("density") or "unknown",
         "rotation": args.rotation or side.get("rotation") or "unknown",
+        "esm": args.esm or side.get("esm") or "unknown",
     }
 
 
@@ -221,7 +228,8 @@ def main():
                     help="比較する候補: 画面スモークの PNG、またはホスト smoke の out.json")
     ap.add_argument("--golden", default=DEFAULT_GOLDEN, help="基準 JSON（既定 %s）" % DEFAULT_GOLDEN)
     ap.add_argument("--update", action="store_true", help="候補を基準として書き出す（人がレビューしてからコミット）")
-    ap.add_argument("--require", action="store_true", help="基準が無ければ失敗（既定は警告のみ）")
+    ap.add_argument("--require", nargs="?", const="golden", default=None, metavar="COND",
+                    help="基準が無ければ失敗（既定は警告のみ）。条件を渡すと現環境も検査（例 esm=absent）")
     ap.add_argument("--max-mean", type=float, default=4.0, help="セル平均差の上限（既定 4.0/255）")
     ap.add_argument("--cell-threshold", type=float, default=12.0, help="「変化した」と数えるセル差（既定 12.0）")
     ap.add_argument("--max-changed-ratio", type=float, default=0.05, help="変化セル率の上限（既定 0.05）")
@@ -229,17 +237,37 @@ def main():
     ap.add_argument("--wm-size", default=None, help="現環境の表示サイズ（例 1280x960）")
     ap.add_argument("--density", default=None, help="現環境の密度（例 240）")
     ap.add_argument("--rotation", default=None, help="現環境の回転（例 1）")
+    ap.add_argument("--esm", default=None, choices=("present", "absent"),
+                    help="現環境のゲームデータ条件（既定はサイドカーから）")
     ap.add_argument("--allow-env-mismatch", action="store_true",
                     help="環境不一致でも画素比較へ進む（既定は環境不一致で落とす）")
     args = ap.parse_args()
 
+    # --require は基準の存在要求。値に `key=value`（例 esm=absent）を渡すと現環境も検査する。
+    require_golden = args.require is not None
+    require_cond = None
+    if args.require and args.require != "golden":
+        if "=" not in args.require:
+            print("::error::--require の値は key=value 形式（例 esm=absent）: %s" % args.require)
+            return 1
+        _k, _v = args.require.split("=", 1)
+        require_cond = (_k.strip(), _v.strip())
+
     # 候補が JSON ならホスト smoke の状態比較（PNG は従来のグリッド比較）。
     if args.candidate.lower().endswith(".json"):
-        return compare_json(args)
+        return compare_json(args, require_golden)
 
     im = load_gray(args.candidate)
     cand = digest(im)
     env = effective_env(args)
+
+    # 明示条件（--require esm=absent 等）: 現環境が満たさなければ、golden を見る前に落とす。
+    if require_cond:
+        ck, cv = require_cond
+        av = env.get(ck, "unknown")
+        if av != cv:
+            print("::error::--require %s=%s を要求しましたが現環境は %s=%s です" % (ck, cv, ck, av))
+            return 2
 
     if args.update:
         cand["meta"] = {
@@ -249,6 +277,7 @@ def main():
             "wm_size": env["wm_size"],
             "density": env["density"],
             "rotation": env["rotation"],
+            "esm": env["esm"],
             "source_png_sha256": sha256_of(args.candidate),
         }
         os.makedirs(os.path.dirname(args.golden) or ".", exist_ok=True)
@@ -265,7 +294,7 @@ def main():
                "エミュレータで 1 度スモークを回し、"
                "`python scripts/compare_golden.py <screenshot> --update` で作成してコミットすること。"
                % args.golden)
-        if args.require:
+        if require_golden:
             print("::error::" + msg)
             return 2
         print("::warning::" + msg)
@@ -278,14 +307,15 @@ def main():
     gmeta = golden.get("meta") or {}
     if gmeta:
         mismatches = []
-        for key in ("wm_size", "density", "rotation"):
+        for key in ("wm_size", "density", "rotation", "esm"):
             gv, cv = gmeta.get(key, "unknown"), env.get(key, "unknown")
             if gv != "unknown" and cv != "unknown" and gv != cv:
                 mismatches.append("%s: golden=%s current=%s" % (key, gv, cv))
-        print("golden meta: taken_at=%s commit=%s app_version=%s wm=%s dpi=%s rot=%s"
+        print("golden meta: taken_at=%s commit=%s app_version=%s wm=%s dpi=%s rot=%s esm=%s"
               % (gmeta.get("taken_at", "unknown"), gmeta.get("commit", "unknown"),
                  gmeta.get("app_version", "unknown"), gmeta.get("wm_size", "unknown"),
-                 gmeta.get("density", "unknown"), gmeta.get("rotation", "unknown")))
+                 gmeta.get("density", "unknown"), gmeta.get("rotation", "unknown"),
+                 gmeta.get("esm", "unknown")))
         if mismatches and not args.allow_env_mismatch:
             print("::error::環境不一致（画素差ではなく撮影条件の違い）: " + " / ".join(mismatches))
             print("  → 同じ表示条件で撮り直すか、その条件が正しいなら --update で更新する。")

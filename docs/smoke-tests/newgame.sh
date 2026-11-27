@@ -20,7 +20,11 @@
 # 前提: エミュレータ（`wm size` を書き換えるため）。物理端末では使わない。
 #
 # 使い方:
-#   bash docs/smoke-tests/newgame.sh [APK]
+#   bash docs/smoke-tests/newgame.sh [APK] [--no-esm]
+# --no-esm:
+#   アプリの data dir にある loose ゲームデータ（*.esm/*.esp/*.bsa）を一時的に隠して
+#   起動する。CI の smoke は実データを積まない（no-ESM）ので、golden を採る条件を
+#   ローカルでも 1 か所で再現するため。終了時に元へ戻す（trap）。
 # 環境変数:
 #   SMOKE_TIMEOUT_S  各段の待ち秒数（既定 180）
 #   SMOKE_SETTLE_S   マーカー後に画面が落ち着くまでの秒数（既定 2）
@@ -28,7 +32,14 @@
 #   SMOKE_EXPECTED_WIDTH  wm size で固定する幅（既定 1280）
 set -euo pipefail
 
-APK="${1:-}"
+APK=""
+NO_ESM=0
+for _arg in "$@"; do
+  case "$_arg" in
+    --no-esm) NO_ESM=1 ;;
+    *)        APK="$_arg" ;;
+  esac
+done
 PKG="com.example.oblivion"
 NEW_GAME_INDEX=1                 # menuItems: 0=Continue 1=New Game 2=Load 3=Options 4=Credits 5=Exit
 MARKER_TAP="Menu selection: New Game"
@@ -95,9 +106,29 @@ mkdir -p "$OUT_DIR"
 LOGCAT_FILE="$OUT_DIR/smoke-newgame.log"
 LOGCAT_PID=""
 
+# --no-esm: アプリ data dir の loose ゲームデータを一時的に隠す（CI と同じ no-ESM 条件）。
+# ファイル名は実測（emulator-5554 の data dir）に合わせる。隠し漏れは下のログ検証で落とす。
+GODATA_FILES=("Oblivion.esm" "Oblivion - Meshes.bsa" "Oblivion.esp")
+hide_game_data() {
+  local f
+  for f in "${GODATA_FILES[@]}"; do
+    "$ADB" shell "run-as $PKG mv 'files/data/$f' 'files/data/$f.noesm-bak' 2>/dev/null || true" >/dev/null 2>&1 || true
+  done
+}
+restore_game_data() {
+  local f
+  for f in "${GODATA_FILES[@]}"; do
+    "$ADB" shell "run-as $PKG mv 'files/data/$f.noesm-bak' 'files/data/$f' 2>/dev/null || true" >/dev/null 2>&1 || true
+  done
+}
+
 cleanup() {
   if [ -n "$LOGCAT_PID" ]; then
     kill "$LOGCAT_PID" >/dev/null 2>&1 || true
+  fi
+  # --no-esm で隠したゲームデータは必ず戻す（失敗しても表示は戻す）。
+  if [ "${NO_ESM:-0}" = "1" ]; then
+    restore_game_data
   fi
   # 表示の上書きは物理端末に残るため、必ず戻す。
   "$ADB" shell wm size reset >/dev/null 2>&1 || true
@@ -136,6 +167,11 @@ echo "display fixed: 1280x960 / 240dpi / rotation 1"
   echo "wm_size=1280x960"
   echo "density=240"
   echo "rotation=1"
+  if [ "$NO_ESM" = "1" ]; then
+    echo "esm=absent"
+  else
+    echo "esm=present"
+  fi
 } > "$OUT_DIR/smoke-newgame.env"
 
 if [ -n "$APK" ]; then
@@ -145,6 +181,12 @@ if [ -n "$APK" ]; then
   fi
   echo "install: $APK"
   "$ADB" install -r -t "$APK"
+fi
+
+# --no-esm: APK 設置後に loose ゲームデータを隠す（次回終了時に戻す）。
+if [ "$NO_ESM" = "1" ]; then
+  echo "no-esm mode: hiding loose game data (${GODATA_FILES[*]})"
+  hide_game_data
 fi
 
 # リングバッファを広げてから、ストリーミングでファイルへ落とす。
@@ -235,6 +277,26 @@ if [ "$opened" != "1" ]; then
   exit 1
 fi
 echo "chargen opened: $MARKER_CHARGEN"
+
+# --no-esm の条件検証: ESM を隠したのに ESM ワールドが構築されていたら、golden を
+# 焼く前に中止する（条件違いの golden を焼かないため）。
+if [ "$NO_ESM" = "1" ]; then
+  if grep -Fq "Building world from ESM data" "$LOGCAT_FILE" 2>/dev/null; then
+    echo "::error::--no-esm なのに ESM ワールドが構築されました（隠し漏れ）。中止。"
+    log_dump
+    exit 1
+  fi
+  if grep -Fq "Extracted Oblivion.esm" "$LOGCAT_FILE" 2>/dev/null; then
+    echo "::error::--no-esm なのに Oblivion.esm が読まれました（隠し漏れ）。中止。"
+    log_dump
+    exit 1
+  fi
+  if grep -Fq "createTestScenario: fallback NPCs/quests created" "$LOGCAT_FILE" 2>/dev/null; then
+    echo "no-esm 条件 OK: ESM ワールド未構築・demo ブロック実行"
+  else
+    echo "no-esm 条件 OK: ESM ワールド未構築（demo マーカーは出ていない。要確認）"
+  fi
+fi
 
 sleep "$SETTLE_S"
 "$ADB" exec-out screencap -p > "$OUT_DIR/smoke-newgame.png" 2>/dev/null || true
