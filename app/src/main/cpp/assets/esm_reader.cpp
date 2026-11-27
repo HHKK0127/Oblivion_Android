@@ -1873,9 +1873,22 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
         std::memcpy(&race.flags, data->data.data() + 32, 4);
     }
 
-    // The RACE attribute values live in the ATTR subrecord (16 bytes); its
-    // layout and the health source are not yet confirmed (V-664-2/V-664-3), so
-    // RaceData.attr* / startingHealth stay at their defaults (0) for now.
+    // ATTR (16 bytes) = 8 male u8 then 8 female u8, in AV order Strength..
+    // Luck (V-664-2: measured against Oblivion.esm on 2026-11-27; all 15
+    // records are exactly 16 bytes, and UESP's per-race M/F table matches byte
+    // for byte). A subrecord shorter than 16 bytes is corrupt, so the whole
+    // ATTR is ignored (both sexes stay 0) rather than partially filled - a
+    // partial fill would leave a real-looking male half with a zero female
+    // half. A longer subrecord reads the first 16 bytes and drops the rest.
+    // startingHealth stays 0: its source is V-664-3 (level-1 health is
+    // 2 x Endurance) and belongs to the caller, not the decoder.
+    auto* attr = rec.findSubRecord("ATTR");
+    if (attr && attr->size() >= 16) {
+        for (int i = 0; i < RaceData::kAttrCount; ++i) {
+            race.attrMale[i] = attr->data[i];
+            race.attrFemale[i] = attr->data[RaceData::kAttrCount + i];
+        }
+    }
 
     m_races.push_back(std::move(race));
 }

@@ -9,6 +9,7 @@
 #include "tests/watr_decode_tests.h"
 #include "tests/xtel_decode_tests.h"
 #include "tests/clas_decode_tests.h"
+#include "tests/race_decode_tests.h"
 #include "tests/weather_transition_tests.h"
 #include "tests/interior_cell_tests.h"
 #include "tests/gamestate_report_tests.h"
@@ -90,6 +91,11 @@ int main() {
         ClasDecodeTests t;
         const bool ok = t.runAllTests();
         runSuite("ClasDecodeTests", ok, t.getSummary(), failed);
+    }
+    {
+        RaceDecodeTests t;
+        const bool ok = t.runAllTests();
+        runSuite("RaceDecodeTests", ok, t.getSummary(), failed);
     }
     {
         WeatherTransitionTests t;

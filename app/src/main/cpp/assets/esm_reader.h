@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <array>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -699,14 +700,26 @@ struct RaceData {
     // AV order is the canonical skill order (Armorer..Speechcraft), the same as
     // Player::Skills (v664, measured against Oblivion.esm).
     std::vector<std::pair<uint8_t, int8_t>> skillBonuses;
-    // Attribute bonuses (7 attributes)
-    uint8_t attrStrength = 0;
-    uint8_t attrIntelligence = 0;
-    uint8_t attrWillpower = 0;
-    uint8_t attrAgility = 0;
-    uint8_t attrSpeed = 0;
-    uint8_t attrEndurance = 0;
-    uint8_t attrPersonality = 0;
+    // Attribute base values, from the RACE ATTR subrecord. Measured against
+    // Oblivion.esm (2026-11-27, V-664-2): ATTR is 16 bytes = 8 male u8 then 8
+    // female u8. The AttrIndex order below IS that byte order (Strength first,
+    // Luck last); UESP's per-race M/F table matches every value (Argonian and
+    // Imperial checked byte for byte).
+    enum AttrIndex {
+        kStrength = 0, kIntelligence, kWillpower, kAgility,
+        kSpeed, kEndurance, kPersonality, kLuck, kAttrCount
+    };
+    static_assert(kAttrCount == 8, "RACE ATTR is 16 bytes = 8 male u8 + 8 female u8");
+    std::array<uint8_t, kAttrCount> attrMale{};
+    std::array<uint8_t, kAttrCount> attrFemale{};
+    // The one accessor: value for one sex (false = male, true = female); 0 for a
+    // record without ATTR or an out-of-range index. Keep the sex a bool so
+    // NPC::isFemale can be passed straight through (no 0/1 inversion).
+    uint8_t attr(AttrIndex index, bool female) const {
+        const size_t i = static_cast<size_t>(index);
+        if (i >= kAttrCount) return 0;
+        return female ? attrFemale[i] : attrMale[i];
+    }
     uint32_t maleVoiceFormID = 0;
     uint32_t femaleVoiceFormID = 0;
     // Body data

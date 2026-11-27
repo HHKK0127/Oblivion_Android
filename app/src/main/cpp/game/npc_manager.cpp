@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <utility>
 #include "../util/msvc_lcg.h"
 
 NpcManager::NpcManager() : nextNpcId(1000) {
@@ -402,7 +403,10 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
     if (race) {
         player.race = race->fullName.empty() ? race->editorID : race->fullName;
 
-        // Apply racial attribute bonuses
+        // Apply racial attribute base values. ATTR is 16 bytes = 8 male u8 then
+        // 8 female u8 in AttrIndex order, so one table drives all eight and the
+        // name/index pairing cannot drift (a straight 8-line list silently
+        // breaks if only one side moves). The sex is NPC::isFemale.
         auto setAttr = [&](const std::string& name, uint8_t bonus) {
             if (bonus > 0) {
                 auto it = player.status.attributes.find(name);
@@ -413,13 +417,19 @@ void NpcManager::initializePlayerFromESM(NPC& player, uint32_t raceFormID,
                 }
             }
         };
-        setAttr("Strength", race->attrStrength);
-        setAttr("Intelligence", race->attrIntelligence);
-        setAttr("Willpower", race->attrWillpower);
-        setAttr("Agility", race->attrAgility);
-        setAttr("Speed", race->attrSpeed);
-        setAttr("Endurance", race->attrEndurance);
-        setAttr("Personality", race->attrPersonality);
+        static const std::pair<oblivion::RaceData::AttrIndex, const char*> kAttrNames[] = {
+            { oblivion::RaceData::kStrength,     "Strength" },
+            { oblivion::RaceData::kIntelligence, "Intelligence" },
+            { oblivion::RaceData::kWillpower,    "Willpower" },
+            { oblivion::RaceData::kAgility,      "Agility" },
+            { oblivion::RaceData::kSpeed,        "Speed" },
+            { oblivion::RaceData::kEndurance,    "Endurance" },
+            { oblivion::RaceData::kPersonality,  "Personality" },
+            { oblivion::RaceData::kLuck,         "Luck" },
+        };
+        for (const auto& entry : kAttrNames) {
+            setAttr(entry.second, race->attr(entry.first, player.isFemale));
+        }
 
         // Apply racial starting health
         if (race->startingHealth > 0) {
