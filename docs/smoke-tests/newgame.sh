@@ -27,7 +27,10 @@
 #   ローカルでも 1 か所で再現するため。終了時に元へ戻す（trap）。
 # 環境変数:
 #   SMOKE_TIMEOUT_S  各段の待ち秒数（既定 180）
-#   SMOKE_SETTLE_S   マーカー後に画面が落ち着くまでの秒数（既定 2）
+#   SMOKE_SETTLE_FRAMES    画面が落ち着いたとみなす「連続同一 screencap」の回数（既定 3）
+#   SMOKE_SETTLE_INTERVAL  撮影間隔 秒（既定 0.7）
+#   SMOKE_SETTLE_DIFF_MAX  「同一」とみなす変化画素の割合の上限（既定 0.001 = 0.1%）
+#   SMOKE_SETTLE_MAX       安定待ちの上限 秒（既定 20。超えたら warning で打ち切る）
 #   OUT_DIR          成果物の出力先（既定 artifacts）
 #   SMOKE_EXPECTED_WIDTH  wm size で固定する幅（既定 1280）
 set -euo pipefail
@@ -46,7 +49,15 @@ MARKER_TAP="Menu selection: New Game"
 # chargen が開いた決定的マーカー（renderer.cpp:5011）。Panel 既定の経路で必ず出る。
 MARKER_CHARGEN="Game started! Opening character creation"
 TIMEOUT_S="${SMOKE_TIMEOUT_S:-180}"
-SETTLE_S="${SMOKE_SETTLE_S:-2}"
+# 安定待ちは「秒」ではなく「連続 N 回の screencap が同一」。時間依存だと、速いマシンでは
+# 1 秒で足り、遅いマシンでは 2 秒でも足りなくなる。フレーム（画面の静止）で待てば速度に
+# 依存しない。chargen の 1 フレームだけ message box がパネルの下に隠れる（renderer.cpp:5151
+# のタイトル分岐が message box を chargen より先に描く）ので、その一過性フレームを
+# 跨ぐには N 連続一致が要る。
+SETTLE_FRAMES="${SMOKE_SETTLE_FRAMES:-3}"       # 同一が何連続したら落ち着いたとみなすか
+SETTLE_INTERVAL="${SMOKE_SETTLE_INTERVAL:-0.7}" # 撮影間隔（秒）
+SETTLE_DIFF_MAX="${SMOKE_SETTLE_DIFF_MAX:-0.001}" # 同一とみなす変化画素割合の上限
+SETTLE_MAX="${SMOKE_SETTLE_MAX:-20}"            # 上限（秒）。超えたら warning で打ち切る
 OUT_DIR="${OUT_DIR:-artifacts}"
 EXPECTED_W="${SMOKE_EXPECTED_WIDTH:-1280}"
 
@@ -298,10 +309,59 @@ if [ "$NO_ESM" = "1" ]; then
   fi
 fi
 
-sleep "$SETTLE_S"
-"$ADB" exec-out screencap -p > "$OUT_DIR/smoke-newgame.png" 2>/dev/null || true
+# 安定待ち: 連続 SETTLE_FRAMES 回「画面が同一」になるまで撮り続ける。
+# 同一判定は**画素差の割合**（閾値付き）。バイト一致（cmp）は使えない: ステータスバー等が
+# 毎回数百画素だけ動き PNG がバイト一致しない（実測 333/2304000 = 0.014%）。一方、
+# 一過性フレーム（message box がパネルの下に隠れる 1 フレーム）は 70% 級に動くので、
+# 0.1% の閾値で明確に分かれる。
+SNAP="$OUT_DIR/smoke-newgame.png"
+PREV="$OUT_DIR/.settle-prev.png"
+PYBIN="$(command -v python || command -v python3 || true)"
+if [ -z "$PYBIN" ]; then
+  echo "::warning::python が無いため安定待ちをスキップします（compare_golden にも python が要ります）"
+fi
+# $1,$2 の変化画素の割合（|Δ|>8）を stdout に出す。python 不在なら 1.0（=変化）を返す。
+screen_changed_ratio() {
+  [ -n "$PYBIN" ] || { echo 1.0; return; }
+  "$PYBIN" - "$1" "$2" <<'PY' 2>/dev/null || echo 1.0
+import sys
+from PIL import Image
+import numpy as np
+a = np.asarray(Image.open(sys.argv[1]).convert("L"), dtype=np.int16)
+b = np.asarray(Image.open(sys.argv[2]).convert("L"), dtype=np.int16)
+if a.shape != b.shape:
+    print(1.0)
+    raise SystemExit
+print(float((np.abs(a - b) > 8).mean()))
+PY
+}
+streak=0
+elapsed=0
+"$ADB" exec-out screencap -p > "$PREV" 2>/dev/null || true
+while :; do
+  sleep "$SETTLE_INTERVAL"
+  elapsed=$(awk -v a="$elapsed" -v b="$SETTLE_INTERVAL" 'BEGIN{printf "%.2f", a+b}')
+  "$ADB" exec-out screencap -p > "$SNAP" 2>/dev/null || true
+  ratio=1.0
+  if [ -s "$SNAP" ] && [ -s "$PREV" ]; then
+    ratio="$(screen_changed_ratio "$PREV" "$SNAP")"
+  fi
+  if awk -v r="$ratio" -v m="$SETTLE_DIFF_MAX" 'BEGIN{exit !(r <= m)}'; then
+    streak=$((streak + 1))
+  else
+    streak=1   # いま撮った 1 枚を新しい run の 1 枚目として数える
+  fi
+  cp "$SNAP" "$PREV" 2>/dev/null || true
+  [ "$streak" -ge "$SETTLE_FRAMES" ] && break
+  if awk -v a="$elapsed" -v b="$SETTLE_MAX" 'BEGIN{exit !(a >= b)}'; then
+    echo "::warning::安定待ちが ${SETTLE_MAX}s を超えました（streak=${streak}/${SETTLE_FRAMES}, ratio=${ratio}）"
+    break
+  fi
+done
+rm -f "$PREV"
+echo "settled: ${streak} 連続同一（interval=${SETTLE_INTERVAL}s, elapsed=${elapsed}s, diff<=${SETTLE_DIFF_MAX}）"
 
-if [ ! -s "$OUT_DIR/smoke-newgame.png" ]; then
+if [ ! -s "$SNAP" ]; then
   echo "::error::スクリーンショットが空です: $OUT_DIR/smoke-newgame.png"
   log_dump
   exit 1
