@@ -710,6 +710,11 @@ struct RaceData {
         kSpeed, kEndurance, kPersonality, kLuck, kAttrCount
     };
     static_assert(kAttrCount == 8, "RACE ATTR is 16 bytes = 8 male u8 + 8 female u8");
+    // True only when the record carried an ATTR subrecord of the measured 16
+    // bytes. The accessor below returns 0 without it, so callers must test this
+    // flag rather than read 0 as a value: an all-zero ATTR is not a valid race,
+    // and treating "absent" as 0 would wipe a fallback base.
+    bool hasAttr = false;
     std::array<uint8_t, kAttrCount> attrMale{};
     std::array<uint8_t, kAttrCount> attrFemale{};
     // The one accessor: value for one sex (false = male, true = female); 0 for a

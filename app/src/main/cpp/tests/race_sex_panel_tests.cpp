@@ -5,11 +5,15 @@
 #include "../ui/ui_toggle.h"
 #include "../game/chargen_commit.h"
 #include "../game/player.h"
+#include "../game/npc_manager.h"
+#include "../assets/esm_reader.h"
 
 #include <android/log.h>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <string>
+#include <vector>
 
 #define LOG_TAG "RaceSexPanelTests"
 #define TEST_LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -19,6 +23,62 @@ namespace {
 
 using Page = RaceSexPanel::Page;
 using ElemType = RaceSexPanel::ElemType;
+
+// Minimal single-RACE ESM (TES4 + GRUP RACE + one playable RACE carrying ATTR)
+// for the chargen::commit re-apply test. ATTR is male 1..8 / female 11..18, all
+// distinct so a wrong row is visible.
+//
+// CANONICAL LAYOUT: tools/host_tests/make_fixture_esm.py. This is a third copy
+// of the same record/GRUP/sub builder (race_decode_tests.cpp has the second);
+// if the ESM record layout changes, update all of them. Extracting a shared
+// header is deliberately out of scope for this unit.
+std::vector<uint8_t> buildAttrRaceEsm(uint32_t formID) {
+    auto u32 = [](std::vector<uint8_t>& v, uint32_t x) {
+        v.push_back(static_cast<uint8_t>(x & 0xFF));
+        v.push_back(static_cast<uint8_t>((x >> 8) & 0xFF));
+        v.push_back(static_cast<uint8_t>((x >> 16) & 0xFF));
+        v.push_back(static_cast<uint8_t>((x >> 24) & 0xFF));
+    };
+    auto sub = [&](std::vector<uint8_t>& v, const char* tag, const std::vector<uint8_t>& p) {
+        v.insert(v.end(), tag, tag + 4);
+        v.push_back(static_cast<uint8_t>(p.size() & 0xFF));
+        v.push_back(static_cast<uint8_t>((p.size() >> 8) & 0xFF));
+        v.insert(v.end(), p.begin(), p.end());
+    };
+
+    std::vector<uint8_t> payload;
+    sub(payload, "EDID", {'A', 't', 't', 'r', 'R', 'a', 'c', 'e', 0});
+    {
+        std::vector<uint8_t> attr;
+        for (int i = 1; i <= 8; ++i) attr.push_back(static_cast<uint8_t>(i));
+        for (int i = 11; i <= 18; ++i) attr.push_back(static_cast<uint8_t>(i));
+        sub(payload, "ATTR", attr);
+    }
+    {
+        std::vector<uint8_t> data(36, 0);
+        data[32] = 0x01;  // DATA flags bit0 = playable
+        sub(payload, "DATA", data);
+    }
+
+    std::vector<uint8_t> rec{'R', 'A', 'C', 'E'};
+    u32(rec, static_cast<uint32_t>(payload.size()));
+    u32(rec, 0);
+    u32(rec, formID);
+    u32(rec, 0);
+    rec.insert(rec.end(), payload.begin(), payload.end());
+
+    std::vector<uint8_t> grup{'G', 'R', 'U', 'P'};
+    u32(grup, static_cast<uint32_t>(rec.size() + 20));
+    grup.insert(grup.end(), {'R', 'A', 'C', 'E'});
+    u32(grup, 0);  // groupType 0 = top level
+    grup.push_back(0); grup.push_back(0); grup.push_back(0); grup.push_back(0);
+    grup.insert(grup.end(), rec.begin(), rec.end());
+
+    std::vector<uint8_t> esm{'T', 'E', 'S', '4'};
+    u32(esm, 0); u32(esm, 0); u32(esm, 0); u32(esm, 0);  // empty TES4 header record
+    esm.insert(esm.end(), grup.begin(), grup.end());
+    return esm;
+}
 
 // spec §2: pane id per slot (+0x40 array), in build order.
 constexpr std::array<int, RaceSexPanel::PAGE_COUNT> kPaneId = {
@@ -452,6 +512,37 @@ bool RaceSexPanelTests::runAllTests() {
                    " gender=" + std::to_string(player.gender));
         const chargen::CommitResult r2 = chargen::commit(nullptr, player, in);
         record("chargen::commit leaves gender alone when unchanged", !r2.genderApplied);
+    }
+    {
+        // V-664-2: a gender-only change (race unchanged) must re-apply the race so
+        // the ATTR row follows the sex. Before the fix, commit ran
+        // applyRaceToPlayer() only when raceChanged, so flipping Gender left the
+        // previous (male) row while only the gender byte changed.
+        oblivion::ESMManager esm;
+        std::vector<uint8_t> bytes = buildAttrRaceEsm(0x00000010);
+        esm.loadPluginFromMemory("attr.esm", bytes.data(), bytes.size());
+
+        NpcManager npcMgr;
+        npcMgr.setESMManager(&esm);
+
+        Player p;
+        chargen::CommitInput inRace;
+        inRace.raceChanged = true;
+        inRace.raceFormID = 0x00000010;
+        inRace.gender = 0;  // Male
+        chargen::commit(&npcMgr, p, inRace);
+        const bool maleRow = p.attributes.Strength == 1 && p.attributes.Luck == 8;
+
+        chargen::CommitInput inSex;
+        inSex.raceChanged = false;  // race unchanged: only Gender flips
+        inSex.gender = 1;           // Female
+        chargen::commit(&npcMgr, p, inSex);
+        const bool femaleRow = p.attributes.Strength == 11 && p.attributes.Luck == 18;
+
+        record("chargen::commit: gender-only change re-applies the ATTR row",
+               maleRow && femaleRow && p.gender == 1,
+               "maleRow=" + std::to_string(maleRow) +
+                   " femaleRow=" + std::to_string(femaleRow));
     }
 
     // --- handleClick transition engine (spec §6; pure logic) ---
@@ -916,6 +1007,56 @@ bool RaceSexPanelTests::runAllTests() {
                    r.health == r.maxHealth && r.skills.Blade == Player::BASE_SKILL,
                "Str=" + std::to_string(r.attributes.Strength) +
                    " HP=" + std::to_string(static_cast<int>(r.maxHealth)));
+
+        // V-664-2: a race WITH ATTR assigns the base (not adds). All 8 values
+        // differ, so a swap or an offset in the field table shows up here.
+        Player s;
+        Player::RaceBonus d;
+        d.hasAttr = true;
+        d.attrs = {1, 2, 3, 4, 5, 6, 7, 8};
+        s.applyRace(d);
+        record("race: ATTR present -> 8 attributes assigned (not added)",
+               s.attributes.Strength == 1 && s.attributes.Intelligence == 2 &&
+                   s.attributes.Willpower == 3 && s.attributes.Agility == 4 &&
+                   s.attributes.Speed == 5 && s.attributes.Endurance == 6 &&
+                   s.attributes.Personality == 7 && s.attributes.Luck == 8,
+               "Str=" + std::to_string(s.attributes.Strength) +
+                   " Luck=" + std::to_string(s.attributes.Luck));
+
+        // Re-applying must NOT double them (the += regression guard).
+        s.applyRace(d);
+        record("race: ATTR re-apply -> still 1..8 (no accumulation)",
+               s.attributes.Strength == 1 && s.attributes.Luck == 8,
+               "Str=" + std::to_string(s.attributes.Strength) +
+                   " Luck=" + std::to_string(s.attributes.Luck));
+
+        // A race WITHOUT ATTR (hasAttr=false) keeps the BASE_ATTRIBUTE fallback.
+        Player::RaceBonus e;  // hasAttr = false
+        s.applyRace(e);
+        record("race: ATTR absent -> falls back to BASE_ATTRIBUTE",
+               s.attributes.Strength == Player::BASE_ATTRIBUTE &&
+                   s.attributes.Luck == Player::BASE_ATTRIBUTE,
+               "Str=" + std::to_string(s.attributes.Strength));
+
+        // Switching to a different ATTR race leaves none of the old values.
+        Player t;
+        Player::RaceBonus f;
+        f.hasAttr = true;
+        f.attrs = {11, 12, 13, 14, 15, 16, 17, 18};
+        t.applyRace(f);
+        t.applyRace(d);  // 11..18 -> 1..8
+        record("race: ATTR switch -> previous values gone (11..18 -> 1..8)",
+               t.attributes.Strength == 1 && t.attributes.Luck == 8,
+               "Str=" + std::to_string(t.attributes.Strength) +
+                   " Luck=" + std::to_string(t.attributes.Luck));
+
+        // Player::isFemale() is the single 0/1 test (V-631-1b inversion guard).
+        Player g2;
+        g2.gender = 0;
+        const bool maleNotFemale = !g2.isFemale();
+        g2.gender = 1;
+        record("Player::isFemale maps gender 0/1", maleNotFemale && g2.isFemale(),
+               "gender=" + std::to_string(g2.gender));
     }
 
     // --- geometry + hitTest (spec §9; pure logic) ---

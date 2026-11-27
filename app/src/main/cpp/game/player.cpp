@@ -193,6 +193,21 @@ void Player::applyRace(const RaceBonus& rb) {
     magicka = maxMagicka;
     maxStamina = BASE_MAX_STAMINA;
     stamina = maxStamina;
+    // 1b. Race base attributes. The ATTR values ARE the base (V-664-2), so this
+    //     assigns rather than adds; a race without ATTR keeps the BASE_ATTRIBUTE
+    //     fallback set by resetAttributes(). The table is in RaceData::AttrIndex
+    //     order (the decoder's order), so the field order cannot drift.
+    if (rb.hasAttr) {
+        static int Attributes::* const kAttrFields[8] = {
+            &Attributes::Strength,     &Attributes::Intelligence,
+            &Attributes::Willpower,    &Attributes::Agility,
+            &Attributes::Speed,        &Attributes::Endurance,
+            &Attributes::Personality,  &Attributes::Luck,
+        };
+        for (int i = 0; i < 8; ++i) {
+            attributes.*(kAttrFields[i]) = rb.attrs[i];
+        }
+    }
     // 2. Drop the previous race's spells so a race switch leaves nothing behind.
     for (uint32_t s : race_granted_spells_) {
         auto it = std::find(knownSpells.begin(), knownSpells.end(), s);

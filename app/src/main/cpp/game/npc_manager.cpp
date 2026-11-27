@@ -510,15 +510,24 @@ bool NpcManager::applyRaceToPlayer(Player& player, uint32_t raceFormID) const {
         LOGW("applyRaceToPlayer: Race 0x%08X not found", raceFormID);
         return false;
     }
-    // V-664: only the skill bonuses (RACE DATA, 7 x (AV index, bonus)) and the
-    // racial spells (SPLO) are parsed; attribute bonuses (ATTR) and health are
-    // not yet wired (V-664-2/V-664-3), so they stay at the chargen base.
+    // V-664: the skill bonuses (RACE DATA, 7 x (AV index, bonus)) and the racial
+    // spells (SPLO) are mapped here; health is not wired yet (V-664-3). The base
+    // attributes come from RACE ATTR (V-664-2) - the male/female row is picked
+    // once, here, from the player's sex, so applyRace() itself stays sex-free.
     Player::RaceBonus rb;
     rb.skillBonuses = race->skillBonuses;
     rb.spells = race->spellFormIDs;
+    rb.hasAttr = race->hasAttr;
+    if (rb.hasAttr) {
+        for (int i = 0; i < oblivion::RaceData::kAttrCount; ++i) {
+            rb.attrs[i] = race->attr(static_cast<oblivion::RaceData::AttrIndex>(i),
+                                     player.isFemale());
+        }
+    }
     player.applyRace(rb);
-    LOGI("Race applied to player: %s (skillBonuses=%zu, spells=%zu)",
-         race->fullName.c_str(), rb.skillBonuses.size(), rb.spells.size());
+    LOGI("Race applied to player: %s (skillBonuses=%zu, spells=%zu, attrs=%s)",
+         race->fullName.c_str(), rb.skillBonuses.size(), rb.spells.size(),
+         rb.hasAttr ? "ATTR" : "base");
     return true;
 }
 

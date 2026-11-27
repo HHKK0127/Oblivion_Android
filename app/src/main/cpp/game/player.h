@@ -47,10 +47,13 @@ struct Player {
     float groundCheckRadius = 0.3f;
 
     // --- Chargen base (v664) ---
-    // The values the chargen applies race bonuses on top of. These are the ONE
-    // definition: the member initializers below use them, resetAttributes()/
-    // resetSkills() and applyRace() revert to them, and the Legacy chargen reads
-    // them, so the Panel and Legacy paths cannot drift apart.
+    // The fallback values used when no race (or a race without ATTR) supplies
+    // its own. A race's attributes ARE its base (RACE ATTR, V-664-2), so
+    // applyRace() overwrites these; BASE_ATTRIBUTE only survives for a race
+    // that carries no ATTR. These are the ONE definition: the member
+    // initializers below use them, resetAttributes()/resetSkills() and
+    // applyRace() revert to them, and the Legacy chargen reads them, so the
+    // Panel and Legacy paths cannot drift apart.
     static constexpr int BASE_ATTRIBUTE = 40;
     static constexpr int BASE_SKILL = 10;
     static constexpr float BASE_MAX_HEALTH = 100.0f;
@@ -67,6 +70,10 @@ struct Player {
 
     // Identity flags
     uint8_t gender = 0;  // 0=Male, 1=Female
+    // One place for the 0/1 test: the Gender toggle flips this and applyRace's
+    // mapping picks the male/female ATTR row from it, so the comparison is not
+    // scattered as `== 1` (the inversion was already hit once, V-631-1b).
+    bool isFemale() const { return gender != 0; }
 
     // Stamina Management
     // Fatigue drain/recovery rates are driven by the GMST formulas in
@@ -174,10 +181,16 @@ struct Player {
 
     // The race-derived inputs applyRace() needs, kept free of the ESM reader so
     // the pure logic stays host-testable; the owner (NpcManager) maps RaceData
-    // onto it. Attribute bonuses and health are not filled yet (V-664-2/V-664-3).
+    // onto it. Health is not filled yet (V-664-3).
     struct RaceBonus {
         std::vector<std::pair<uint8_t, int8_t>> skillBonuses;  // AV 0x0C..0x20, bonus
         std::vector<uint32_t> spells;                          // SPLO formIDs
+        // Base attributes for the player's sex, in RaceData::AttrIndex order
+        // (Strength..Luck). The owner picks the male/female row once, at the
+        // mapping site, so applyRace() never sees the sex. hasAttr=false (a
+        // race without ATTR) leaves the BASE_ATTRIBUTE fallback in place.
+        bool hasAttr = false;
+        std::array<uint8_t, 8> attrs{};
     };
     // Revert to the chargen base, then apply the race. Idempotent: re-applying
     // the same race does not double a bonus, and a different race leaves nothing

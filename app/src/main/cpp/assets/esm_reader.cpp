@@ -1888,6 +1888,7 @@ void ESMFile::decodeRace(const ESMRecord& rec) {
             race.attrMale[i] = attr->data[i];
             race.attrFemale[i] = attr->data[RaceData::kAttrCount + i];
         }
+        race.hasAttr = true;
     }
 
     m_races.push_back(std::move(race));
