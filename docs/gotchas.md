@@ -127,3 +127,46 @@ AGENTS.md の Learnings（振る舞い）とは別。ここは**ドメイン知�
 - **確認方法**: staged 件数が期待どおり。`git show --stat HEAD` に削除と追加が**両方**あること。
 - **CI は緑だったから大丈夫、が通じない**: CI は fixture を再生成しないので、壊れた中間状態
   （削除のみ・追加なし）でも旧ゲート×旧 fixture で緑になる。緑は「ツリーが正しい」証拠ではない。
+
+## 11. 連続 screencap は「たいてい同一・ときどき数百画素動く」（安定待ちをバイト一致で組むと flake になる）
+
+- **症状**: `docs/smoke-tests/newgame.sh` の画面の安定待ちを「PNG のバイト一致（`cmp -s`）」で
+  組むと、**収束する run と 20s 上限に張り付く run が混ざる**（＝ flake）。「たまに落ちる」
+  ゲートになり、原因が見えにくい。
+- **原因**: 静止して見える画面でも、連続する `screencap` が**ときどき**数百画素だけ変わる
+  （ステータスバーの時計の刻み・アニメーションの端）。実測:
+  - 同一画面の連続 4 枚（ランチャー）: **0 / 2304000（完全一致、PNG もバイト同一）**
+  - 時計が刻んだ瞬間の 1 組: **333 / 2304000 = 0.0145%**（`|Δ|>8` で数えた変化画素）
+  - つまり**毎回ではない**。だからバイト一致は「ほとんど通る」ので、失敗が再現しにくい。
+- **正しい手順**: 同一判定は**画素差の割合**で行い、閾値は観測した最悪値の約 7 倍の
+  **0.1%（`SMOKE_SETTLE_DIFF_MAX=0.001`）**。一過性フレーム（タイトル分岐
+  `renderer.cpp:5151` が message box を chargen より先に描く 1 フレーム）は **70% 級**に
+  動くので、0.1% で明確に分かれる（ノイズ床の約 700 倍下）。**収束しなかったら `exit 2`**
+  （撮って進めると、収束しなかった run が緑になり flake が戻る）。
+- **確認方法**: 実測 2026-11-27 —
+  - 正常: `SMOKE_SETTLE_DIFF_MAX=0.001` で `settled: 3 連続同一（elapsed=2.10s）`、
+    golden `mean=0.02 / changed=0/576` で一致。
+  - 閾値の位置: `0.0001`（0.01%）でも chargen 画面では収束した（＝ 0.1% は縁ではない。
+    chargen 画面のノイズは 0 のこともある）。
+  - バイト一致（`cmp`）では収束せず 20s 上限に張り付いた（実測）。
+  - 上限の陰性対照: `SMOKE_SETTLE_MAX=1` にすると収束前に **exit 2** で止まる。
+
+## 12. 手元 Windows の host テストは `OBLIVION_RUST_HOST_TRIPLE` を付けないと Linux 書庫を掴む
+
+- **症状**: `tools/host_tests/run_host_tests.sh` がリンクで落ちる。
+  `relocation truncated to fit: R_X86_64_DTPOFF32`、
+  `undefined reference to core::slice::index::slice_fail`、
+  `std::sys::io::error::unix::errno` などが出る。リポジトリの記録も
+  「手元 Windows では host 書庫が MSVC 成果物になり手元実行は不可」としている。
+- **原因**: `_cand_triples=("$RUST_HOST_TRIPLE")` の先頭が空だと、探索が
+  `target/gnu//release` → `target//release` の順に落ち、**Linux 産の ELF 書庫
+  `rust/target/release/`** を先に掴む（MINGW 分岐で gnu triple が足されるのは
+  その後）。`target/release/` は Linux 産（`std::sys::…::unix` を含む）なので
+  MinGW ではリンクできない。**MSVC の問題ではなく、Linux 書庫を掴んでいた**。
+- **正しい手順**: `OBLIVION_RUST_HOST_TRIPLE=x86_64-pc-windows-gnu` を付けて実行する。
+  これで `rust/target/gnu/x86_64-pc-windows-gnu/release/` が選ばれる。環境変数名は
+  `RUST_HOST_TRIPLE` ではなく **`OBLIVION_RUST_HOST_TRIPLE`**（`run_host_tests.sh:28`）。
+- **確認方法**: `OBLIVION_RUST_HOST_TRIPLE=x86_64-pc-windows-gnu bash
+  tools/host_tests/run_host_tests.sh` → `HOST RUNNER: ALL GREEN (0 suite(s) failed)`
+  （2026-11-27 実測。`rust/target/gnu/x86_64-pc-windows-gnu/release/lib*_ffi.a` は
+  6 本そろっている）。C++ のホストテストは手元で回せる。
