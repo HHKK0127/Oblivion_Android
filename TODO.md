@@ -2,6 +2,15 @@
 
 ## Tasks
 
+- [ ] **#205** 【作製・低優先・既存穴（非退行）】chargen::commit の race 適用ガード `npcMgr && player.raceFormID` により、race を未選択（raceFormID=0）に戻すと applyRaceToPlayer が走らず、**前の race の属性/skill/spell が残る**。#204 の変更前から同じ挙動なので退行ではない。race を「無し」に戻す操作が入るなら、resetAttributes()/resetSkills() へ戻す経路が要る。V-664-2 の続き or #202 周辺。今は直さない。 `#V-664-2` `#chargen`
+
+- [ ] **#204** 【作製・高優先】V-664-2 の Player 適用段: race の ATTR 属性を Player に適用する（#196 でレイアウト確定済み）。触る: (a) game/player.cpp の applyRace — resetAttributes() の後、race->attr(kX, gender) を attributes の各フィールドへ**代入**（加算しない）。ATTR の無い race は 40 のまま。(b) game/player.h — BASE_ATTRIBUTE のコメントを『race 不在/ATTR 無しのフォールバック』に限定（値 40 は不変）。(c) host テスト — 男女で全 8 値が異なる合成 race を通し applyRace 後に 8 フィールドが ATTR 値になること、ATTR 無しでは 40 のままであること。触らない: renderer.*（Legacy renderer.cpp:942-944 は既に代入で正しい）/ chargen_commit.* / npc_manager.cpp / health（V-664-3・#200 待ち）。制約: smoke JSON は player.attributes を読むので blocking golden が動く。再採取は linux-gnu のみ。実機確認も要る。前提: #203（base か bonus かの裁定）を先に確定する。 `#V-664-2` `#chargen` `#golden` `#player`
+  > 実機合格条件を 1 段強化（2026-11-27）: V-631-1b の『gender 0→1→0 のログ』だけでは不十分。gender 切替で RACE ATTR の男女行が入れ替わるので、`chargen commit applied: ... str=%d end=%d gender=%u` の行で gender 0→1 のとき str/end が男性行→女性行へ変わり、1→0 で戻ることを確認する（ログ出現だけでは属性未切替の実装でも通る）。golden 期待: smoke 既定 gender=Male で attributes=1..8（11..18 なら男女逆、40 なら未適用、41..48 なら加算のまま）。
+
+- [ ] **#203** 【作製・中優先・V-664-2 適用段の前提】ATTR の 30-50 は base 値であって bonus ではない。Oblivion では race の属性がそのまま初期値で、BASE_ATTRIBUTE=40 は race 不在/ATTR 無しのフォールバック。したがって: (1) Player::applyRace は resetAttributes()（=40 へ revert）の後、race->attr(kX, gender) を attributes の各フィールドへ**代入**する（加算しない）。ATTR の無い race は 40 のまま。(2) player.h の BASE_ATTRIBUTE は『フォールバック』に限定（値 40 は不変、コメントのみ）。(3) 死コード NpcManager::initializePlayerFromESM の setAttr の `+=` も代入に直す（#202 と連動）。名前だけでなく演算そのものを正す: `+=` のままだと 40 に足されて 70-90 になる。 `#V-664-2` `#base-value` `#chargen`
+
+- [ ] **#202** 【作製・中優先】NpcManager::initializePlayerFromESM は呼び出し元 0 件の死コード（grep は定義とログのみ）。書き込み先は NPC::status.attributes（std::unordered_map<string,float>）で、Player の attributes 構造体には届かない。chargen の race 適用は現状 Player::applyRace（skill/spell のみ）が担当。#196 でこの関数に ATTR 8 属性の対応表を入れたが呼ばれないので挙動には出ない。掃除するか、Player 経路へ統合するかを決める（V-664-2 の Player 適用段と併せて）。 `#V-664-2` `#chargen` `#deadcode`
+
 - [ ] **#201** #RE: 214 Style / 215 HairColor の扱いを確定する（bool 反転か index 巡回か）。docs/chargen_ui_spec.md §10 に 214/215 の記述は無く、巡回の記述は 211 Race のみ（§10.4「1 個のトグルで race を巡回選択」）。claims.md の「214/215 は index 巡回」は実装の無い仕様記述なので、決め打ちすると bool だった場合に逆の実装を積む。調べ方: 0xB39440 と同じ手順で 0x5CDF29 系の user0 読み手と、Race トグルの左右子（race_template_toggle_left/_right）に相当する子が 214/215 にあるかを XML と命令の両方で確認する。#199（トグルの ON/OFF の意味）と対。 `#214` `#215` `#RE` `#V-631-1b` `#chargen`
 
 - [ ] **#200** #RE: health の定数確認 — Original Oblivion の health 式は maxHealth(level1)=2×Endurance（UESP で確定）だが、exe の係数（fHealth… 系）を命令で確認する。V-664-3 の実装前に必要（係数を推測で焼かない）。 `#RE` `#V-664-3` `#chargen`
@@ -12,7 +21,8 @@
 
 - [ ] **#197** docs/code 不一致③: game/player.h の BASE_MAX_HEALTH=100 と applyRace の maxHealth=BASE_MAX_HEALTH は、確定式 maxHealth(level1)=2×Endurance（Imperial=80/Argonian=60/Nord=100）と矛盾する。V-664-3 で式に置き換える。 `#V-664-3` `#chargen` `#docs-code-gap`
 
-- [ ] **#196** docs/code 不一致②: assets/esm_reader.h:702-709 の RaceData は attr を 7 個の uint8_t（Luck 無し・性別無し）で持つが、実測 ATTR は 16B = 男性 8 u8 + 女性 8 u8（順序 Str,Int,Wil,Agi,Spd,End,Per,Luck。Argonian/Imperial で UESP と完全一致）。V-664-2 で形を合わせる。 `#V-664-2` `#chargen` `#docs-code-gap`
+- [x] **#196** docs/code 不一致②: assets/esm_reader.h:702-709 の RaceData は attr を 7 個の uint8_t（Luck 無し・性別無し）で持つが、実測 ATTR は 16B = 男性 8 u8 + 女性 8 u8（順序 Str,Int,Wil,Agi,Spd,End,Per,Luck。Argonian/Imperial で UESP と完全一致）。V-664-2 で形を合わせる。 `#V-664-2` `#chargen` `#docs-code-gap` (2026-11-27)
+  > 実装完了 commit 071b34e1（コード 7 ファイル）+ 33f84f36（STATE.md）。ATTR 16B を RaceData.attrMale/attrFemale[8] + attr(AttrIndex, bool female) で表現、decodeRace が populate（16B 未満は全体無視）、initializePlayerFromESM を {AttrIndex, 名前} 対応表 8 行（Luck 追加）に。host RaceDecodeTests 29/29・ALL GREEN。証拠はユニットテストのみ（呼び出し元 0 件の死コードのため実機/ golden 証拠なし）。
 
 - [ ] **#195** docs/code 不一致①: ui/race_sex_panel.cpp:438-441 のコメントが「A toggle's value flip ... is the widget's own responsibility」と言うが、UIToggle::toggleChecked() の呼び出し元はテストのみ（renderer も panel も呼ばない）。コメントを信じた人が実装しないので、コメント修正か実装のどちらかに決める（V-631-1b の実体）。 `#V-631-1b` `#chargen` `#docs-code-gap`
 
@@ -3776,11 +3786,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3804,4 +3809,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-27 16:49:16
+**ai-todo** | Last Updated: 2026-11-27 19:11:09
