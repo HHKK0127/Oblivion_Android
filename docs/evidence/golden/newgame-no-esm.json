@@ -7,14 +7,14 @@
   "pageCount": 21,
   "itemCount": 118,
   "attributes": {
-    "Strength": 40,
-    "Intelligence": 40,
-    "Willpower": 40,
-    "Agility": 40,
-    "Speed": 40,
-    "Endurance": 40,
-    "Personality": 40,
-    "Luck": 40
+    "Strength": 1,
+    "Intelligence": 2,
+    "Willpower": 3,
+    "Agility": 4,
+    "Speed": 5,
+    "Endurance": 6,
+    "Personality": 7,
+    "Luck": 8
   },
   "skills": {
     "Armorer": 10,

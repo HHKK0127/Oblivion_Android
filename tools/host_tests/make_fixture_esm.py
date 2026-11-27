@@ -5,7 +5,7 @@
 newgame host smoke (tools/host_tests/newgame_smoke.cpp) 用の最小 ESM:
   TES4 ヘッダ + RACE(2) + CLAS(1) + BSGN(1) の GRUP。
 
-RACE は playable bit と skill bonus (DATA) / spell (SPLO) を持つ。
+RACE は playable bit と skill bonus (DATA) / spell (SPLO) / 属性 (ATTR) を持つ。
 時刻・乱数・絶対パスを使わない（再実行しても同一バイト列）。
 
 レイアウト（RE v664 実測）:
@@ -13,6 +13,7 @@ RACE は playable bit と skill bonus (DATA) / spell (SPLO) を持つ。
   sub     = tag(4) + size(2) + payload
   GRUP    = "GRUP" + size(4, header 20 を含む) + label(4) + type(4) + stamp(2) + unknown(2) + body
   RACE DATA (36B) = 7 x (int8 skillAV, int8 bonus) + 2 reserved + 4 float + int32 flags(bit0=playable)
+  RACE ATTR (16B) = 8 male u8 + 8 female u8 (AttrIndex 順 Strength..Luck, V-664-2)
 """
 import os
 import struct
@@ -57,8 +58,17 @@ def race_data(skills, playable):
     return bytes(b)
 
 
-def race(formid, edid, full, desc, skills, spells, playable=True):
+def attr_payload(male, female):
+    """RACE ATTR (16B): 8 male u8 then 8 female u8, AttrIndex order Strength..Luck."""
+    b = bytes(male) + bytes(female)
+    assert len(b) == 16, len(b)
+    return bytes(b)
+
+
+def race(formid, edid, full, desc, skills, spells, playable=True, attr_mf=None):
     p = sub("EDID", zstr(edid)) + sub("FULL", zstr(full)) + sub("DESC", zstr(desc))
+    if attr_mf is not None:
+        p += sub("ATTR", attr_payload(*attr_mf))
     for s in spells:
         p += sub("SPLO", u32(s))
     p += sub("DATA", race_data(skills, playable))
@@ -75,9 +85,13 @@ def bsgn(formid, edid, full):
 
 def build():
     # TestRaceA: Blade(0x0E)+10, HeavyArmor(0x12)+5, 2 racial spells. playable.
+    # ATTR male 1..8 / female 11..18: all eight differ, so the host smoke golden
+    # pins the ATTR mapping 1:1 (distinct values expose += / field swap / offset
+    # / male-female inversion; a duplicate-heavy row like Imperial's would not).
     race_a = race(0x00000010, "TestRaceA", "Test Race A", "A test race (A).",
                   [(0x0E, 10), (0x12, 5)] + [(0xFF, 0)] * 5,
-                  [0x00000100, 0x00000101], True)
+                  [0x00000100, 0x00000101], True,
+                  attr_mf=([1, 2, 3, 4, 5, 6, 7, 8], [11, 12, 13, 14, 15, 16, 17, 18]))
     # TestRaceB: Armorer(0x0C)+7, 1 racial spell. playable.
     race_b = race(0x00000011, "TestRaceB", "Test Race B", "A test race (B).",
                   [(0x0C, 7)] + [(0xFF, 0)] * 6,
