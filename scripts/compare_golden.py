@@ -37,7 +37,9 @@
   python scripts/compare_golden.py out.json --update   # 採取
 
 終了コード:
-  0 = 一致（または --update 成功） / 1 = 閾値超過・環境不一致、または --require で基準が無い
+  0 = 一致（または --update 成功）
+  2 = ゲート失敗（hard）: 閾値超過 / 環境不一致 / JSON 相違 / --require で基準が無い / 形状不一致
+  1 = ツール異常: 候補（画像/JSON）が無い・解析できない・依存（Pillow/numpy）が無い
 """
 import argparse
 import datetime
@@ -102,10 +104,10 @@ def load_gray(path):
         from PIL import Image
     except ImportError:
         print("::error::Pillow が必要です（python -m pip install pillow numpy）")
-        sys.exit(2)
+        sys.exit(1)
     if not os.path.exists(path):
         print("::error::候補画像がありません: %s" % path)
-        sys.exit(2)
+        sys.exit(1)
     return Image.open(path).convert("L").resize((GRID_W, GRID_H), Image.BOX)
 
 
@@ -153,12 +155,12 @@ def compare_json(args):
     """
     if not os.path.exists(args.candidate):
         print("::error::候補 JSON がありません: %s" % args.candidate)
-        return 2
+        return 1
     try:
         cand = load_json(args.candidate)
     except (json.JSONDecodeError, ValueError) as e:
         print("::error::候補 JSON を解析できません（%s）: %s" % (args.candidate, e))
-        return 2
+        return 1
     if args.update:
         os.makedirs(os.path.dirname(args.golden) or ".", exist_ok=True)
         with open(args.golden, "w", encoding="utf-8") as fh:
@@ -175,7 +177,7 @@ def compare_json(args):
                % args.golden)
         if args.require:
             print("::error::" + msg)
-            return 1
+            return 2
         print("::warning::" + msg)
         return 0
 
@@ -190,7 +192,7 @@ def compare_json(args):
         print("  " + d)
     if len(diffs) > 20:
         print("  ... 他 %d 点" % (len(diffs) - 20))
-    return 1
+    return 2
 
 
 def write_diff(golden_cells, cand_im, out_path):
@@ -265,7 +267,7 @@ def main():
                % args.golden)
         if args.require:
             print("::error::" + msg)
-            return 1
+            return 2
         print("::warning::" + msg)
         return 0
 
@@ -287,19 +289,19 @@ def main():
         if mismatches and not args.allow_env_mismatch:
             print("::error::環境不一致（画素差ではなく撮影条件の違い）: " + " / ".join(mismatches))
             print("  → 同じ表示条件で撮り直すか、その条件が正しいなら --update で更新する。")
-            return 1
+            return 2
 
     if (cand["grid_w"], cand["grid_h"]) != (golden.get("grid_w"), golden.get("grid_h")):
         print("::error::グリッド形状が不一致: golden=%sx%s candidate=%sx%s"
               % (golden.get("grid_w"), golden.get("grid_h"), cand["grid_w"], cand["grid_h"]))
-        return 1
+        return 2
 
     import numpy as np
     g = np.array(golden["cells"], dtype=np.float32)
     c = np.array(cand["cells"], dtype=np.float32)
     if g.shape != c.shape:
         print("::error::セル数が不一致: golden=%s candidate=%s" % (g.shape, c.shape))
-        return 1
+        return 2
 
     d = np.abs(g - c)
     mean = float(d.mean())
@@ -319,7 +321,7 @@ def main():
     if mean > args.max_mean or ratio > args.max_changed_ratio:
         print("::error::ゴールデンと差があります（mean=%.2f, changed=%.1f%%）" % (mean, ratio * 100.0))
         print("  意図した変更なら: python scripts/compare_golden.py %s --update" % args.candidate)
-        return 1
+        return 2
     print("OK: ゴールデンと一致")
     return 0
 
