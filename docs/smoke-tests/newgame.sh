@@ -318,7 +318,9 @@ SNAP="$OUT_DIR/smoke-newgame.png"
 PREV="$OUT_DIR/.settle-prev.png"
 PYBIN="$(command -v python || command -v python3 || true)"
 if [ -z "$PYBIN" ]; then
-  echo "::warning::python が無いため安定待ちをスキップします（compare_golden にも python が要ります）"
+  # 安定判定ができない＝収束を確認できない。撮って進めると flake が戻るので止める。
+  echo "::error::python が無いため画面の安定判定ができません（compare_golden にも python が要ります）"
+  exit 2
 fi
 # $1,$2 の変化画素の割合（|Δ|>8）を stdout に出す。python 不在なら 1.0（=変化）を返す。
 screen_changed_ratio() {
@@ -354,8 +356,10 @@ while :; do
   cp "$SNAP" "$PREV" 2>/dev/null || true
   [ "$streak" -ge "$SETTLE_FRAMES" ] && break
   if awk -v a="$elapsed" -v b="$SETTLE_MAX" 'BEGIN{exit !(a >= b)}'; then
-    echo "::warning::安定待ちが ${SETTLE_MAX}s を超えました（streak=${streak}/${SETTLE_FRAMES}, ratio=${ratio}）"
-    break
+    # 収束しなかった run を緑にしない。撮って進むと flake が戻る。
+    echo "::error::画面が ${SETTLE_MAX}s 以内に落ち着きませんでした（streak=${streak}/${SETTLE_FRAMES}, 最後の ratio=${ratio}）"
+    log_dump
+    exit 2
   fi
 done
 rm -f "$PREV"
