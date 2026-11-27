@@ -6,6 +6,7 @@
 
 - [ ] **#204** 【作製・高優先】V-664-2 の Player 適用段: race の ATTR 属性を Player に適用する（#196 でレイアウト確定済み）。触る: (a) game/player.cpp の applyRace — resetAttributes() の後、race->attr(kX, gender) を attributes の各フィールドへ**代入**（加算しない）。ATTR の無い race は 40 のまま。(b) game/player.h — BASE_ATTRIBUTE のコメントを『race 不在/ATTR 無しのフォールバック』に限定（値 40 は不変）。(c) host テスト — 男女で全 8 値が異なる合成 race を通し applyRace 後に 8 フィールドが ATTR 値になること、ATTR 無しでは 40 のままであること。触らない: renderer.*（Legacy renderer.cpp:942-944 は既に代入で正しい）/ chargen_commit.* / npc_manager.cpp / health（V-664-3・#200 待ち）。制約: smoke JSON は player.attributes を読むので blocking golden が動く。再採取は linux-gnu のみ。実機確認も要る。前提: #203（base か bonus かの裁定）を先に確定する。 `#V-664-2` `#chargen` `#golden` `#player`
   > 実機合格条件を 1 段強化（2026-11-27）: V-631-1b の『gender 0→1→0 のログ』だけでは不十分。gender 切替で RACE ATTR の男女行が入れ替わるので、`chargen commit applied: ... str=%d end=%d gender=%u` の行で gender 0→1 のとき str/end が男性行→女性行へ変わり、1→0 で戻ることを確認する（ログ出現だけでは属性未切替の実装でも通る）。golden 期待: smoke 既定 gender=Male で attributes=1..8（11..18 なら男女逆、40 なら未適用、41..48 なら加算のまま）。
+  > 実機確認（2026-11-28, emulator-5554 / 実 Oblivion.esm）: Nord 0x000224FD で 3 run（1 プロセス 1 セッション）→ `chargen commit applied: ... str=50 end=50 gender=0` / `str=50 end=40 gender=1` / `str=50 end=50 gender=0`。初回 commit の ATTR 行が gender に追従（Nord の ESM 実値 M end=50 / F end=40 どおり）。`Race applied to player: Nord (skillBonuses=6, spells=3, attrs=ATTR)`。合格条件を差し替え: 『初回 commit の ATTR 行が gender に追従する。gender 単独再適用は host テストのみ』。限界: commit 後に chargen が閉じ、開き直しの console は文字入力の JNI が無く adb から打てない → gender 単独変更の再適用（raceChanged || genderApplied）は実機で踏めない（各 run は新規プロセスで raceChanged=true）。この経路は host テスト `chargen::commit: gender-only change re-applies the ATTR row` のみ。詳細 docs/evidence/204/device.md。
 
 - [ ] **#203** 【作製・中優先・V-664-2 適用段の前提】ATTR の 30-50 は base 値であって bonus ではない。Oblivion では race の属性がそのまま初期値で、BASE_ATTRIBUTE=40 は race 不在/ATTR 無しのフォールバック。したがって: (1) Player::applyRace は resetAttributes()（=40 へ revert）の後、race->attr(kX, gender) を attributes の各フィールドへ**代入**する（加算しない）。ATTR の無い race は 40 のまま。(2) player.h の BASE_ATTRIBUTE は『フォールバック』に限定（値 40 は不変、コメントのみ）。(3) 死コード NpcManager::initializePlayerFromESM の setAttr の `+=` も代入に直す（#202 と連動）。名前だけでなく演算そのものを正す: `+=` のままだと 40 に足されて 70-90 になる。 `#V-664-2` `#base-value` `#chargen`
 
@@ -21,24 +22,24 @@
 
 - [ ] **#197** docs/code 不一致③: game/player.h の BASE_MAX_HEALTH=100 と applyRace の maxHealth=BASE_MAX_HEALTH は、確定式 maxHealth(level1)=2×Endurance（Imperial=80/Argonian=60/Nord=100）と矛盾する。V-664-3 で式に置き換える。 `#V-664-3` `#chargen` `#docs-code-gap`
 
-- [x] **#196** docs/code 不一致②: assets/esm_reader.h:702-709 の RaceData は attr を 7 個の uint8_t（Luck 無し・性別無し）で持つが、実測 ATTR は 16B = 男性 8 u8 + 女性 8 u8（順序 Str,Int,Wil,Agi,Spd,End,Per,Luck。Argonian/Imperial で UESP と完全一致）。V-664-2 で形を合わせる。 `#V-664-2` `#chargen` `#docs-code-gap` (2026-11-27)
+- [x] **#196** docs/code 不一致②: assets/esm_reader.h:702-709 の RaceData は attr を 7 個の uint8_t（Luck 無し・性別無し）で持つが、実測 ATTR は 16B = 男性 8 u8 + 女性 8 u8（順序 Str,Int,Wil,Agi,Spd,End,Per,Luck。Argonian/Imperial で UESP と完全一致）。V-664-2 で形を合わせる。 `#V-664-2` `#chargen` `#docs-code-gap` (2026-11-28)
   > 実装完了 commit 071b34e1（コード 7 ファイル）+ 33f84f36（STATE.md）。ATTR 16B を RaceData.attrMale/attrFemale[8] + attr(AttrIndex, bool female) で表現、decodeRace が populate（16B 未満は全体無視）、initializePlayerFromESM を {AttrIndex, 名前} 対応表 8 行（Luck 追加）に。host RaceDecodeTests 29/29・ALL GREEN。証拠はユニットテストのみ（呼び出し元 0 件の死コードのため実機/ golden 証拠なし）。
 
 - [ ] **#195** docs/code 不一致①: ui/race_sex_panel.cpp:438-441 のコメントが「A toggle's value flip ... is the widget's own responsibility」と言うが、UIToggle::toggleChecked() の呼び出し元はテストのみ（renderer も panel も呼ばない）。コメントを信じた人が実装しないので、コメント修正か実装のどちらかに決める（V-631-1b の実体）。 `#V-631-1b` `#chargen` `#docs-code-gap`
 
 - [ ] **#194** fix(renderer): chargen の描画順 — タイトル画面分岐（renderer.cpp:5151）は message box を chargen パネルより先に描くため、New Game 処理フレームの 1 フレームだけダイアログがパネルの下に隠れる。message box を chargen の後に描けば SETTLE の安定待ち自体が不要になる（#186 の本体修正。golden 側の対症＝安定待ちは newgame.sh で実装済み）。 `#186` `#chargen` `#renderer`
 
-- [x] **#193** 【作製・高優先】nif-ffi の block_type_count を型名テーブル長に修正（実バグ）。nif_get_header_info が block_type_indices.len()（＝num_objects）を入れ、C++ shim が型名テーブルのループ回数に使っていた。86%（6896/8032）の実メッシュで型名を読み過ぎ空文字が並ぶ。lib.rs / nif_ffi.h ＋ C ABI の nobj!=ntyp テスト ＋ build_host_rust.sh の WSL ガード/--clean ＋ build_apk.sh ＋ gotchas #5-#7。commit cc556a80、実機 1 run PASS（chargen→commit→セル侵入、クラッシュ 0、blockTypes 81 行中 52 行が numBlocks!=blockTypes）。 `#bugfix` `#device` `#ffi` `#nif` (2026-11-27)
+- [x] **#193** 【作製・高優先】nif-ffi の block_type_count を型名テーブル長に修正（実バグ）。nif_get_header_info が block_type_indices.len()（＝num_objects）を入れ、C++ shim が型名テーブルのループ回数に使っていた。86%（6896/8032）の実メッシュで型名を読み過ぎ空文字が並ぶ。lib.rs / nif_ffi.h ＋ C ABI の nobj!=ntyp テスト ＋ build_host_rust.sh の WSL ガード/--clean ＋ build_apk.sh ＋ gotchas #5-#7。commit cc556a80、実機 1 run PASS（chargen→commit→セル侵入、クラッシュ 0、blockTypes 81 行中 52 行が numBlocks!=blockTypes）。 `#bugfix` `#device` `#ffi` `#nif` (2026-11-28)
 
 - [ ] **#192** 【作製・高優先】nif-ffi の block_type_count を型名テーブル長に修正（実バグ）。nif_get_header_info が block_type_indices.len()（＝num_objects）を入れ、C++ shim が型名テーブルのループ回数に使っていた。86%（6896/8032）の実メッシュで型名を読み過ぎ空文字が並ぶ。lib.rs/  nif_ffi.h＋C ABI の nobj!=ntyp テスト＋build_host_rust.sh の WSL ガード/--clean＋build_apk.sh＋gotchas #5-#7。commit cc556a80、実機 1 run PASS（chargen→commit→セル侵入、クラッシュ 0、blockTypes 81 行中 52 行が numBlocks!=blockTypes）。 `#bugfix` `#device` `#ffi` `#nif`
 
-- [x] **#191** 【判断待ち・低優先】precheck の CN リストが日本語字 U+636E（「すえる」「すえおき」等で使う字）を誤検出する。CN_CHARS に U+636E が入っており（scripts/precheck.py:37 付近）、日本語文書で正当に使うと既定モードが FAIL、--all の baseline も押し上げる。STATE.md の該当行は allow-cn マーカーで回避済み。候補: (a) U+636E を CN_CHARS から除外し --all baseline を再測（日本語でも使う字のため『簡体字専用』の定義に反する） (b) 現状維持で都度 allow マーカー／言い換え。実測 2026-11-26: この誤検出で #189/#190 の文面を言い換えた。 `#approval` `#precheck` `#tooling` (2026-11-27)
+- [x] **#191** 【判断待ち・低優先】precheck の CN リストが日本語字 U+636E（「すえる」「すえおき」等で使う字）を誤検出する。CN_CHARS に U+636E が入っており（scripts/precheck.py:37 付近）、日本語文書で正当に使うと既定モードが FAIL、--all の baseline も押し上げる。STATE.md の該当行は allow-cn マーカーで回避済み。候補: (a) U+636E を CN_CHARS から除外し --all baseline を再測（日本語でも使う字のため『簡体字専用』の定義に反する） (b) 現状維持で都度 allow マーカー／言い換え。実測 2026-11-26: この誤検出で #189/#190 の文面を言い換えた。 `#approval` `#precheck` `#tooling` (2026-11-28)
   > 完了 2026-11-26: ユーザー裁定『除外』。CN_CHARS から U+636E を除去（88945c0f）。--audit を追加（CN_CHARS ∩ 常用漢字 を一覧。常用漢字は scripts/data/joyo_kanji.txt 2136 字、hiroshi-manabe/Joyo-Kanji-List 由来）。--all baseline を再測し 231→166（CN=163/FFFD=3/dotAV=0。U+636E の寄与は -51、tmp/re の RE 裁定文書に多用）。AGENTS に『除外判断のたびに --audit』を追記。
 
-- [x] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip` (2026-11-27)
+- [x] **#190** 【作製・低優先】WIP ゲートの blocking 化: active（直近 7 日）の未マージ枝が上限 5 以内に落ち着いたのを確認したら、android.yml の wip-limit ジョブから continue-on-error を外し、check_wip_limit.py に --strict を付けて error 化する（release.yml が緑 CI を要求するため、滞留が多いうちは warn-only で維持）。判定材料はローカル実行の active 数（CI は origin 枝のみでローカル専用枝を見ない）。 `#gate` `#tooling` `#wip` (2026-11-28)
   > 完了 2026-11-26: ユーザー裁定『5 を待たずに二段構え』。check_wip_limit.py に --block-limit（既定 10）を追加し、active > block で exit 1（常時）・active > warn(5) で警告（既定 exit 0、--strict で exit 1）。android.yml から continue-on-error を外し --block-limit 10 を付与（3754a78e）。実測: active 9 → warn exit 0 / --strict exit 1 / --block-limit 8 exit 1 / 緑 exit 0。active が 5 以下に落ちたら block を 5 へ下げるラチェットが残。
 
-- [x] **#189** 【判断待ち・中優先】WIP 上限警告（scripts/check_wip_limit.py / android.yml wip-limit ジョブ）の扱いを決める。実測 2026-11-26: 未マージブランチ=33（CI 注記は 18）・open PR=0・上限=3 で warn-only が常時鳴る。候補: (a) 指標を open PR 数へ変更（ただし現在 0 で常に緑＝死んだゲート） (b) 上限を 33 前後へ上げる（実質 no-op） (c) 未マージ枝の棚卸し（close/merge）を先に行い上限を変えずに維持する。policy 値のため人間が決定。 `#approval` `#gate` `#tooling` (2026-11-27)
+- [x] **#189** 【判断待ち・中優先】WIP 上限警告（scripts/check_wip_limit.py / android.yml wip-limit ジョブ）の扱いを決める。実測 2026-11-26: 未マージブランチ=33（CI 注記は 18）・open PR=0・上限=3 で warn-only が常時鳴る。候補: (a) 指標を open PR 数へ変更（ただし現在 0 で常に緑＝死んだゲート） (b) 上限を 33 前後へ上げる（実質 no-op） (c) 未マージ枝の棚卸し（close/merge）を先に行い上限を変えずに維持する。policy 値のため人間が決定。 `#approval` `#gate` `#tooling` (2026-11-28)
   > 完了 2026-11-26: ユーザー裁定は「active/stale 分離」。check_wip_limit.py に --active-days（既定 7）/ --stale-days（既定 30）を追加し、判定を active のみ・上限 5 へ。stale は常に一覧表示。open PR は併記のみ（gh があれば）。android.yml も --limit 5 へ（d200f94a）。実測ローカル: 未マージ 33 / active 9 / 中間 1 / stale 23 / open PR 0。--strict で exit 1、--limit 20 で exit 0。CI は fresh clone で origin 枝のみ＝active 9 本（全てローカル専用）は見えない。当面は warn-only で維持。
 
 - [ ] **#186** 【作製・高優先】AssetManager::extractEsmFromArchive の loose-file 読みが書き込み完了を待たない。1 Hz の maybeRetryGameDataLoad が cp 途中のファイルを開くと tellg() の部分サイズで read 成功→gameDataLoaded_=true で固定され、二度と読み直さない。実測 2026-11-25 (emulator-5554): push 277,504,985B の Oblivion.esm を後置き→ [OK] Extracted Oblivion.esm (148,828,160 bytes)（部分）→ Loading 1855 cells (0 worldspaces, main=0x00000000)。対策案: サイズ安定待ち（連続同サイズ）／一時ファイル+.tmp→rename／期待サイズ照合。app/src/main/cpp/assets/asset_manager.cpp:196-212。 `#161` `#assets` `#bug` `#esm`
@@ -48,7 +49,7 @@
   > 進捗 2026-11-26: ①regex 修正（e31f6583）— HANDLER_RE を本体全体から match 腕パターン（ARM_RE・全深さ・複数行対応）へ。本体リテラル（byte/float/string/Vector3/Color4）を拾わなくなり、stray 21→0（known_out_of_corpus.txt に実在型 16 を理由付き除外）。impl_covered 119 / missing 0。②型被覆 fixture（2b14422b）— CI にコーパスが無い（両コーパス gitignore 済み）ため、Oblivion - Meshes.bsa の最小抜粋 58 本 / 5.01MB を docs/evidence/fixtures/nif/ に固定（markers 27 + cover 31・全 119 型）。nif_fixture_select.py が決定的に選択（gain/sqrt(bytes)・supply map 出力）。android.yml に nif-coverage ジョブ。外せない 4 本＝minotaurold / snow / rainlight / blackwoodpump01（7 型の唯一の供給元）。ゲート --min-impl 119 --max-missing 0 --max-stray 0 --expect-corpus-types 119 --expect-corpus-files 58 -> exit 0。③オラクル拡張の順番（未着手）: NiWireframeProperty を扱う marker 8 本 → 外せない 4 本（粒子・キーフレーム）→ 頻度順（bhkCollisionObject 6401 → NiNode 7896）。見出しは oracle_verified/corpus_types = 2/119 (1.7%)。
   > 進捗 2026-11-26（オラクル拡張）: ①regex 修正（e31f6583）②型被覆 fixture（2b14422b）③オラクル期待値を固定し CI で比較（481dbc6e）— tools/nif_oracle/ の driver ＋ scripts/build_nif_oracle.sh ＋ scripts/nif_oracle_check.py（fixture 27 本を dump_rust に通し docs/evidence/fixtures/nif/oracle/ の固定期待値と 1 バイト比較・不一致 exit 2）＋ android.yml の nif-oracle ジョブ。期待値は marker 27 本の dump_orig 出力。再ビルド dump_orig は旧版と 27/27 一致。oracle_verified は 20（NiKeyframeController は oracle に居るがコーパス外なので 21 にならない。--min-oracle 20 で凍結）。途中で nif-ffi の block_type_count 実バグを発見・修正した（cc556a80）。
 
-- [x] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke` (2026-11-27)
+- [x] **#183** 【作動・高優先（#161 landing 後の予定）】golden #1 を再採取する。並行レーンが焼いた docs/evidence/golden/newgame-no-esm-prefix.json は pre-startGame・pre-Unchanged 修正の画面なので、#161（269e594c）landing 後は smoke が赤くなる（正常）。--update の前に必ず差分画像を目視し「パネル領域の崩れ」か「パネル以外」かを判定する。再採取後は newgame-no-esm.json へ改名（V-664 完了後）。 `#161` `#chargen` `#golden` `#smoke` (2026-11-28)
   > 2026-11-25 時点で blocked: 並行レーンが docs/evidence/golden/newgame-no-esm-prefix.json / docs/smoke-tests/newgame.sh / scripts/compare_golden.py を未コミットで編集中。--update すると相手の WIP を上書きするため、相手の landing 待ち。再開時は事前に差分画像を目視（赤は正常）。
   > 再採取 済 2026-11-26（commit 2c46b359）。手順: 並行レーンの未コミット WIP 3 ファイル（mtime 31h・停滞）を wip/golden-lane=1f575195 に保全 → master 復帰 → レビューで退行を発見（WIP の compare_golden.py が CI 依存の JSON 比較経路 compare_json/load_json/json_differences/.json ディスパッチを欠落）→ 復元して feature を 22a295df で着地 → golden 再採取。実測: 旧 golden vs 新 PNG = mean=3.01 changed=60/576 (10.4%)（#161 後で赤・想定どおり）、新 golden は run2/run3 とも mean=0.00 changed=0/576 (0.0%) の 2 run 連続一致。差分画像を目視: 変化は背景の地形エッジ（上段 rows2-9・右 columns10-31 の斜め帯、上段59/下段1）に集中しパネル領域（左の Player/Race/Face/Hair）ではない＝『パネル以外』。実機 emulator-5554 / 1280x960 / 240dpi / rotation 1、Git Bash で smoke、APK app-debug.apk(14:01)。残: newgame-no-esm.json への改名は V-664 完了後（未実施）。限界: この golden を比較する CI ジョブは hosted runner に hypervisor 無しで skip のため 2 run 一致はローカル証拠のみ。
 
@@ -3786,6 +3787,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3809,4 +3815,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-27 19:11:09
+**ai-todo** | Last Updated: 2026-11-28 05:29:16
