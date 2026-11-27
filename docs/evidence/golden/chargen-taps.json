@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "purpose": "chargen パネルのタップ反応（画素差分）の基準。世界の golden newgame-no-esm-prefix.json とは別ファイル（条件が違うため混ぜない）。",
+    "conditions": "wm size 1280x960 / density 240 / rotation 1、chargen パネル（ChargenUi::Panel）、Main ページ・スクロール 0、emulator-5554",
+    "app_surface": "1280x870",
+    "date": "2026-11-27",
+    "source": "docs/evidence/prep/chargen-probe-baseline.md（#183 準備時の実測。元の実測日は未確認）",
+    "rule_note": "合格条件は値そのものではない: Eyes は『反転が無い』= changed==0、Race は『変化している』= changed>1000。85958 は参考値で、一致しなくても失敗にしない（レイアウト依存の絶対値に計測器の生死を賭けない）。",
+    "threshold": 8
+  },
+  "taps": {
+    "eyes_main": {
+      "x": 377,
+      "y": 472,
+      "label": "Main row 3 toggle id 204 Eyes",
+      "changed": 0,
+      "rule": "eq0",
+      "note": "FAMILY 外＝メニューハンドラ無し。値も反転しないので画素が動かない（V-631-1b）"
+    },
+    "race_main": {
+      "x": 377,
+      "y": 219,
+      "label": "Main row 0 button id 201 Race",
+      "changed": 85958,
+      "rule": "gt1000",
+      "note": "Race ページへ遷移する。85958 は参考値（絶対値はレイアウト依存）"
+    }
+  }
+}

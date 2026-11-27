@@ -3,16 +3,24 @@
 `scripts/compare_golden.py` が比較する基準。**生の PNG は置かない**（Bethesda の
 アセットが写るため再配布不可）。
 
-このディレクトリには用途の異なる **2 つのゴールデン**がある。混同しないこと。
+このディレクトリには用途の異なる **3 つのゴールデン**がある。混同しないこと。
 
 | ファイル | 何の基準か | 比較方法 | 使うジョブ | 状態 |
 |---|---|---|---|---|
 | `newgame-no-esm.json` | host smoke の**状態 JSON** | 完全一致 | `smoke-host`（**blocking**） | 採取済み |
 | `newgame-no-esm-prefix.json` | エミュレータ画面の **32x18 輝度グリッド** | グリッド差 | `smoke`（emulator・warn-only） | 未検証のピン（V688a park） |
+| `chargen-taps.json` | chargen パネルの**タップ画素差分** | ルール判定（`eq0` / `gt1000`） | **ローカル専用**（`scripts/chargen_probe.py`） | 陰性対照 PASS（2026-11-27） |
+
+`chargen-taps.json` は **CI では回らない**（hosted runner に hypervisor が無く
+emulator が起動しない）。`newgame-no-esm-prefix.json` と同じく**ローカル専用**で、
+`scripts/chargen_probe.py` からだけ使う。CI で探しても見つからないのが正しい。
+合格条件は値そのものではなく **rule**（Eyes = `changed==0` / Race = `changed>1000`）。
+`85958` は参考値で、一致しなくても失敗にしない（絶対値はレイアウト依存）。
+詳細は `docs/evidence/prep/chargen-probe-baseline.md`。
 
 `compare_golden.py` の**既定**（`--golden` 省略時）は PNG 経路用の
 `newgame-no-esm-prefix.json`。host smoke は `--golden docs/evidence/golden/newgame-no-esm.json`
-を**明示**して使う（既定ではない）。
+を**明示**して使う（既定ではない）。`chargen-taps.json` は `chargen_probe.py` の既定。
 
 ## 採取（人がレビューしてからコミットする）
 
