@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#201** #RE: 214 Style / 215 HairColor の扱いを確定する（bool 反転か index 巡回か）。docs/chargen_ui_spec.md §10 に 214/215 の記述は無く、巡回の記述は 211 Race のみ（§10.4「1 個のトグルで race を巡回選択」）。claims.md の「214/215 は index 巡回」は実装の無い仕様記述なので、決め打ちすると bool だった場合に逆の実装を積む。調べ方: 0xB39440 と同じ手順で 0x5CDF29 系の user0 読み手と、Race トグルの左右子（race_template_toggle_left/_right）に相当する子が 214/215 にあるかを XML と命令の両方で確認する。#199（トグルの ON/OFF の意味）と対。 `#214` `#215` `#RE` `#V-631-1b` `#chargen`
+
 - [ ] **#200** #RE: health の定数確認 — Original Oblivion の health 式は maxHealth(level1)=2×Endurance（UESP で確定）だが、exe の係数（fHealth… 系）を命令で確認する。V-664-3 の実装前に必要（係数を推測で焼かない）。 `#RE` `#V-664-3` `#chargen`
 
 - [ ] **#199** #RE: chargen トグル 4 つ（204 Eyes / 210 Gender / 214 Style / 215 HairColor）の ON/OFF の意味を確定する。何を変えるか（trait / モーフ / テクスチャ / 性別）。調べ方: 0xB39440（V-653-1）と同じ手順で 0x5CDF29 系の user0 読み手と HandleClick 0x5CC200 の該当分岐を追う。Eyes の反転実装はこれが無くても書けるが、期待値はこれで埋める。 `#RE` `#V-631-1b` `#chargen`
@@ -3774,6 +3776,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3797,4 +3804,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-27 14:18:34
+**ai-todo** | Last Updated: 2026-11-27 16:49:16
