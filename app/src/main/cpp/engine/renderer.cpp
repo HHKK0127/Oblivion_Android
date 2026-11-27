@@ -9080,6 +9080,10 @@ void Renderer::setChargenUi(ChargenUi ui) {
                     in.raceChanged = raceSexPanel->raceChanged();
                     in.raceFormID = raceSexPanel->selectedRaceFormID();
                     in.name = raceSexPanel->playerName();
+                    // V-631-1b: the Gender toggle's value (0=Male/1=Female,
+                    // player.h:69). It reaches Player::gender through the shared
+                    // chargen::commit() so the host smoke drives the same code.
+                    in.gender = raceSexPanel->genderFemale() ? 1 : 0;
                     chargen::commit(npcManager.get(), *player, in);
                 }
                 setChargenUi(ChargenUi::None);
@@ -9111,6 +9115,8 @@ void Renderer::setChargenUi(ChargenUi ui) {
                                                              : player->name);
             raceSexPanel->setCurrentName(std::string());
             raceSexPanel->setCurrentRaceFormID(player->raceFormID);
+            // V-631-1b: seed the Gender toggle from the player (0=Male/1=Female).
+            raceSexPanel->setGenderFemale(player->gender != 0);
         }
         if (textRenderer) {
             raceSexPanel->instantiate(textRenderer.get());

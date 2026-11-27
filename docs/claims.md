@@ -51,7 +51,7 @@
 | 区分 | 項目 |
 |---|---|
 | **残** | `V-664-2` / `V-664-3`: `on_commit_`（共有 `game/chargen_commit.cpp`）で Legacy と同順に **HP/Magicka/Stamina/level/8 属性/21 スキル**を適用する。**`startGame()` は #161 行が `renderer.cpp` の `setOnCommit`（Panel 経路）に入れた＝landed。Panel レーンは同じ 1 行を書かないこと（二重実装の回避）**。完了条件は実機でセル侵入まで到達し、その画面で golden #2 を採取（golden #1 は V-664 完了後に再採取して `newgame-no-esm.json` へ改名） |
-| **残** | **`UIToggle` にクリック処理が無い**（`ui_toggle.cpp` は 31 行で `render()` のみ）。影響は race_sex_panel の **5 トグル全部**（Eyes 204 / Gender 210 / Race 211 / Style 214 / Hair Color 215。race_sex_panel 以外の消費者は 0）。**2 種に分けること**: (1) **bool 反転** = 204, 210（widget 内で `checked` をトグル）(2) **index 巡回** = 211, 214, 215（左右半分で ±1、既存 `cycleRaceFromTap` と同経路。**widget 内で反転しない**）。汎用の反転を足すと 211 で反転と巡回が二重に走る（値が bool でなく、`handleClick` が 211 を先に消費するため順序次第で握り潰し）。完了条件: 実機で Eyes(122,379) と Gender を押して画素変化が出ること／211・214・215 が二重処理にならないこと（Race 押下で index が 2 進まない） |
+| **一部済 / 残** | **`UIToggle` のクリック処理**（`ui_toggle.cpp` は 31 行で `render()` のみ）。**bool 反転 = 204 Eyes / 210 Gender は実装済み**（2026-11-27・`RaceSexPanel::handleClick`。host テスト 2 件＋実機 probe。Gender は `CommitInput.gender` → `Player::gender` まで通した）。**index 巡回 = 211 Race / 214 Style / 215 Hair Color は未実装**（211 は既存 `cycleRaceFromTap`、214/215 は新規）。**汎用の反転を足すと 211/214/215 で反転と巡回が二重に走る**ので、bool と巡回は分けたまま（`handleClick` は 204/210 だけ反転する）。`#195` は 214/215 に呼び出し元が付いた時点で閉じる。完了条件: 実機で Eyes/Gender を押して画素変化が出ること／211・214・215 が二重処理にならないこと（Race 押下で index が 2 進まない） |
 | **済** | `initialize()` の無描画修正（landed 済み・`2e550a68`） |
 | **済** | `bad_weak_ptr` クラッシュ（`shared_ptr` 所有・landed 済み・`0e9b8aef`） |
 

@@ -23,11 +23,17 @@ struct CommitInput {
     // The entered name. Empty means "leave the current name" (the renderer only
     // writes a non-empty field).
     std::string name;
+    // V-631-1b: the Gender toggle's value. Player::gender is 0=Male / 1=Female
+    // (player.h:69; face_race_presets.h Gender::MALE=0/FEMALE=1). The toggle's
+    // OFF/ON meaning is the port's choice (the original's is not measured, #199):
+    // OFF = Male (0), ON = Female (1), which matches the Player default.
+    uint8_t gender = 0;
 };
 
 struct CommitResult {
     bool raceApplied = false;
     bool nameApplied = false;
+    bool genderApplied = false;
 };
 
 // Applies the confirmed chargen state to `player`: the race (only when changed)

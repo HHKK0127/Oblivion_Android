@@ -26,13 +26,22 @@ CommitResult commit(NpcManager* npcMgr, Player& player, const CommitInput& in) {
         player.name = in.name;
         r.nameApplied = true;
     }
+    // V-631-1b: the Gender toggle. Write only when it changed and log the change
+    // (the device pass condition is a log line showing gender 0 -> 1 -> 0).
+    if (in.gender != player.gender) {
+        LOGI("chargen commit: gender %u -> %u", static_cast<unsigned>(player.gender),
+             static_cast<unsigned>(in.gender));
+        player.gender = in.gender;
+        r.genderApplied = true;
+    }
     // #161 device evidence: applyRaceToPlayer() only reports the skill path, so
     // log the race id plus HP/attributes here to show what the commit actually
     // applied. Attribute bonuses and health are not wired yet (V-664-2/V-664-3),
     // so str/end stay at the chargen base and hp is unchanged.
-    LOGI("chargen commit applied: race=0x%08X hp=%.0f/%.0f str=%d end=%d",
+    LOGI("chargen commit applied: race=0x%08X hp=%.0f/%.0f str=%d end=%d gender=%u",
          player.raceFormID, player.health, player.maxHealth,
-         player.attributes.Strength, player.attributes.Endurance);
+         player.attributes.Strength, player.attributes.Endurance,
+         static_cast<unsigned>(player.gender));
     return r;
 }
 

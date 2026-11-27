@@ -1,5 +1,7 @@
 #include "race_sex_panel.h"
 
+#include "ui_toggle.h"
+
 #include <algorithm>
 #include <cmath>
 #include <ctime>
@@ -15,6 +17,17 @@ const RaceSexPanel::Element* RaceSexPanel::find_element(int id) const {
     if (id < 0 || id >= static_cast<int>(id_to_index_.size())) return nullptr;
     const int slot = id_to_index_[id];
     return slot == 0 ? nullptr : &elements_[slot - 1];
+}
+
+RaceSexPanel::Element* RaceSexPanel::find_element_mutable(int id) {
+    if (id < 0 || id >= static_cast<int>(id_to_index_.size())) return nullptr;
+    const int slot = id_to_index_[id];
+    return slot == 0 ? nullptr : &elements_[slot - 1];
+}
+
+bool RaceSexPanel::toggleChecked(int id) const {
+    const Element* e = find_element(id);
+    return e != nullptr && e->type == ElemType::Toggle && e->checked;
 }
 
 int RaceSexPanel::add_element(int page_slot, ElemType type, const std::string& label) {
@@ -382,6 +395,26 @@ bool RaceSexPanel::handleClick(int arg1) {
     // and does nothing (spec §10.4). The renderer routes id 211 to
     // cycleRaceFromTap before calling handleClick.
     if (arg1 == RACE_TOGGLE_ID) return true;
+
+    // V-631-1b: spec §10.6 calls a toggle's value flip "the widget's own
+    // responsibility", but nothing called UIToggle::toggleChecked(), so a tap on
+    // a toggle did nothing at all. claims.md (Panel lane, 残) splits the five
+    // toggles in two: bool flips (204 Eyes, 210 Gender) and index cyclers (211
+    // Race, 214 Style, 215 Hair Color). Only the bool pair flips here — the
+    // cyclers get their own left/right handling (211 is driven by
+    // cycleRaceFromTap) and must NOT also flip, or a bool would be written where
+    // an index is expected and the two paths would fight.
+    if (arg1 == EYES_TOGGLE_ID || arg1 == GENDER_TOGGLE_ID) {
+        if (Element* toggle = find_element_mutable(arg1)) {
+            toggle->checked = !toggle->checked;
+            if (auto* widget = dynamic_cast<UIToggle*>(toggle->widget.get())) {
+                widget->setChecked(toggle->checked);
+            }
+            if (arg1 == GENDER_TOGGLE_ID) {
+                gender_female_ = toggle->checked;
+            }
+        }
+    }
 
     // Random (227) / Reset (228): never a page transition (spec §10.7). The
     // first click shows the confirm dialog and arms; an armed click runs the

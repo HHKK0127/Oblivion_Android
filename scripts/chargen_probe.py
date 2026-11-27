@@ -88,6 +88,10 @@ def check_rule(rule: str, changed: int):
         return changed == 0
     if rule == "gt1000":
         return changed > 1000
+    if rule == "gt500":
+        # A toggle's own checkbox mark is ~34x34 px (UIToggle::render draws the
+        # inner mark at box*0.5, box = size.y*0.8), so a flip changes ~1k px.
+        return changed > 500
     print("::error::未知の rule: %s" % rule)
     sys.exit(1)
 

@@ -184,6 +184,8 @@ public:
     const std::vector<Element>& elements() const { return elements_; }
     // +0x94 lookup: element by runtime id, or nullptr when the slot is empty.
     const Element* find_element(int id) const;
+    // Mutable variant, for the toggle flip in handleClick (V-631-1b).
+    Element* find_element_mutable(int id);
 
     // Turn the descriptors into live widgets (device-only: needs a TextRenderer
     // and a GL context). Fills Element::widget and parents each widget under the
@@ -252,6 +254,18 @@ public:
     // applies the race then (the original's 0x51C090 no-op guard).
     bool raceChanged() const;
 
+    // --- Toggles (V-631-1b) ---
+    // The Gender toggle (id 210) is the only toggle whose value the commit
+    // consumes: Player::gender is 0=Male / 1=Female (player.h:69, the same
+    // convention as face_race_presets.h Gender::MALE/FEMALE). OFF = Male, ON =
+    // Female — the original's ON/OFF meaning is not measured (#199), so this
+    // mapping is the port's choice and is recorded as such.
+    bool genderFemale() const { return gender_female_; }
+    void setGenderFemale(bool female) { gender_female_ = female; }
+    // A toggle's checked state by runtime id (false for non-toggles). Lets the
+    // host suite pin the flip without the device-only widget.
+    bool toggleChecked(int id) const;
+
     // --- Name + confirm + commit (spec §10.1/§10.3) ---
     // The original rejects a name that is empty, contains a space, or is
     // unchanged from the current one (0x5CCA77). `player_name_` is the entered /
@@ -306,6 +320,13 @@ public:
     // Race page elements (spec §10.4): the race toggle and its description text.
     static constexpr int RACE_TOGGLE_ID = 211;
     static constexpr int RACE_DESC_ID = 212;
+    // Main page "Eyes" toggle (spec §10.6) and the Race page "Gender" toggle.
+    // The Gender toggle's value is carried into the commit (V-631-1b); the other
+    // toggles' effects are not measured yet (#199).
+    static constexpr int EYES_TOGGLE_ID = 204;
+    static constexpr int GENDER_TOGGLE_ID = 210;
+    static constexpr int STYLE_TOGGLE_ID = 214;
+    static constexpr int HAIR_COLOR_TOGGLE_ID = 215;
     // Face page 4 buttons (spec §10.7): builder order Shape/Tone/Random/Reset.
     static constexpr int RANDOM_BUTTON_ID = 227;
     static constexpr int RESET_BUTTON_ID = 228;
@@ -461,6 +482,9 @@ private:
     std::string player_name_;
     // The player's current name, the baseline for the "unchanged" check.
     std::string current_name_;
+    // V-631-1b: the Gender toggle's value (false = Male, true = Female). Seeded
+    // from Player::gender on open and read back by the renderer's commit.
+    bool gender_female_ = false;
 
     // Race selection + confirm state (spec §10.2/§10.4).
     std::vector<RaceEntry> races_;

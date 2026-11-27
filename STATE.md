@@ -2,6 +2,15 @@
 
 Rust host-tests baseline: **194 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新）。
 
+## 2026-11-27 — V-631-1b Gender: トグル反転の参照実装（鎖を最後まで通した）
+
+- **実装**: `RaceSexPanel::handleClick` が **bool 反転（204 Eyes / 210 Gender）** を行う。`claims.md` の 2 種分割（bool 反転 / index 巡回）に従い、**211/214/215 は反転しない**。`RaceSexPanel` に `genderFemale()` / `setGenderFemale()` / `toggleChecked(id)` / `find_element_mutable()` を追加。`CommitInput.gender`（`uint8_t`、**0=Male / 1=Female**、`player.h:69` と同じ慣習）→ `chargen::commit` が `Player::gender` へ書く（変化時のみ＋ログ 1 行）。`renderer.cpp` は `setChargenUi(Panel)` で seed、`onCommit` で `in.gender` を渡す。
+- **鎖を 4 区間すべて通した**: タップ → `UIToggle`/`Element.checked` → `genderFemale()` → `CommitInput.gender` → `Player::gender`。**Gender が参照実装**（Eyes / Style / HairColor はこの形をコピーする）。`CommitInput` に他トグルのフィールドはまだ足していない。
+- **検証**: host `race_sex_panel_tests.cpp` に 5 件追加（bool 2 件が反転・巡回 3 件が反転しない・Gender の値・commit が書く・変化なしで書かない）→ `HOST RUNNER: ALL GREEN (0 suite(s) failed)`。**手元 Windows でホストテストが回る**（`OBLIVION_RUST_HOST_TRIPLE=x86_64-pc-windows-gnu`、gotcha #12）。実機 emulator-5554（1280x960 / 240dpi / rotation 1・ESM あり）: Gender タップで `changed=594/1228800`（旧 APK は 0）、Done→Yes で `chargen commit: gender 0 -> 1`・`chargen commit applied: race=0x00023FE9 hp=100/100 str=40 end=40 gender=1`。
+- **正典との差（重要）**: `docs/claims.md` は 5 トグルを **bool 反転（204/210）** と **index 巡回（211/214/215）** に分ける。最初の実装は 214/215 も bool 反転しており正典に反していた → `handleClick` を 204/210 に限定して修正。
+- **残**: 214 Style / 215 HairColor（巡回の実装）。Eyes は効果が未確定（`#199`）＋`Player` に目/テクスチャの受け皿が無いため bool 反転のみ。`#195` は 214/215 の実装後に閉じる。
+- **ホスト smoke は不変**: `CommitInput` の `gender` は既定 0 で smoke の JSON に含めないため、blocking golden `newgame-no-esm.json` は揺れない。
+
 ## 2026-11-24 — chargen race 適用（skill bonus＋spell）＋ Legacy base 統一（V-654-4 一部 close）
 
 - **前提の訂正**: `RaceData` の `attr*`/`startingHealth`/`skillBonuses` は **未 populate** だった（`decodeRace` が RACE `ATTR`/health を未パース、書き手 0 件）。実装済みは `spellFormIDs`(SPLO) のみ。spec §10.5 を訂正。

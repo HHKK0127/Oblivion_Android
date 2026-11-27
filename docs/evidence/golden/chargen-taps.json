@@ -24,6 +24,14 @@
       "changed": 85958,
       "rule": "gt1000",
       "note": "Race ページへ遷移する。85958 は参考値（絶対値はレイアウト依存）"
+    },
+    "gender_race": {
+      "x": 377,
+      "y": 219,
+      "label": "Race row 0 toggle id 210 Gender (Race ページ)",
+      "changed": 594,
+      "rule": "gt500",
+      "note": "V-631-1b で反転を実装。UIToggle の内側マーク（box*0.5 ≒ 34x34px）が変わる。実測 2026-11-27: 594/1228800（旧 APK では 0 だった）"
     }
   }
 }

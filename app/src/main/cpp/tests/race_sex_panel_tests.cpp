@@ -3,6 +3,7 @@
 #include "../ui/race_sex_panel.h"
 #include "../ui/ui_slider.h"
 #include "../ui/ui_toggle.h"
+#include "../game/chargen_commit.h"
 #include "../game/player.h"
 
 #include <android/log.h>
@@ -385,6 +386,72 @@ bool RaceSexPanelTests::runAllTests() {
         toggle.toggleChecked();
         const bool off = !toggle.isChecked();
         record("UIToggle flips checked on operation", start && on && off);
+    }
+
+    // --- V-631-1b: toggles flip on tap, and the Gender value reaches the commit ---
+    // claims.md splits the five toggles: bool flips (204 Eyes, 210 Gender) vs
+    // index cyclers (211 Race, 214 Style, 215 Hair Color). Only the bool pair
+    // must flip here; a cycler that also flipped would write a bool where an
+    // index is expected.
+    {
+        RaceSexPanel panel3;
+        panel3.init();
+        const int boolToggles[] = {RaceSexPanel::EYES_TOGGLE_ID,
+                                   RaceSexPanel::GENDER_TOGGLE_ID};
+        bool allFlip = true;
+        std::string flipMsg;
+        for (int id : boolToggles) {
+            const bool before = panel3.toggleChecked(id);
+            panel3.handleClick(id);
+            const bool after = panel3.toggleChecked(id);
+            if (before || !after) {
+                allFlip = false;
+                flipMsg += " id=" + std::to_string(id);
+            }
+        }
+        record("toggle: bool toggles (204/210) flip on tap (V-631-1b)", allFlip, flipMsg);
+
+        const int cyclerToggles[] = {RaceSexPanel::RACE_TOGGLE_ID,
+                                     RaceSexPanel::STYLE_TOGGLE_ID,
+                                     RaceSexPanel::HAIR_COLOR_TOGGLE_ID};
+        bool cyclersClean = true;
+        std::string cyclerMsg;
+        for (int id : cyclerToggles) {
+            panel3.handleClick(id);
+            if (panel3.toggleChecked(id)) {
+                cyclersClean = false;
+                cyclerMsg += " id=" + std::to_string(id);
+            }
+        }
+        record("toggle: index cyclers (211/214/215) do not flip (claims.md)",
+               cyclersClean, cyclerMsg);
+    }
+    {
+        // Gender: the flip is carried as the panel's value (OFF = Male).
+        RaceSexPanel g;
+        g.init();
+        const bool maleStart = !g.genderFemale();
+        g.handleClick(RaceSexPanel::GENDER_TOGGLE_ID);
+        const bool female = g.genderFemale();
+        g.handleClick(RaceSexPanel::GENDER_TOGGLE_ID);
+        const bool backToMale = !g.genderFemale();
+        record("toggle: Gender flips the panel value (OFF=Male, ON=Female)",
+               maleStart && female && backToMale);
+    }
+    {
+        // The commit consumes the Gender value. Player::gender is 0=Male/1=Female
+        // (player.h:69); npcMgr is null so the race path is skipped and no ESM is
+        // needed.
+        Player player;
+        chargen::CommitInput in;
+        in.gender = 1;
+        const chargen::CommitResult r = chargen::commit(nullptr, player, in);
+        record("chargen::commit writes Player::gender (V-631-1b)",
+               r.genderApplied && player.gender == 1,
+               "applied=" + std::to_string(r.genderApplied) +
+                   " gender=" + std::to_string(player.gender));
+        const chargen::CommitResult r2 = chargen::commit(nullptr, player, in);
+        record("chargen::commit leaves gender alone when unchanged", !r2.genderApplied);
     }
 
     // --- handleClick transition engine (spec §6; pure logic) ---
