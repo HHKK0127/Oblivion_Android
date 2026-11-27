@@ -8,8 +8,9 @@ Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --w
 - **hasAttr**: decoder は ATTR 不在・15B を 0 で返すので、`RaceData::hasAttr`（`>= 16` のときだけ true）で判定。0 を値として使わない（0 が正当な race で嘘になる）。
 - **写像**: `RaceBonus` に `hasAttr`＋`attrs[8]`（性別選択済み、ESM 非依存）。性別の選択は `applyRaceToPlayer` で 1 回だけ（`Player::isFemale()`）。
 - **gender 順序**: `applyRaceToPlayer` が `player.gender` で ATTR 行を選ぶため、`chargen::commit` は gender を race の**前**に書く。**gender 単独変更でも race を再適用**（`raceChanged || genderApplied`。無いと男性行が残る）。
-- **検証**: host **ALL GREEN**、`RaceSexPanelTests` **98/98**（新規 6 件＝代入・再適用・ATTR 無し・race 切替・`isFemale`・gender 単独変更の ATTR 行切替）。smoke golden が `attributes` **40→1..8**（fixture TestRaceA に ATTR M`1..8`/F`11..18` を追加。blocking golden が写像を 1:1 固定）。platform 一致: 旧 golden（CI linux-gnu）と win-gnu の smoke 出力が**完全一致**。
-- **証拠の範囲**: 実機確認は別途（V-631-1b の条件を「gender 切替で str/end が入れ替わる」まで強化）。
+- **検証**: host **ALL GREEN**、`RaceSexPanelTests` **98/98**（新規 6 件＝代入・再適用・ATTR 無し・race 切替・`isFemale`・gender 単独変更の ATTR 行切替）。smoke golden が `attributes` **40→1..8**（fixture TestRaceA に ATTR M`1..8`/F`11..18` を追加。blocking golden が写像を 1:1 固定）。platform 一致: 旧 golden（CI linux-gnu）と win-gnu の smoke 出力が**完全一致**。CI run `46059363533` = **ALL GREEN**（`New game host smoke (fixture ESM)` ✓ 4m46s）。
+- **実機（emulator-5554 / 実 Oblivion.esm）**: Nord（`0x000224FD`）で 3 run → `chargen commit applied: ... str=50 end=50 gender=0` / `str=50 end=40 gender=1` / `str=50 end=50 gender=0`。**初回 commit の ATTR 行が gender に追従**（Nord の ESM 実値 M end=50 / F end=40 どおり）。詳細 `docs/evidence/204/device.md`。
+- **証拠の範囲（重要）**: 実機で示せたのは「**初回 commit の ATTR 行が gender に追従する**」ことまで。**gender 単独変更の再適用（`raceChanged || genderApplied`）は実機で踏めない**（commit 後に chargen が閉じ、開き直しの console は文字入力の JNI が無く adb から打てない。各 run は新規プロセスで `raceChanged=true`）。この経路はホストテストのみが押さえる。
 - **残**: health（`V-664-3`・#200 待ち）、race 未選択時の戻り（#205）、死コード掃除（#202）。
 
 ## 2026-11-27 — #196 RACE ATTR を実測 16B でパース（V-664-2 の decode 部分・commit 071b34e1）
