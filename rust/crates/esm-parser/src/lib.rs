@@ -307,6 +307,19 @@ pub struct Plugin {
     pub masters: Vec<String>,
     pub records: Vec<RecordIndex>,
     pub group_count: usize,
+    /// Bytes after the last indexed record or group header that the index does
+    /// not cover.
+    ///
+    /// A complete plugin ends exactly where the index ends, so this is 0. A
+    /// non-zero value means the walk stopped early: the file is truncated
+    /// (partly copied) or ends with bytes that are not a record/group header.
+    ///
+    /// The walk itself is deliberate about stopping instead of erroring (a
+    /// damaged tail must not throw away the records that did parse), which is
+    /// why the truncation signal has to be carried out of the parser
+    /// explicitly (#186: a 1 KiB slice of Oblivion.esm parsed "successfully"
+    /// with 0 records and was accepted as game data).
+    pub unindexed_tail: usize,
     form_id_index: HashMap<u32, usize>,
 }
 
@@ -343,6 +356,7 @@ impl Plugin {
             masters,
             records: Vec::new(),
             group_count: 0,
+            unindexed_tail: 0,
             form_id_index: HashMap::new(),
         };
         plugin.index_records(data);
@@ -428,6 +442,10 @@ impl Plugin {
             self.records.push(index);
             pos = end;
         }
+
+        // Whatever the walk did not cover is the truncation signal: a complete
+        // plugin ends exactly at EOF.
+        self.unindexed_tail = data.len().saturating_sub(pos);
     }
 
     pub fn record_by_form_id(&self, form_id: u32) -> Option<&RecordIndex> {
@@ -791,6 +809,28 @@ mod tests {
         let truncated = &data[..data.len() - 8];
         let plugin = Plugin::parse("Oblivion.esm", truncated).unwrap();
         assert_eq!(plugin.records.len(), 0);
+        // The walk stopped at the CELL header and did not consume it, so the
+        // caller can tell "0 records because truncated" from "0 records and
+        // complete" (#186).
+        assert_eq!(plugin.unindexed_tail, 28);
+    }
+
+    #[test]
+    fn a_complete_plugin_has_no_unindexed_tail() {
+        let mut data = tes4(&["Oblivion.esm"]);
+        data.extend_from_slice(&record(b"CELL", 0x0000_0300, 0, &[0u8; 16]));
+        let plugin = Plugin::parse("Oblivion.esm", &data).unwrap();
+        assert_eq!(plugin.records.len(), 1);
+        assert_eq!(plugin.unindexed_tail, 0);
+    }
+
+    #[test]
+    fn trailing_bytes_are_reported_as_unindexed_tail() {
+        let mut data = tes4(&["Oblivion.esm"]);
+        data.extend_from_slice(b"xyz");
+        let plugin = Plugin::parse("Oblivion.esm", &data).unwrap();
+        assert_eq!(plugin.records.len(), 0);
+        assert_eq!(plugin.unindexed_tail, 3);
     }
 
     #[test]
@@ -872,6 +912,10 @@ mod tests {
         );
         assert!(plugin.group_count > 20_000, "groups={}", plugin.group_count);
         assert!(plugin.summary().compressed_count > 0);
+        // The retail plugin is complete: the walk must reach EOF exactly,
+        // otherwise `unindexed_tail` could not be used to reject a
+        // partly-copied file (#186).
+        assert_eq!(plugin.unindexed_tail, 0, "retail plugin must be walked to EOF");
 
         let cells = plugin.records_of_type(b"CELL").count();
         assert!(cells > 5_000, "cells={cells}");
@@ -895,5 +939,30 @@ mod tests {
         for name in ["WEAP", "QUST", "MGEF", "SCPT"] {
             assert!(counts.iter().any(|t| t.rec_type == name), "missing {name}");
         }
+    }
+
+    /// A real plugin cut in half still parses (`Ok`), because the walk stops at
+    /// the first record or group that would run past the buffer. That is why
+    /// `unindexed_tail` exists: it is the only signal that the bytes are not the
+    /// whole file, and the C++ loader rejects a non-zero tail (#186).
+    #[test]
+    fn a_truncated_retail_plugin_parses_but_reports_a_tail() {
+        let path = std::env::var("OBLIVION_ESM").unwrap_or_else(|_| {
+            r"C:\Program Files (x86)\Steam\steamapps\common\Oblivion\Data\Oblivion.esm".to_string()
+        });
+        let Ok(data) = std::fs::read(&path) else {
+            eprintln!("skip: {path} unavailable");
+            return;
+        };
+
+        let cut = data.len() / 2;
+        let plugin = Plugin::parse("Oblivion.esm", &data[..cut])
+            .expect("a truncated plugin still parses (the walk stops short)");
+        assert_eq!(plugin.header.rec_type, *b"TES4");
+        assert!(
+            plugin.unindexed_tail > 0,
+            "a truncated plugin must report an unindexed tail, got 0 for {} bytes",
+            cut
+        );
     }
 }

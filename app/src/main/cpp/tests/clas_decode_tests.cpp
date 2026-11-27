@@ -241,6 +241,20 @@ bool ClasDecodeTests::runAllTests() {
     const bool parsed = file.parseFromMemory("synthetic.esm", esm.data(), esm.size());
 
     record("ParseSyntheticEsm", parsed, parsed ? "parsed OK" : "parseFromMemory returned false");
+
+    // #186: a plugin whose bytes end before the record walk reaches EOF must be
+    // rejected. The walk itself returns Ok on an incomplete tail, so this pins
+    // the C++ gate that turns the parser's unindexed-tail signal into a failure
+    // (a partly-copied loose plugin used to be accepted as game data).
+    {
+        std::vector<uint8_t> truncated = esm;
+        truncated.pop_back();
+        oblivion::ESMFile truncFile;
+        const bool truncParsed = truncFile.parseFromMemory(
+            "truncated.esm", truncated.data(), truncated.size());
+        record("TruncatedEsmRejected", !truncParsed,
+               truncParsed ? "truncated plugin was accepted" : "rejected as expected");
+    }
     record("FiveClassesDecoded", file.getClasses().size() == 5,
            "decoded " + std::to_string(file.getClasses().size()));
 

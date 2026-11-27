@@ -135,6 +135,7 @@ static void test_null_handles(void) {
     memset(buffer, 0x7F, sizeof(buffer));
     check(esm_plugin_record_count(NULL) == 0, "null record count");
     check(esm_plugin_group_count(NULL) == 0, "null group count");
+    check(esm_plugin_unindexed_tail(NULL) == 0, "null unindexed tail");
     check(esm_plugin_compressed_count(NULL) == 0, "null compressed count");
     check(esm_plugin_is_master(NULL) == 0, "null master flag");
     check(esm_plugin_header_size(NULL) == 0, "null header size");
@@ -197,6 +198,7 @@ static void test_header_plugin(void) {
         check(esm_last_error_code() == ESM_OK, "parse clears the error");
         check(esm_plugin_record_count(plugin) == 0, "no records past the header");
         check(esm_plugin_group_count(plugin) == 0, "no groups");
+        check(esm_plugin_unindexed_tail(plugin) == 0, "complete plugin has no unindexed tail");
         check(esm_plugin_compressed_count(plugin) == 0, "nothing compressed");
         check(esm_plugin_is_master(plugin) == 1, "esm extension marks a master");
         check(esm_plugin_header_size(plugin) == header_size, "header size");

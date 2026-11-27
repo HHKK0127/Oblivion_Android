@@ -1,6 +1,14 @@
 # Loop State — My Project
 
-Rust host-tests baseline: **194 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新）。
+Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
+
+## 2026-11-27 — #186 loose ESM の部分読みレースを塞いだ（landing）
+
+- **症状**: 1 Hz の `maybeRetryGameDataLoad` が回っている間に loose `Oblivion.esm` を書き込むと、**書き込み途中のファイルを受理**して壊れた世界が静かに立ち上がり、`gameDataLoaded_` が立って二度と直らない。パーサは切り詰めを検出しない（`index_records` は不足時に `break` して `Ok` を返す）。実測: 1024B(0.4%)・50%・98.8% の切り詰めすべて受理。
+- **修正**: 経路で分けた。**BSA 経路**はディレクトリレコードの期待サイズと `out.size()` を照合。**loose 経路**は ①サイズ+mtime が 1.5s 不変になるまで待つ ②`TES4`/`HEDR` 検査 ③パーサに末尾整合を判定させる（`Plugin.unindexed_tail`。実ファイル `D:\re\Oblivion.esm` 277504985B は 0）。拒否したサイズ/mtime は再読しない。`gameDataLoaded_` は**パース成功後にのみ** set、受理時は `accepted esm size=%zu` をログ。`esmParseInFlight_` で多重パースを抑止。
+- **検証**: Rust **197 passed / 0 failed**（末尾 3 テスト追加。実ファイルを半分に切ると `unindexed_tail > 0`）。C++ host `ClasDecodeTests PASSED`（473B の合成 ESM を 1B 切ると `truncated: 453 bytes after the last complete record`）。実機: 切り詰め ESM は `Invalid ESM from memory: Oblivion.esm (truncated: 101154619 bytes ...)` で拒否・受理されずリトライ継続。`scripts/repro-esm-race.sh` **PASS**（コピー中は受理せず、完了後にだけ `accepted esm size=277504985`）。`newgame.sh --no-esm` PASS（golden `changed=0/576`）。
+- **golden の 74% 差は退行ではないと確定**: 旧コードでも `SMOKE_SETTLE_S=0` で mean=32.94 / changed=74.1% を再現。原因は「New Game 処理フレームの一過性描画」（タイトル分岐 `renderer.cpp:5151` が message box を chargen より先に描く 1 フレーム）。安定待ちを固定秒から**連続同一フレーム**へ変更（`e00c895e`）。本体修正は `#194`。
+- **限界**: `Default path smoke` は CI で skip（hypervisor 無し）なので、golden の一致はローカル証拠のみ。
 
 ## 2026-11-27 — V-631-1b Gender: トグル反転の参照実装（鎖を最後まで通した）
 

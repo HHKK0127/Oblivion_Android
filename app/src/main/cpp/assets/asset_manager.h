@@ -115,6 +115,11 @@ public:
     void setDataPath(const std::string& dataPath) { m_dataPath = dataPath; }
     const std::string& getDataPath() const { return m_dataPath; }
 
+    // True when a loose plugin exists but extractEsmFromArchive() did not read it
+    // yet (the copy has not settled, or the file was rejected and is unchanged).
+    // Callers must retry instead of reporting "no game data" (#186).
+    bool isLooseEsmPending() const { return m_looseEsmPending; }
+
 private:
     // Load NIF from raw byte data (from BSA or direct file)
     std::shared_ptr<Mesh> loadNifFromData(const std::string& path,
@@ -127,6 +132,28 @@ private:
     // BSA Archives
     std::vector<std::unique_ptr<BSArchive>> m_archives;
     std::string m_dataPath;
+
+    // Loose-plugin read gate (#186). A plugin copied into files/data is visible
+    // long before it is complete; reading it at that moment used to accept a
+    // truncated file as game data. The size must stop changing for
+    // LOOSE_ESM_STABLE_MS before the bytes are read, and a plugin whose size
+    // did not change after a failed parse is not read again until the file is
+    // touched (so a corrupt copy does not turn the 1 Hz retry into an I/O loop).
+    static constexpr long long LOOSE_ESM_STABLE_MS = 1500;
+    mutable long long m_looseEsmSize = -1;
+    mutable long long m_looseEsmMtime = 0;
+    mutable long long m_looseEsmSeenAtMs = 0;
+    // Set while a loose plugin exists but was deliberately not read (still
+    // growing, or rejected and unchanged). The loader must treat this as "wait"
+    // rather than "no game data", otherwise a copy in progress flashes the
+    // missing-data dialog.
+    mutable bool m_looseEsmPending = false;
+    mutable long long m_lastReadEsmSize = -1;
+    mutable long long m_lastReadEsmMtime = 0;
+    // Size/mtime of the last loose read the parser rejected. Written from the
+    // const extraction path, hence mutable like the settle-wait state above.
+    mutable long long m_rejectedEsmSize = -1;
+    mutable long long m_rejectedEsmMtime = 0;
 
     // ESM Manager
     oblivion::ESMManager m_esmManager;

@@ -229,6 +229,13 @@ bool ESMFile::open(const std::string& filePath) {
         LOGE("Failed to open ESM file: %s (code=%d)", filePath.c_str(), esm_last_error_code());
         return false;
     }
+    // Same truncation gate as parseFromMemory(): the index has to reach EOF.
+    if (const size_t unindexedTail = esm_plugin_unindexed_tail(plugin); unindexedTail != 0) {
+        LOGE("Failed to open ESM file: %s (truncated: %zu bytes after the last complete record)",
+             filePath.c_str(), unindexedTail);
+        esm_plugin_free(plugin);
+        return false;
+    }
 
     {
         char nameBuf[512];
@@ -2844,6 +2851,19 @@ bool ESMFile::parseFromMemory(const std::string& name, const uint8_t* data, size
     EsmPlugin* plugin = esm_plugin_parse_memory(name.c_str(), data, dataSize);
     if (!plugin) {
         LOGE("Invalid ESM from memory: %s (code=%d)", name.c_str(), esm_last_error_code());
+        return false;
+    }
+
+    // A truncated plugin still parses: the record walk stops at the first
+    // incomplete record instead of failing. The bytes the index did not cover
+    // are therefore the only signal that this is not the whole file, and a
+    // partly-copied plugin must not be accepted as game data (#186). Returning
+    // false leaves the caller free to retry once the copy finishes.
+    const size_t unindexedTail = esm_plugin_unindexed_tail(plugin);
+    if (unindexedTail != 0) {
+        LOGE("Invalid ESM from memory: %s (truncated: %zu bytes after the last complete record)",
+             name.c_str(), unindexedTail);
+        esm_plugin_free(plugin);
         return false;
     }
 

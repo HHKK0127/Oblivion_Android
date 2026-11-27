@@ -364,6 +364,10 @@ private:
     // True only once Oblivion.esm has been extracted (the data that matters).
     // maybeRetryGameDataLoad() gates on this, so an empty data dir keeps retrying.
     std::atomic<bool> gameDataLoaded_{false};
+    // True while an async ESM parse is running. gameDataLoaded_ only flips after
+    // the parse succeeds (#186), so without this a 1 Hz retry would start another
+    // 277 MB extraction+parse while the first one is still running.
+    std::atomic<bool> esmParseInFlight_{false};
     // True while loadBSAArchives() is running. Both callers (init() and
     // nativeSetDataPath()) run on the GL thread via onSurfaceCreated, so this is
     // not concurrent in practice; it is cheap insurance against a future caller

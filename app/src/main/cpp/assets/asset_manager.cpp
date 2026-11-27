@@ -5,16 +5,56 @@
 #include <android/log.h>
 #include <algorithm>
 #include <cctype>
+#include <chrono>
+#include <cstring>
 #include <dirent.h>
 #include <fstream>
 #include <sstream>
+#include <sys/stat.h>
 
 #undef LOG_TAG
 #undef LOGD
+#undef LOGW
 #undef LOGE
 #define LOG_TAG "AssetManager"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
+namespace {
+long long steadyMillis() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+}
+
+// Cheap header gate for loose plugins, applied before the parse (#186).
+//
+// Every plugin starts with a 20-byte TES4 record header. Oblivion's TES4 body
+// starts with the HEDR subrecord, whose first field is the format version
+// (1.0). Tool-made plugins can ship an empty TES4 body (the host smoke fixture
+// does: `TES4` then `GRUP` at offset 20), so the version is checked only when
+// HEDR is present.
+bool hasTes4Header(const std::vector<uint8_t>& bytes) {
+    constexpr size_t kRecordHeader = 20;
+    constexpr size_t kSubHeader = 6;
+    if (bytes.size() < kRecordHeader) return false;
+    if (std::memcmp(bytes.data(), "TES4", 4) != 0) return false;
+    if (bytes.size() < kRecordHeader + kSubHeader ||
+        std::memcmp(bytes.data() + kRecordHeader, "HEDR", 4) != 0) {
+        return true;   // no HEDR subrecord: nothing more to check here
+    }
+    uint16_t subSize = 0;
+    std::memcpy(&subSize, bytes.data() + kRecordHeader + 4, sizeof(subSize));
+    if (subSize < 12 || bytes.size() < kRecordHeader + kSubHeader + 4) return false;
+    float version = 0.0f;
+    std::memcpy(&version, bytes.data() + kRecordHeader + kSubHeader, sizeof(version));
+    if (version < 0.99f || version > 1.01f) {
+        LOGD("Loose plugin HEDR version is %.3f (expected 1.0 for Oblivion)", version);
+        return false;
+    }
+    return true;
+}
+}  // namespace
 
 AssetManager::AssetManager()
     : maxCacheSize(500 * 1024 * 1024),  // 500 MB default
@@ -172,6 +212,7 @@ bool AssetManager::loadEsm(const std::string& esmPath) {
 bool AssetManager::extractEsmFromArchive(const std::string& esmName,
                                          std::vector<uint8_t>& out) const {
     out.clear();
+    m_looseEsmPending = false;
 
     // The ESM is stored inside a BSA. Find the ESM file from the archives.
     std::string searchPath = esmName;
@@ -188,25 +229,90 @@ bool AssetManager::extractEsmFromArchive(const std::string& esmName,
              searchPath.c_str(), entry->offset, entry->size);
 
         if ((*it)->extractFileDecompressed(*entry, out)) {
+            // The archive's directory record knows the exact size, so a short
+            // extraction is detectable without any timing guesswork (#186).
+            // realSize is 0 for some compressed entries; fall back to the
+            // parser's tail check in that case.
+            const size_t expected = entry->compressed ? entry->realSize : entry->size;
+            if (expected != 0 && out.size() != expected) {
+                LOGE("ESM extraction is short: %s in BSA gave %zu of %zu bytes",
+                     searchPath.c_str(), out.size(), expected);
+                out.clear();
+                continue;
+            }
             LOGD("Extracted ESM data: %zu bytes", out.size());
             return true;
         }
     }
 
-    // Fallback to a plain file on disk (loose plugin next to the BSAs)
+    // Fallback to a plain file on disk (loose plugin next to the BSAs).
+    //
+    // A loose plugin can be a copy in progress: the file exists and grows for
+    // tens of seconds, and the record walk does not fail on a truncated tail,
+    // so reading it early accepted 0 records (or a partial world) as game data
+    // (#186). Only read bytes whose size and mtime have stopped changing, and
+    // sanity-check the TES4 header before handing them to the parser.
     if (!m_dataPath.empty()) {
         const std::string fullPath = m_dataPath + "/" + searchPath;
-        std::ifstream file(fullPath, std::ios::binary | std::ios::ate);
-        if (file.is_open()) {
-            const std::streamsize size = file.tellg();
-            file.seekg(0, std::ios::beg);
-            if (size > 0) {
-                out.resize(static_cast<size_t>(size));
-                if (file.read(reinterpret_cast<char*>(out.data()), size)) {
-                    LOGD("Loaded ESM from file: %s (%zu bytes)", fullPath.c_str(), out.size());
-                    return true;
+        struct stat fileStat {};
+        if (::stat(fullPath.c_str(), &fileStat) == 0 && fileStat.st_size > 0) {
+            const long long size = static_cast<long long>(fileStat.st_size);
+            const long long mtime = static_cast<long long>(fileStat.st_mtime);
+            const long long nowMs = steadyMillis();
+
+            if (size == m_rejectedEsmSize && mtime == m_rejectedEsmMtime) {
+                // Already read once and the parser rejected it; the file has not
+                // changed, so re-reading it every second only burns I/O.
+                m_looseEsmPending = true;
+                LOGW("Loose plugin %s was rejected and is unchanged (%lld bytes)",
+                     searchPath.c_str(), size);
+                return false;
+            }
+            if (size != m_looseEsmSize || mtime != m_looseEsmMtime) {
+                m_looseEsmSize = size;
+                m_looseEsmMtime = mtime;
+                m_looseEsmSeenAtMs = nowMs;
+                m_looseEsmPending = true;
+                LOGI("Loose plugin %s is %lld bytes; waiting %lld ms for it to settle",
+                     searchPath.c_str(), size, static_cast<long long>(LOOSE_ESM_STABLE_MS));
+                return false;
+            }
+            if (nowMs - m_looseEsmSeenAtMs < LOOSE_ESM_STABLE_MS) {
+                m_looseEsmPending = true;
+                return false;
+            }
+
+            std::ifstream file(fullPath, std::ios::binary | std::ios::ate);
+            if (file.is_open()) {
+                const std::streamsize fileSize = file.tellg();
+                file.seekg(0, std::ios::beg);
+                if (fileSize > 0) {
+                    out.resize(static_cast<size_t>(fileSize));
+                    if (file.read(reinterpret_cast<char*>(out.data()), fileSize)) {
+                        // The file can still change between stat() and read().
+                        if (out.size() != static_cast<size_t>(size)) {
+                            LOGE("Loose plugin %s changed while reading (%zu of %lld bytes)",
+                                 searchPath.c_str(), out.size(), size);
+                            out.clear();
+                            m_looseEsmSize = -1;   // re-arm the settle wait
+                            m_looseEsmPending = true;
+                            return false;
+                        }
+                        if (!hasTes4Header(out)) {
+                            LOGE("Loose plugin %s is not a TES4 plugin (%zu bytes)",
+                                 searchPath.c_str(), out.size());
+                            out.clear();
+                            m_rejectedEsmSize = size;
+                            m_rejectedEsmMtime = mtime;
+                            return false;
+                        }
+                        LOGD("Loaded ESM from file: %s (%zu bytes)", fullPath.c_str(), out.size());
+                        m_lastReadEsmSize = size;
+                        m_lastReadEsmMtime = mtime;
+                        return true;
+                    }
+                    out.clear();
                 }
-                out.clear();
             }
         }
     }
@@ -221,8 +327,19 @@ bool AssetManager::parseEsmFromMemory(const std::string& esmName,
         return false;
     }
     const bool ok = m_esmManager.loadPluginFromMemory(esmName, data.data(), data.size());
-    if (ok) publishGmstOverrides(m_esmManager);
-    return ok;
+    if (ok) {
+        publishGmstOverrides(m_esmManager);
+        m_rejectedEsmSize = -1;
+        m_rejectedEsmMtime = 0;
+        return true;
+    }
+    // Remember which loose file produced the invalid bytes so the retry loop
+    // does not re-read an unchanged, already-rejected copy every second (#186).
+    if (m_lastReadEsmSize > 0 && static_cast<long long>(data.size()) == m_lastReadEsmSize) {
+        m_rejectedEsmSize = m_lastReadEsmSize;
+        m_rejectedEsmMtime = m_lastReadEsmMtime;
+    }
+    return false;
 }
 
 bool AssetManager::loadEsmFromArchive(const std::string& esmName) {

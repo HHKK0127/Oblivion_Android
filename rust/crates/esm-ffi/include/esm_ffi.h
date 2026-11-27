@@ -173,6 +173,11 @@ size_t esm_plugin_record_count(const EsmPlugin *handle);
 /** Number of GRUP headers traversed. 0 for NULL. */
 size_t esm_plugin_group_count(const EsmPlugin *handle);
 
+/** Bytes past the last indexed record or group that the index does not cover.
+ *  0 means the plugin was walked to EOF; non-zero means truncated/trailing data
+ *  and a loader reading a file that is still being written must not accept it. */
+size_t esm_plugin_unindexed_tail(const EsmPlugin *handle);
+
 /** Number of records whose payload is zlib compressed. 0 for NULL. */
 size_t esm_plugin_compressed_count(const EsmPlugin *handle);
 

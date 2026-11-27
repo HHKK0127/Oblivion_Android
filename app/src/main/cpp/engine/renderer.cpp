@@ -3200,6 +3200,10 @@ void Renderer::loadBSAArchives() {
         LOGI("loadBSAArchives: game data already loaded, skipping");
         return;
     }
+    if (esmParseInFlight_.load(std::memory_order_acquire)) {
+        LOGI("loadBSAArchives: an ESM parse is in flight, skipping");
+        return;
+    }
     // NOTE: gameDataLoaded_ is set only after the ESM has actually been read. A
     // fresh install (`pm clear`) leaves files/data empty, and the Java side can
     // reach this before extraction finishes; marking the load complete up front
@@ -3305,6 +3309,14 @@ void Renderer::loadBSAArchives() {
         LOGI("Loading ESM game data (fallback, no plugins.txt)...");
     std::vector<uint8_t> esmBytes;
     if (!assetManager->extractEsmFromArchive("Oblivion.esm", esmBytes)) {
+        if (assetManager->isLooseEsmPending()) {
+            // The plugin exists but its copy has not settled (or it was rejected
+            // and is unchanged). Not "missing": keep retrying without flipping the
+            // missing-data state, so a copy in progress does not flash the dialog
+            // or lock in the fallback world (#186).
+            LOGI("Oblivion.esm is present but not ready yet (copy in progress) - retrying");
+            return;
+        }
         // No ESM: the data dir is empty or still being populated. Fall back and
         // keep going rather than blocking the GL thread; gameDataLoaded_ stays
         // false so maybeRetryGameDataLoad() retries once the ESM arrives (#161).
@@ -3315,8 +3327,6 @@ void Renderer::loadBSAArchives() {
                 ensureScenarioBuilt();
         return;
     }
-    gameDataLoaded_ = true;
-    gameDataRetryCount_ = 0;
     if (gameDataMissing_) {
         // The world was built from the fallback before the real data arrived.
         // Re-arm the defer gate so the render thread rebuilds the world - and
@@ -3340,9 +3350,16 @@ void Renderer::loadBSAArchives() {
     // time a parse is submitted.
     if (!asyncTaskMgr_.initialize(2)) {
         LOGW("  [--] Async worker pool unavailable, parsing on the render thread");
-        if (assetManager->parseEsmFromMemory("Oblivion.esm", esmBytes)) {
-            LOGI("  [OK] Loaded Oblivion.esm");
+        const bool parsed = assetManager->parseEsmFromMemory("Oblivion.esm", esmBytes);
+        if (parsed) {
+            gameDataLoaded_.store(true, std::memory_order_release);
+            LOGI("  [OK] Loaded Oblivion.esm (accepted esm size=%zu)", esmBytes.size());
             logEsmRecordCounts(assetManager.get());
+        } else {
+            // Truncated or invalid: do not mark the load complete, so the retry
+            // loop keeps going until the file changes (#186).
+            gameDataMissing_ = true;
+            LOGW("  [--] Oblivion.esm rejected (truncated or invalid); will retry");
         }
         gameDataLoadAttempted.store(true, std::memory_order_release);
                 onGameDataLoaded();
@@ -3353,7 +3370,9 @@ void Renderer::loadBSAArchives() {
 
     LOGI("Parsing Oblivion.esm on a worker thread...");
     auto esmBuffer = std::make_shared<std::vector<uint8_t>>(std::move(esmBytes));
+    esmParseInFlight_.store(true, std::memory_order_release);
     asyncTaskMgr_.submitESMParse([this, esmBuffer]() {
+        const size_t acceptedSize = esmBuffer->size();
         const bool ok = assetManager->parseEsmFromMemory("Oblivion.esm", *esmBuffer);
         // Release the plugin buffer as soon as the parse is done: the world build
         // only reads the parsed records.
@@ -3361,13 +3380,19 @@ void Renderer::loadBSAArchives() {
         esmBuffer->shrink_to_fit();
 
         if (ok) {
-            LOGI("  [OK] Loaded Oblivion.esm (async)");
+            // gameDataLoaded_ means "the ESM is in", so it is only set once the
+            // parse succeeded: a truncated plugin parses without error in the
+            // walk, and the tail check inside the parser is what rejects it.
+            gameDataLoaded_.store(true, std::memory_order_release);
+            LOGI("  [OK] Loaded Oblivion.esm (async, accepted esm size=%zu)", acceptedSize);
             logEsmRecordCounts(assetManager.get());
         } else {
-            LOGW("  [--] Oblivion.esm parse failed (will test without ESM data)");
+            gameDataMissing_.store(true, std::memory_order_release);
+            LOGW("  [--] Oblivion.esm rejected (truncated or invalid); will retry");
         }
         // Release: the render thread sees the records and builds the world next frame.
         gameDataLoadAttempted.store(true, std::memory_order_release);
+        esmParseInFlight_.store(false, std::memory_order_release);
 
                 // Hide loading screen on the render thread next frame
                 // (loadingScreen is not thread-safe, so we defer the hide)
@@ -3384,6 +3409,9 @@ void Renderer::maybeRetryGameDataLoad() {
     // attempt would be final. Retry at most once a second, on the render thread,
     // so the BSA reader (not thread safe) is only ever touched from one thread.
     if (gameDataLoaded_ || g_pendingDataPath.empty()) {
+        return;
+    }
+    if (esmParseInFlight_.load(std::memory_order_acquire)) {
         return;
     }
     // Bounded: a machine that never gets game data must not retry forever.
@@ -3488,6 +3516,12 @@ void Renderer::ensureScenarioBuilt() {
         // Load game systems from ESM data (render thread, after ESM parse completes)
         if (gameDataLoadAttempted) {
             onGameDataLoaded();
+        }
+        // Reset the retry budget on the render thread (the worker that parsed must
+        // not write it): a rejected plugin keeps its retries, an accepted one
+        // starts from zero (#186).
+        if (gameDataLoaded_) {
+            gameDataRetryCount_ = 0;
         }
 
         createTestScenario();

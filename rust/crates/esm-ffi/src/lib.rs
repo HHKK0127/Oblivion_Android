@@ -450,6 +450,26 @@ pub unsafe extern "C" fn esm_plugin_group_count(handle: *const EsmPlugin) -> usi
     })
 }
 
+/// Bytes at the end of the buffer that the record index does not cover.
+///
+/// A complete plugin ends exactly where the index ends, so this is 0. Non-zero
+/// means the file was truncated or has trailing data: a loader that reads a file
+/// while it is still being written must not accept the plugin (#186).
+/// 0 for NULL handles.
+///
+/// # Safety
+/// `handle` must be NULL or a live plugin handle.
+#[no_mangle]
+pub unsafe extern "C" fn esm_plugin_unindexed_tail(handle: *const EsmPlugin) -> usize {
+    guard_value(0, || {
+        clear_error();
+        match unsafe { plugin_ref(handle) } {
+            Some(plugin) => plugin.plugin.unindexed_tail,
+            None => 0,
+        }
+    })
+}
+
 /// Number of records whose payload is zlib compressed. 0 for NULL handles.
 ///
 /// # Safety
@@ -1548,6 +1568,7 @@ mod tests {
         unsafe {
             assert_eq!(esm_plugin_record_count(handle), 1_167_016);
             assert_eq!(esm_plugin_group_count(handle), 85_079);
+            assert_eq!(esm_plugin_unindexed_tail(handle), 0);
             assert_eq!(esm_plugin_compressed_count(handle), 41_789);
             assert_eq!(esm_plugin_is_master(handle), 1);
             assert_eq!(esm_plugin_header_size(handle), 744);
