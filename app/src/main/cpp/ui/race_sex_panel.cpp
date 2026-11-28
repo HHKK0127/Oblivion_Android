@@ -710,14 +710,49 @@ void RaceSexPanel::setSelectedRaceIndex(int index) {
 }
 
 void RaceSexPanel::cycleRace(int delta) {
-    // The original's end behaviour (wrap vs clamp) is not measured; clamp
-    // (V-654-3).
-    setSelectedRaceIndex(selected_race_index_ + delta);
+    // The ends wrap, not clamp: the original's race_template_toggle user0 is
+    // ((...) - user4) mod (user5 - user4 + 1) + user4 (V-654-3, XML <mod>).
+    const int count = raceCount();
+    if (count <= 0) {
+        selected_race_index_ = 0;
+        return;
+    }
+    int i = (selected_race_index_ + delta) % count;
+    if (i < 0) i += count;
+    selected_race_index_ = i;
 }
 
 void RaceSexPanel::cycleRaceFromTap(float pane_local_x, float row_width) {
     // spec §10.4: the left half steps back, the right half steps forward.
     cycleRace(pane_local_x >= row_width * 0.5f ? +1 : -1);
+}
+
+void RaceSexPanel::stepToggleFromTap(int id, float pane_local_x, float row_width) {
+    // spec §10.9: the tapped half of the row steps the index; the ends wrap
+    // (same <mod> as the race toggle, V-654-3).
+    Element* e = find_element_mutable(id);
+    if (e == nullptr || e->type != ElemType::Toggle) return;
+    const int span = e->index_max - e->index_min + 1;
+    if (span <= 0) return;
+    const int dir = (pane_local_x >= row_width * 0.5f) ? +1 : -1;
+    int i = (e->index + dir - e->index_min) % span;
+    if (i < 0) i += span;
+    e->index = i + e->index_min;
+}
+
+int RaceSexPanel::toggleIndex(int id) const {
+    const Element* e = find_element(id);
+    return (e != nullptr && e->type == ElemType::Toggle) ? e->index : 0;
+}
+
+void RaceSexPanel::setToggleRange(int id, int index_min, int index_max) {
+    Element* e = find_element_mutable(id);
+    if (e == nullptr || e->type != ElemType::Toggle) return;
+    if (index_max < index_min) index_max = index_min;
+    e->index_min = index_min;
+    e->index_max = index_max;
+    if (e->index < index_min) e->index = index_min;
+    if (e->index > index_max) e->index = index_max;
 }
 
 uint32_t RaceSexPanel::selectedRaceFormID() const {
@@ -740,6 +775,29 @@ const std::string& RaceSexPanel::selectedRaceDescription() const {
 bool RaceSexPanel::raceChanged() const {
     const uint32_t id = selectedRaceFormID();
     return id != 0 && id != current_race_form_id_;
+}
+
+// ---------------------------------------------------------------------------
+// Draw (spec §9.5 / §10.9). The index cyclers read their value from the
+// descriptor, so the widget needs no index copy (#195).
+// ---------------------------------------------------------------------------
+
+void RaceSexPanel::render() {
+    // Generic pass: the panel background and every child widget (including the
+    // toggle boxes). Then the index cyclers draw their arrows/marker on top from
+    // the Element descriptor (211 Race, 214 Style, 215 Hair Color).
+    UIPanel::render();
+    for (const Element& e : elements_) {
+        if (e.type != ElemType::Toggle) continue;
+        if (e.id != RACE_TOGGLE_ID && e.id != STYLE_TOGGLE_ID &&
+            e.id != HAIR_COLOR_TOGGLE_ID) {
+            continue;
+        }
+        if (!e.widget || !e.widget->isVisible()) continue;
+        if (auto* toggle = dynamic_cast<UIToggle*>(e.widget.get())) {
+            toggle->renderIndex(e.index, e.index_max - e.index_min + 1);
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

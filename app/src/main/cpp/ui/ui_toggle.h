@@ -18,6 +18,12 @@ public:
 
     void render() override;
 
+    // Index cycler drawing (spec §10.9): the toggles that step through a list
+    // (211 Race, 214 Style, 215 Hair Color) draw a left arrow, a right arrow and
+    // a position marker. The value lives in the panel's Element descriptor and is
+    // passed in at draw time, so UIToggle keeps no index state (#195).
+    void renderIndex(int index, int count);
+
     void setChecked(bool checked) { checked_ = checked; }
     bool isChecked() const { return checked_; }
     void toggleChecked() { checked_ = !checked_; }

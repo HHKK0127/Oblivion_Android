@@ -164,6 +164,15 @@ public:
         float jump = 0.1f;
         bool checked = false;
 
+        // Index cycler state (spec §10.9): 211 Race, 214 Style, 215 Hair Color
+        // step through a list with the tapped half of the row. This is the single
+        // source of truth — UIToggle keeps no copy (#195). index_min/index_max are
+        // the template's user4/user5 (0..1 by default; #206 supplies the real
+        // range). `checked` stays the bool pair's (204/210) state.
+        int index = 0;
+        int index_min = 0;
+        int index_max = 1;
+
         // Random writes the user3 trait (0xFB1) three times per affected tile
         // (sentinel -> value -> 0.0); the port records the final value and the
         // write count so the host suite can pin "only (Main,Age)/(Main,Complexion)".
@@ -238,8 +247,18 @@ public:
     int raceCount() const { return static_cast<int>(races_.size()); }
     int selectedRaceIndex() const { return selected_race_index_; }
     void setSelectedRaceIndex(int index);  // clamped to [0, count-1]
-    // Left/right of the race toggle: +1/-1, clamped at the ends (V-654-3).
+    // Left/right of the race toggle: +1/-1, wrapping at the ends (V-654-3: the
+    // original's race_template_toggle user0 is ((...) - user4) mod (user5-user4+1)
+    // + user4, i.e. the ends wrap, they do not clamp).
     void cycleRace(int delta);
+    // spec §10.9: step an index-cycler toggle (211/214/215) by the tapped half of
+    // the row; wraps at the ends. The value lives in the Element descriptor.
+    void stepToggleFromTap(int id, float pane_local_x, float row_width);
+    // Current index of an index-cycler toggle (0 for a non-toggle / unknown id).
+    int toggleIndex(int id) const;
+    // spec §10.9 / #206: the index cycler's range (template user4/user5; default
+    // 0..1). #206 supplies the real list sizes; the port keeps 0..1 until then.
+    void setToggleRange(int id, int index_min, int index_max);
     // spec §10.4: the race toggle cycles on the tapped half of its row.
     // pane_local_x is the panel's own (canvas) x; row_width is the row width.
     // Left half = -1, right half = +1 (clamped).
@@ -384,6 +403,10 @@ public:
     float panelOriginY() const;
 
     // --- Layout / draw (spec §9.5) ---
+    // spec §10.9: draw the index cyclers' arrows/marker from the descriptor (the
+    // widget holds no index). Everything else draws through UIPanel::render().
+    void render() override;
+
     // Device-space rectangle. The draw side and hitTestScreen() must share ONE
     // transform (canvas 1280x960 -> device via layoutScale() + race_window
     // origin), or a tap and its pixels drift apart.

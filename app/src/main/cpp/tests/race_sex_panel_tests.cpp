@@ -699,20 +699,20 @@ bool RaceSexPanelTests::runAllTests() {
                    std::string(RaceSexPanel::articleFor("Martin")) == "a" &&
                    std::string(RaceSexPanel::articleFor("")) == "a");
 
-        // (g) race toggle: clamp at both ends, no-op when unchanged.
+        // (g) race toggle: the ends wrap (V-654-3), no-op when unchanged.
         {
             RaceSexPanel p;
             int notifies = 0, confirms = 0, commits = 0;
             bool lastYes = false;
             makePanel(p, notifies, confirms, lastYes, commits);
             p.setSelectedRaceIndex(0);
-            p.cycleRace(-1);  // left end clamps
-            const bool clampLo = (p.selectedRaceIndex() == 0);
+            p.cycleRace(-1);  // left end wraps to the last race
+            const bool wrapLo = (p.selectedRaceIndex() == p.raceCount() - 1);
             p.setSelectedRaceIndex(p.raceCount() - 1);
-            p.cycleRace(+1);  // right end clamps
-            const bool clampHi = (p.selectedRaceIndex() == p.raceCount() - 1);
-            record("race toggle: -1/+1 clamp at the ends", clampLo && clampHi,
-                   "lo=" + std::to_string(clampLo) + " hi=" + std::to_string(clampHi));
+            p.cycleRace(+1);  // right end wraps to the first
+            const bool wrapHi = (p.selectedRaceIndex() == 0);
+            record("race toggle: -1/+1 wrap at the ends", wrapLo && wrapHi,
+                   "lo=" + std::to_string(wrapLo) + " hi=" + std::to_string(wrapHi));
 
             p.setSelectedRaceIndex(0);
             const bool sameNoop = !p.raceChanged();  // 0x100 == current 0x100
@@ -723,7 +723,7 @@ bool RaceSexPanelTests::runAllTests() {
                        p.selectedRaceName() == "Orc");
         }
 
-        // (h) tap halves: left -> -1, right -> +1, clamped at the ends.
+        // (h) tap halves: left -> -1, right -> +1, wrapping at the ends.
         {
             RaceSexPanel p;
             int notifies = 0, confirms = 0, commits = 0;
@@ -733,17 +733,17 @@ bool RaceSexPanelTests::runAllTests() {
             p.setSelectedRaceIndex(1);
             p.cycleRaceFromTap(10.0f, w);       // left half -> -1
             const bool leftDown = (p.selectedRaceIndex() == 0);
-            p.cycleRaceFromTap(10.0f, w);       // left end clamps
-            const bool leftClamp = (p.selectedRaceIndex() == 0);
+            p.cycleRaceFromTap(10.0f, w);       // left end wraps to the last
+            const bool leftWrap = (p.selectedRaceIndex() == 1);
             p.cycleRaceFromTap(w - 1.0f, w);    // right half -> +1
-            const bool rightUp = (p.selectedRaceIndex() == 1);
-            p.cycleRaceFromTap(w - 1.0f, w);    // right end clamps
-            const bool rightClamp = (p.selectedRaceIndex() == 1);
+            const bool rightUp = (p.selectedRaceIndex() == 0);
+            p.cycleRaceFromTap(w - 1.0f, w);    // right end wraps to the first
+            const bool rightWrap = (p.selectedRaceIndex() == 1);
             p.setSelectedRaceIndex(0);
             p.cycleRaceFromTap(w * 0.5f, w);    // midpoint = right half
             const bool midRight = (p.selectedRaceIndex() == 1);
-            record("race tap: left -1 / right +1, clamped",
-                   leftDown && leftClamp && rightUp && rightClamp && midRight,
+            record("race tap: left -1 / right +1, wrapping",
+                   leftDown && leftWrap && rightUp && rightWrap && midRight,
                    "L=" + std::to_string(leftDown) + " R=" + std::to_string(rightUp));
         }
 
@@ -759,6 +759,33 @@ bool RaceSexPanelTests::runAllTests() {
             record("handleClick(211): consumed, no page change, no cycle",
                    consumed && p.currentPage() == Page::PAGE_RACE &&
                        p.selectedRaceIndex() == 0);
+        }
+
+        // (j) index cyclers (214 Style / 215 Hair Color, spec §10.9): the tapped
+        // half steps the descriptor index and the ends wrap; checked never
+        // changes. Widen 0..2 so a mid step is distinguishable from a wrap.
+        {
+            RaceSexPanel p;
+            p.init();
+            const int cyclers[] = {RaceSexPanel::STYLE_TOGGLE_ID,
+                                   RaceSexPanel::HAIR_COLOR_TOGGLE_ID};
+            const float w = 500.0f;
+            bool ok = true;
+            std::string msg;
+            for (int id : cyclers) {
+                p.setToggleRange(id, 0, 2);
+                p.stepToggleFromTap(id, w - 1.0f, w);  // mid: 0 -> 1
+                if (p.toggleIndex(id) != 1) { ok = false; msg += " midUp=" + std::to_string(id); }
+                p.stepToggleFromTap(id, 10.0f, w);     // mid: 1 -> 0
+                if (p.toggleIndex(id) != 0) { ok = false; msg += " midDown=" + std::to_string(id); }
+                p.stepToggleFromTap(id, 10.0f, w);     // min + left wraps to max
+                if (p.toggleIndex(id) != 2) { ok = false; msg += " wrapLo=" + std::to_string(id); }
+                p.stepToggleFromTap(id, w - 1.0f, w);  // max + right wraps to min
+                if (p.toggleIndex(id) != 0) { ok = false; msg += " wrapHi=" + std::to_string(id); }
+                if (p.toggleChecked(id)) { ok = false; msg += " checked=" + std::to_string(id); }
+            }
+            record("index cyclers (214/215): left/right step and wrap, checked unchanged",
+                   ok, msg);
         }
     }
 
