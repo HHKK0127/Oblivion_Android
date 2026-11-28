@@ -8380,14 +8380,21 @@ void Renderer::onTouchEvent(int pointerId, float x, float y, int action) {
         if (action == 0 || action == 5) {
             if (!raceSexPanel->beginScrollDrag(x, y)) {
                 const int id = raceSexPanel->hitTestScreen(x, y);
-                if (id == RaceSexPanel::RACE_TOGGLE_ID) {
-                    // spec §10.4: the panel owns the left/right decision from the
-                    // tapped half of the row.
+                if (id == RaceSexPanel::RACE_TOGGLE_ID ||
+                    id == RaceSexPanel::STYLE_TOGGLE_ID ||
+                    id == RaceSexPanel::HAIR_COLOR_TOGGLE_ID) {
+                    // spec §10.4/§10.9: the panel owns the left/right decision
+                    // from the tapped half of the row. 211 cycles the race; 214
+                    // Style / 215 Hair Color step their index cycler.
                     const float s = raceSexPanel->layoutScale();
                     const float pane_x = (x - raceSexPanel->panelOriginX()) / s;
-                    raceSexPanel->cycleRaceFromTap(
-                        pane_x, static_cast<float>(
-                                    raceSexPanel->paneWidth(raceSexPanel->currentPage())));
+                    const float pane_w = static_cast<float>(
+                        raceSexPanel->paneWidth(raceSexPanel->currentPage()));
+                    if (id == RaceSexPanel::RACE_TOGGLE_ID) {
+                        raceSexPanel->cycleRaceFromTap(pane_x, pane_w);
+                    } else {
+                        raceSexPanel->stepToggleFromTap(id, pane_x, pane_w);
+                    }
                     raceSexPanel->applyLayout();
                 } else if (id >= 0) {
                     // handleClick resets the scroll and fires the layout hook on
