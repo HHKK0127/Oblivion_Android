@@ -18,7 +18,8 @@
 
 - [ ] **#199** #RE: chargen トグル 4 つ（204 Eyes / 210 Gender / 214 Style / 215 HairColor）の ON/OFF の意味を確定する。何を変えるか（trait / モーフ / テクスチャ / 性別）。調べ方: 0xB39440（V-653-1）と同じ手順で 0x5CDF29 系の user0 読み手と HandleClick 0x5CC200 の該当分岐を追う。Eyes の反転実装はこれが無くても書けるが、期待値はこれで埋める。 `#RE` `#V-631-1b` `#chargen`
 
-- [ ] **#198** 【作製・低優先・close】docs/code 不一致④: 旧 pane id 表（v629/v631/v632 の RE ノート。Main=201/Race=210/…/NoseTex=425）は **全 pane が +1 ずれ**（実装・`docs/chargen_ui_spec.md §2`・v634 の 3 者一致が正典。Main だけ arg4=0 即値で counter 非消費＝id=0、その 1 の差が以降に +1 で伝播）。`STATE.md`（3 箇所）と両台帳（`.ai-todo/state/TODO.md` / `TODO.md`）を「旧→新」形式＋訂正マーカー（参照先 `docs/chargen_ui_spec.md §2`、補助 v634）に直した。再発防止に `race_sex_panel_tests.cpp` へ pane_ids_ 全 21 件（Main=0＋20）の期待値固定テストを追加。 `#ai-todo` `#chargen` `#docs-code-gap`
+- [x] **#198** 【作製・低優先・close】docs/code 不一致④: 旧 pane id 表（v629/v631/v632 の RE ノート。Main=201/Race=210/…/NoseTex=425）は **全 pane が +1 ずれ**（実装・`docs/chargen_ui_spec.md §2`・v634 の 3 者一致が正典。Main だけ arg4=0 即値で counter 非消費＝id=0、その 1 の差が以降に +1 で伝播）。`STATE.md`（3 箇所）と両台帳（`.ai-todo/state/TODO.md` / `TODO.md`）を「旧→新」形式＋訂正マーカー（参照先 `docs/chargen_ui_spec.md §2`、補助 v634）に直した。再発防止に `race_sex_panel_tests.cpp` へ pane_ids_ 全 21 件（Main=0＋20）の期待値固定テストを追加。 `#ai-todo` `#chargen` `#docs-code-gap` (2026-11-28)
+  > 2026-11-28 完了。ずれの向き＝『旧表が +1（実装が正しい）』で確定。実装 race_sex_panel.cpp の pane id（Main=0/Race=209/Hair=213/…/NoseTex=424）と docs/chargen_ui_spec.md §2・v634 が 3 者一致。旧表 Main=201 起点が誤り（Main だけ arg4=0 即値で counter 非消費＝id=0、その 1 が全 20 pane に +1 で伝播。例外なし）。修正: ①STATE.md 3 箇所（直接編集）②両台帳 .ai-todo/state/TODO.md と TODO.md の #96 note 4 箇所（直接編集→accept_tamper 1 回→再読確認、2 台帳 IDENTICAL 復帰）③#198 description（modify_task）④tmp/re の v629/v631/v632/TODO_re49 に『旧値を消さず』v634 訂正ポインタ 1 行（値は不変、cd42d980）⑤session-memory.json に新規 1 件（append-only、bb684807）。再発防止は既存テスト『21 pane ids match spec §2』（kPaneId 全 21 件 = Main=0 + 20）が担保、外部契約の旨コメント追加。host ALL GREEN（EXIT=0）。旧値 grep の残りは訂正文脈/誤検出（Race∈Main=201 の 201 は要素 id）/append-only 台帳のみ。
 
 - [ ] **#197** docs/code 不一致③: game/player.h の BASE_MAX_HEALTH=100 と applyRace の maxHealth=BASE_MAX_HEALTH は、確定式 maxHealth(level1)=2×Endurance（Imperial=80/Argonian=60/Nord=100）と矛盾する。V-664-3 で式に置き換える。 `#V-664-3` `#chargen` `#docs-code-gap`
 
@@ -3810,4 +3811,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-28 15:55:51
+**ai-todo** | Last Updated: 2026-11-28 20:36:35
