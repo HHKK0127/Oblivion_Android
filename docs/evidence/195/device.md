@@ -2,8 +2,8 @@
 
 - **日付**: 2026-11-28
 - **端末**: emulator-5554（`sdk_gphone64_x86_64`）
-- **画面**: `wm size` 実出力 = `Physical size: 1920x1200` / `Override size: 1280x960`。`wm density 240`（Physical density 240）。`user_rotation 1` / `accelerometer_rotation 0`。＝ `#204` と同じ変換（`s=0.90625`, origin=(150.625,176.719)）に固定。
-- **APK の鮮度**: `app/build/outputs/apk/debug/app-debug.apk` の mtime = `2026-11-28 22:27:00`（ビルド開始 22:17 より後）。端末 `dumpsys package` の `lastUpdateTime=2026-11-28 13:27:31`（端末 TZ、ホスト 22:27 相当）＝ 導入済みは新ビルド。`BUILD SUCCESSFUL in 9m 55s`（renderer.cpp もコンパイル通過）。
+- **画面**: `wm size` 実出力 = `Physical size: 1920x1200` / `Override size: 1280x960`。`wm density` = `Physical density: 240`。`user_rotation 1` / `accelerometer_rotation 0`。＝ `#204` と同じ変換（`s=0.90625`, origin=(150.625,176.719)）に固定。
+- **APK の鮮度**: `app/build/outputs/apk/debug/app-debug.apk` の mtime = `2026-11-28 22:27:00`（ビルド開始 22:17 より後）。端末 `dumpsys package com.example.oblivion` の `lastUpdateTime=2026-11-28 13:27:31`（端末 TZ、ホスト 22:27 相当）＝ 導入済みは新ビルド。`BUILD SUCCESSFUL in 9m 55s`（renderer.cpp もコンパイル通過）。
 
 ## 手順（座標は device px）
 
