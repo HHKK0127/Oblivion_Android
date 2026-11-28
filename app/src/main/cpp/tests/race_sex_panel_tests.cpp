@@ -186,6 +186,10 @@ bool RaceSexPanelTests::runAllTests() {
     record("118 items built", elements.size() == 118,
            "got " + std::to_string(elements.size()));
 
+    // 21 pane ids (+0x40) are an external contract: RE notes and
+    // docs/chargen_ui_spec.md §2 reference these values, so a refactor that
+    // shifts one must fail here (#198: the old v629 table was +1 for every
+    // non-Main pane because it assumed Main consumed the counter).
     bool paneOk = true;
     std::string paneMsg;
     for (int s = 0; s < RaceSexPanel::PAGE_COUNT; ++s) {

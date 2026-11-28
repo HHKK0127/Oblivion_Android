@@ -18,7 +18,7 @@
 
 - [ ] **#199** #RE: chargen トグル 4 つ（204 Eyes / 210 Gender / 214 Style / 215 HairColor）の ON/OFF の意味を確定する。何を変えるか（trait / モーフ / テクスチャ / 性別）。調べ方: 0xB39440（V-653-1）と同じ手順で 0x5CDF29 系の user0 読み手と HandleClick 0x5CC200 の該当分岐を追う。Eyes の反転実装はこれが無くても書けるが、期待値はこれで埋める。 `#RE` `#V-631-1b` `#chargen`
 
-- [ ] **#198** docs/code 不一致④: .ai-todo/state/TODO.md の v633 ページ id 表（Main=201/Race=210/…/NoseTex=425）は docs/chargen_ui_spec.md §2（Race=209/…/NoseTex=424）と 1 ずれる（v632 §2 で訂正済みの古い表）。座標を間違えるので表を更新する。 `#ai-todo` `#chargen` `#docs-code-gap`
+- [ ] **#198** 【作製・低優先・close】docs/code 不一致④: 旧 pane id 表（v629/v631/v632 の RE ノート。Main=201/Race=210/…/NoseTex=425）は **全 pane が +1 ずれ**（実装・`docs/chargen_ui_spec.md §2`・v634 の 3 者一致が正典。Main だけ arg4=0 即値で counter 非消費＝id=0、その 1 の差が以降に +1 で伝播）。`STATE.md`（3 箇所）と両台帳（`.ai-todo/state/TODO.md` / `TODO.md`）を「旧→新」形式＋訂正マーカー（参照先 `docs/chargen_ui_spec.md §2`、補助 v634）に直した。再発防止に `race_sex_panel_tests.cpp` へ pane_ids_ 全 21 件（Main=0＋20）の期待値固定テストを追加。 `#ai-todo` `#chargen` `#docs-code-gap`
 
 - [ ] **#197** docs/code 不一致③: game/player.h の BASE_MAX_HEALTH=100 と applyRace の maxHealth=BASE_MAX_HEALTH は、確定式 maxHealth(level1)=2×Endurance（Imperial=80/Argonian=60/Nord=100）と矛盾する。V-664-3 で式に置き換える。 `#V-664-3` `#chargen` `#docs-code-gap`
 
@@ -1029,8 +1029,8 @@
   > 7. edi の 3 代入（0x5CA0B3 / 0x5CA0C5 / 0x5CA1C1）のうち最後が 0x5CA1C1 で、21 呼出（0x5CA448..0x5CBB21）はすべてその後 → 全 21 サイト同一 edi（3 群に割れない）。
   > ■ (2) V-628-1b: counter simulation による pane id 確定 [部分確定]
   > - arg4 = player[0xE8] は全サイト同値。+0x94 表は id を索引にするため同値だと衝突する → player[0xE8] == -1（自動採番）でなければならない（-1 は実行時値のため推定）。
-  > - builder 線形 simulation（counter 初期 200、増分 §1(4)）で pane id:
-  > Main=201 / Race=210 / Hair=214 / Face=225 / Shape=230 / Tone=240 / GeneralFace=247 / Brow=258 / Cheeks=265 / Chin=276 / Eyes=291 / Forehead=300 / Jaw=307 / Mouth=316 / Nose=337 / GeneralSkin=366 / Beard=377 / EyesTex=390 / Eyebrows=403 / MouthLips=418 / NoseTex=425
+  > - builder 線形 simulation（counter 初期 200、増分 §1(4)）で pane id（**訂正: 本表の旧値は Main が counter を 1 消費すると仮定した誤り。実物は Main だけ arg4=0 即値で counter 非消費＝id=0。旧表は全 pane が +1 ずれ。正値は docs/chargen_ui_spec.md §2 と実装、補助 v634。以下 旧→新**）:
+  > Main 201→0 / Race 210→209 / Hair 214→213 / Face 225→224 / Shape 230→229 / Tone 240→239 / GeneralFace 247→246 / Brow 258→257 / Cheeks 265→264 / Chin 276→275 / Eyes 291→290 / Forehead 300→299 / Jaw 307→306 / Mouth 316→315 / Nose 337→336 / GeneralSkin 366→365 / Beard 377→376 / EyesTex 390→389 / Eyebrows 403→402 / MouthLips 418→417 / NoseTex 425→424
   > - counter 使用者 call 総数 = 139 = 既知の 139 generator（Pane21+Slider90+Button22+Toggle5+Text1）と一致。final counter = 429。
   > ■ 残点
   > - V-629-1（player[0xE8] == -1 の実行時裏取り・runtime 依存）→ V-626-2（menu+0x94 の読み手）→ V-626-3（item builder と template）。
@@ -1090,7 +1090,7 @@
   > - → id→pane 解決は 0xB13970(g_TileMenuArray)/GetTileMenu/by-name に一本化。V-625-3 はその形に書き直す。
   > ■ (6) pane 別クラス内訳 [部分確定]
   > - クラス写像（推定）: slider=0x5C93F0 / button=0x5C4480 / toggle=0x5C4630 / text=0x5C4800。
-  > - Main(201)=0/0/0/0、Race(210)=2/3/1/0、Hair(214)=0/0/2/1、Face(225)=4/0/2/0、Shape(230)=0/4/0/0、Tone(240)=0/9/0/0、GeneralFace(247)=0/6/0/0、Brow(258)=5/0/0/0、Cheeks(265)=3/0/0/0、Chin(276)=5/0/0/0、Eyes(291)=7/0/0/0、Forehead(300)=4/0/0/0、Jaw(307)=3/0/0/0、Mouth(316)=4/0/0/0、Nose(337)=10/0/0/0、GeneralSkin(366)=14/0/0/0、Beard(377)=5/0/0/0、EyesTex(390)=6/0/0/0、Eyebrows(403)=6/0/0/0、MouthLips(418)=7/0/0/0、NoseTex(425)=3/0/0/0。
+  > - Main(201→0)=0/0/0/0、Race(210→209)=2/3/1/0、Hair(214→213)=0/0/2/1、Face(225→224)=4/0/2/0、Shape(230→229)=0/4/0/0、Tone(240→239)=0/9/0/0、GeneralFace(247→246)=0/6/0/0、Brow(258→257)=5/0/0/0、Cheeks(265→264)=3/0/0/0、Chin(276→275)=5/0/0/0、Eyes(291→290)=7/0/0/0、Forehead(300→299)=4/0/0/0、Jaw(307→306)=3/0/0/0、Mouth(316→315)=4/0/0/0、Nose(337→336)=10/0/0/0、GeneralSkin(366→365)=14/0/0/0、Beard(377→376)=5/0/0/0、EyesTex(390→389)=6/0/0/0、Eyebrows(403→402)=6/0/0/0、MouthLips(418→417)=7/0/0/0、NoseTex(425→424)=3/0/0/0。（**訂正: 旧値→新値。理由は上記 pane id 節。正値は docs/chargen_ui_spec.md §2 と実装**）
   > - 差分検算（例 Race: 210-201=9=1+2*2+3+1）✓。
   > - 実装単位列の充填は race_sex_panel 未作成のため保留（V-631-1）。リポジトリの UI は app/src/main/cpp/ui/*.cpp（race_sex_panel は未作成）。
   > ■ その他
@@ -3787,11 +3787,6 @@
 
 ---
 
-## Task Metadata
-
-Task relationships and dependencies (managed by todo.ai tool).
-View with: `./todo.ai show <task-id>`
-
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3815,4 +3810,4 @@ View with: `./todo.ai show <task-id>`
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-28 05:29:16
+**ai-todo** | Last Updated: 2026-11-28 15:55:51
