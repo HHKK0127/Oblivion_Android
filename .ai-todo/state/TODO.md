@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#206** #RE: 214 Style / 215 Hair Color の min/max 供給元（Style のメッシュ数・Hair Color の色数）と適用先（[+0x870] / [+0x88C] / [+0x8F0]）を確定する。v635 で index 巡回（wrap）と確定済みだが、範囲の実値と適用先は未確定（V-635-1）。ESM に無い可能性が高く BSA 側の調査になる。#199 とは独立（混ぜると膨らむ）。 `#RE` `#V-635-1` `#chargen`
+
 - [ ] **#205** 【作製・低優先・既存穴（非退行）】chargen::commit の race 適用ガード `npcMgr && player.raceFormID` により、race を未選択（raceFormID=0）に戻すと applyRaceToPlayer が走らず、**前の race の属性/skill/spell が残る**。#204 の変更前から同じ挙動なので退行ではない。race を「無し」に戻す操作が入るなら、resetAttributes()/resetSkills() へ戻す経路が要る。V-664-2 の続き or #202 周辺。今は直さない。 `#V-664-2` `#chargen`
 
 - [ ] **#204** 【作製・高優先】V-664-2 の Player 適用段: race の ATTR 属性を Player に適用する（#196 でレイアウト確定済み）。触る: (a) game/player.cpp の applyRace — resetAttributes() の後、race->attr(kX, gender) を attributes の各フィールドへ**代入**（加算しない）。ATTR の無い race は 40 のまま。(b) game/player.h — BASE_ATTRIBUTE のコメントを『race 不在/ATTR 無しのフォールバック』に限定（値 40 は不変）。(c) host テスト — 男女で全 8 値が異なる合成 race を通し applyRace 後に 8 フィールドが ATTR 値になること、ATTR 無しでは 40 のままであること。触らない: renderer.*（Legacy renderer.cpp:942-944 は既に代入で正しい）/ chargen_commit.* / npc_manager.cpp / health（V-664-3・#200 待ち）。制約: smoke JSON は player.attributes を読むので blocking golden が動く。再採取は linux-gnu のみ。実機確認も要る。前提: #203（base か bonus かの裁定）を先に確定する。 `#V-664-2` `#chargen` `#golden` `#player`
@@ -12,7 +14,8 @@
 
 - [ ] **#202** 【作製・中優先】NpcManager::initializePlayerFromESM は呼び出し元 0 件の死コード（grep は定義とログのみ）。書き込み先は NPC::status.attributes（std::unordered_map<string,float>）で、Player の attributes 構造体には届かない。chargen の race 適用は現状 Player::applyRace（skill/spell のみ）が担当。#196 でこの関数に ATTR 8 属性の対応表を入れたが呼ばれないので挙動には出ない。掃除するか、Player 経路へ統合するかを決める（V-664-2 の Player 適用段と併せて）。 `#V-664-2` `#chargen` `#deadcode`
 
-- [ ] **#201** #RE: 214 Style / 215 HairColor の扱いを確定する（bool 反転か index 巡回か）。docs/chargen_ui_spec.md §10 に 214/215 の記述は無く、巡回の記述は 211 Race のみ（§10.4「1 個のトグルで race を巡回選択」）。claims.md の「214/215 は index 巡回」は実装の無い仕様記述なので、決め打ちすると bool だった場合に逆の実装を積む。調べ方: 0xB39440 と同じ手順で 0x5CDF29 系の user0 読み手と、Race トグルの左右子（race_template_toggle_left/_right）に相当する子が 214/215 にあるかを XML と命令の両方で確認する。#199（トグルの ON/OFF の意味）と対。 `#214` `#215` `#RE` `#V-631-1b` `#chargen`
+- [x] **#201** #RE: 214 Style / 215 HairColor の扱いを確定する（bool 反転か index 巡回か）。docs/chargen_ui_spec.md §10 に 214/215 の記述は無く、巡回の記述は 211 Race のみ（§10.4「1 個のトグルで race を巡回選択」）。claims.md の「214/215 は index 巡回」は実装の無い仕様記述なので、決め打ちすると bool だった場合に逆の実装を積む。調べ方: 0xB39440 と同じ手順で 0x5CDF29 系の user0 読み手と、Race トグルの左右子（race_template_toggle_left/_right）に相当する子が 214/215 にあるかを XML と命令の両方で確認する。#199（トグルの ON/OFF の意味）と対。 `#214` `#215` `#RE` `#V-631-1b` `#chargen` (2026-11-28)
+  > 裁定完了（v635 / 2026-11-28）。214/215 は bool 反転ではなく index 巡回（wrap）。決定打: Hair Color 適用 FUN_005c5f00 が user0 を [actor+0x8F0+idx*4] の添字に使う（bool では不成立）。XML race_template_toggle の user0 が <mod> で wrap（既定 user4=0/user5=1 のときだけ見かけ上 bool）。通知 dispatch FUN_005CC200 の 28 ブロックに 214/215 の行は 0 件（Hair は Red/Green/Blue/Length のみ）。Style=214 / HairColor=215（builder 生成順）。反映: tmp/re/v635_style_haircolor_ruling.md（新規）/ spec §10.9 追加 / §8 V-654-3 close（clamp→wrap に訂正）/ claims.md L54。次: #195 本体（UIToggle の index 化）。
 
 - [ ] **#200** #RE: health の定数確認 — Original Oblivion の health 式は maxHealth(level1)=2×Endurance（UESP で確定）だが、exe の係数（fHealth… 系）を命令で確認する。V-664-3 の実装前に必要（係数を推測で焼かない）。 `#RE` `#V-664-3` `#chargen`
 
@@ -26,7 +29,7 @@
 - [x] **#196** docs/code 不一致②: assets/esm_reader.h:702-709 の RaceData は attr を 7 個の uint8_t（Luck 無し・性別無し）で持つが、実測 ATTR は 16B = 男性 8 u8 + 女性 8 u8（順序 Str,Int,Wil,Agi,Spd,End,Per,Luck。Argonian/Imperial で UESP と完全一致）。V-664-2 で形を合わせる。 `#V-664-2` `#chargen` `#docs-code-gap` (2026-11-28)
   > 実装完了 commit 071b34e1（コード 7 ファイル）+ 33f84f36（STATE.md）。ATTR 16B を RaceData.attrMale/attrFemale[8] + attr(AttrIndex, bool female) で表現、decodeRace が populate（16B 未満は全体無視）、initializePlayerFromESM を {AttrIndex, 名前} 対応表 8 行（Luck 追加）に。host RaceDecodeTests 29/29・ALL GREEN。証拠はユニットテストのみ（呼び出し元 0 件の死コードのため実機/ golden 証拠なし）。
 
-- [ ] **#195** docs/code 不一致①: ui/race_sex_panel.cpp:438-441 のコメントが「A toggle's value flip ... is the widget's own responsibility」と言うが、UIToggle::toggleChecked() の呼び出し元はテストのみ（renderer も panel も呼ばない）。コメントを信じた人が実装しないので、コメント修正か実装のどちらかに決める（V-631-1b の実体）。 `#V-631-1b` `#chargen` `#docs-code-gap`
+- [ ] **#195** UIToggle の index 巡回を実装する（本体）。race_sex_panel.cpp:399-406 のコメント（index cyclers = 211/214/215、bool は 204/210）は v635 の裁定と一致＝正しいので残す。実装側が無いのが問題。UIToggle は bool checked_ のみ・左右ヒット領域なし・add_toggle は左右の子を生成しないので構造変更から。作業: ①UIToggle に index 状態・左右クリック・wrap を追加（min/max は当面 0/1 固定＝テンプレ既定）②211 Race の端を clamp→wrap に直す（V-654-3 close）。適用先 [+0x870]/[+0x88C]/[+0x8F0] と min/max 供給は別チケット（V-635-1）。 `#V-631-1b` `#chargen` `#docs-code-gap`
 
 - [ ] **#194** fix(renderer): chargen の描画順 — タイトル画面分岐（renderer.cpp:5151）は message box を chargen パネルより先に描くため、New Game 処理フレームの 1 フレームだけダイアログがパネルの下に隠れる。message box を chargen の後に描けば SETTLE の安定待ち自体が不要になる（#186 の本体修正。golden 側の対症＝安定待ちは newgame.sh で実装済み）。 `#186` `#chargen` `#renderer`
 
@@ -3811,4 +3814,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-28 20:36:35
+**ai-todo** | Last Updated: 2026-11-28 21:45:26
