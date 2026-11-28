@@ -641,6 +641,9 @@ K2=1（`0x0165` SaveIniFiles `call edx`×3）、K3=0、K4=11（call なしへの
   - **(3) [未確定] V-628-1**: arg4 が 21 サイトで同値となり pane ごとの id と矛盾 → **symbolic stack simulation** が必要。推測で埋めない。
   - **(4) [確定(命令)] 副産物**: item builder `0x5C93F0` は `ret 0x18`=6 引数・item index を `push imm`(0..0x36)・**counter `0xB3B5D4` を +2**。counter は pane +1 / item +2、リセット `0x5C4F3C`(200)。
   - 残点 **V-628-1 / V-626-2 / V-626-3**。
+> 訂正(v634): 以下の pane id 表は全 pane が +1 ずれ（Main は counter 非消費で 0）。
+> 正値は docs/chargen_ui_spec.md §2 と tmp/re/v634_pane_names_global_ruling.md。
+
 - [x] U32【high・#96】**V-628-1 決着: `0x5C4340` 本体読み（a）と counter simulation による pane id 確定（b）**。
   - **完了 (2026-11-21, v629)**: 成果物 `tmp/re/v629_v628_1_pane_id_ruling.md`。台帳 **row605**・`round_verify` **ALL OK（rows 31..605 / total 491 / done 485 / open 6）**。
   - **(1) [確定(命令)] V-628-1a**: extent `0x5C4340..0x5C4471`。本体全域で実使用は **arg1=`[esp+0x34]`（parent）と arg4=`[esp+0x40]`（id）のみ**、**arg3/arg5 は未使用**。arg4 は **`this+0x94` の索引**に届く。`0xB3B5D4` は 5 関数共有（pane +1 / item +2）。リセット `0x5C4F3C` は `FUN_005c4e40`。`edi` の最後の代入 `0x5CA1C1` が全 21 呼出の前。

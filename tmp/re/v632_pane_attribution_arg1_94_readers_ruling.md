@@ -23,6 +23,9 @@ text   0x5CA60B: mov eax,[esi+0x44]; push eax; mov ecx,esi; call 0x5C4800
 
 **pane X に、その直後に生成された item を帰属**（サイト実アドレスで計数）:
 
+> 訂正(v634): 以下の pane id 表は全 pane が +1 ずれ（Main は counter 非消費で 0）。
+> 正値は docs/chargen_ui_spec.md §2 と tmp/re/v634_pane_names_global_ruling.md。
+
 | pane | id | slider | button | toggle | text |
 |---|---|---|---|---|---|
 | **Main** | 201 | **2** | **3** | **1** | 0 |

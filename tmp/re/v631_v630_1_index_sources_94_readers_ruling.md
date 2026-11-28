@@ -69,6 +69,9 @@
 
 クラス写像（関数→種別）: slider=`0x5C93F0` / button=`0x5C4480` / toggle=`0x5C4630` / text=`0x5C4800`（推定）。
 
+> 訂正(v634): 以下の pane id 表は全 pane が +1 ずれ（Main は counter 非消費で 0）。
+> 正値は docs/chargen_ui_spec.md §2 と tmp/re/v634_pane_names_global_ruling.md。
+
 | pane | id | slider | button | toggle | text |
 |---|---|---|---|---|---|
 | Main | 201 | 0 | 0 | 0 | 0 |

@@ -70,6 +70,9 @@
 
 builder を線形 simulation（counter 初期 200、増分 §1(4)）:
 
+> 訂正(v634): 以下の pane id 表は全 pane が +1 ずれ（Main は counter 非消費で 0）。
+> 正値は docs/chargen_ui_spec.md §2 と tmp/re/v634_pane_names_global_ruling.md。
+
 | pane | id | pane | id |
 |---|---|---|---|
 | Main | **201** | Forehead | 300 |
