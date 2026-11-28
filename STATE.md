@@ -2,6 +2,16 @@
 
 Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
 
+## 2026-11-28 — #195 実機確認（Hair 214/215・Race 211）＋ 台帳 close 3 件
+
+- **実機（emulator-5554 / `wm 1280x960` / density 240 / rotation 1）**: APK 再ビルド（`BUILD SUCCESSFUL in 9m 55s`、mtime 22:27:00、端末 `lastUpdateTime` 13:27:31＝ホスト 22:27 相当）。証拠 `docs/evidence/195/`。
+  - **Hair**: 214 のマーカーが左→右で **0→1→0**（画素実測 (127,250)↔(251,374)）、215 は独立。`UIToggle::renderIndex` が効いた。
+  - **Race(211)**: 先頭で左タップ → 説明文が **Argonian→Imperial**（末尾へ wrap）。
+- **未確認/残（申し送り）**: ①**211 のマーカーが動かない**（`render()` は `Element.index` を使うが 211 の index は `selected_race_index_`。修正案: `RACE_TOGGLE_ID` だけ `selected_race_index_`/`raceCount()` を使う 2 行）。②**toggle widget の描画矩形が item 矩形と不一致**（実測 w≈301/x≈100 vs item 453/150.6。タップ判定は item 矩形側で正しく動く）。どちらも #195 追加 or 別チケット。
+- **台帳（1 件ずつ証拠で）**: **#204 close**（landing f049ceee/9c2dcb4a/d2c7f271・実機 Nord end 50→40→50、限界は host のみ）／**#203 close**（裁定は #204/#202 で実現、close 条件を note）／**#194 close**（d7d90212・golden 0/576）／**#202 open のまま**（死コード掃除未着手）／**#192 は #193 と本文完全同一＝重複**（同一 commit cc556a80、close は判断待ち）。
+- **規範追記**: `~/.config/opencode/AGENTS.md` の台帳節に「landing したらその場で close、報告だけにしない。裁定は実装先が別なら close 条件を note に書く」を 1 行追加。
+- **TODO 表示の一本化**: `opencode.jsonc` の plugins から `opencode-todolist` を外し ai-todo サイドバーだけに（backup `opencode.jsonc.bak-todolist-off-20261128-223352`）。副作用で `todowrite`/`todoread` も消えた（以後 ai-todo のみ。`AGENTS.md` L69 のフォールバック記述は要更新）。
+
 ## 2026-11-28 — #201 裁定（214/215 = index 巡回 wrap）＋ #195 本体実装（UIToggle index）
 
 - **裁定（v635 / #201 close）**: 214 Style / 215 Hair Color は **bool 反転ではなく index 巡回（wrap）**。決定打は Hair Color 適用 `FUN_005c5f00` が `user0` を `[actor+0x8F0+idx*4]` の添字に使うこと（bool では不成立）。XML `race_template_toggle.user0` が `<mod>` で端は wrap（既定 `user4=0`/`user5=1` のときだけ見かけ上 bool）。通知 dispatch `FUN_005CC200` の 28 ブロックに 214/215 の行は 0 件。要素名は GameSetting `0xB38FB8`(sStyle)/`0xB39330`(sHairColor)。**`V-654-3` close（clamp→wrap に訂正）**。
