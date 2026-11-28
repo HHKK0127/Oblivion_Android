@@ -246,7 +246,7 @@ arg1 == 98  → 0x5CCBF4: [0xB333C4].vtable[0x170]() → 0x526F00（リスト操
 | V-653-3 | 名前検証の成功/失敗時のダイアログ文言と `0x5C2BA0` callback の動作（§10.3） | `[未確定]` |
 | V-654-1 | **close**。port に race 受け皿あり（一覧 `ESMManager::getAllRaces()` ＋ playable フィルタ `(flags & 1u)`、適用 `NpcManager::initializePlayerFromESM()` ＋ `Player::raceFormID`）。§10.5 | `[確定(データ)]` |
 | V-654-2 | 確認文の冠詞（`[0xB38660]`/`[0xB38668]` = "a"/"an"）の判定ロジックは**未計測**。当面「先頭が母音なら an、他は a」の簡易規則 | `[未確定]` |
-| V-654-3 | race トグルの端挙動（wrap か clamp か）は**未計測**。当面 clamp | `[未確定]` |
+| V-654-3 | **close（v635）**。race トグル（template 102）の端挙動は **wrap**。XML `user0` の式が `<mod>`（`race_sex_menu.xml` L417-430）＝ clamp する要素が無い。**実装の `clamp` は原作とずれ**（`cycleRace`→`setSelectedRaceIndex`。`#195` 本体で wrap に直す） | `[確定(XML)]` |
 | V-654-4 | **一部 close（v664）**。`Player` への race 適用は **属性（RACE `ATTR`）＋ skill bonus（RACE DATA）＋ racial spell（SPLO）を実装**（`Player::applyRace`、§10.8）。**残**: health（`V-664-3`）・mesh/morph（未適用）。`NpcManager::initializePlayerFromESM` は `NPC&` を取り `Player` は別 struct のため、`applyRaceToPlayer` を新設 | `[部分確定]` |
 | V-660-A1 | **close（v663）**。Reset の既定値＝**raw 0**。`0x521E40` は `0x5538D0`（`[0xb39b80]+8`）→ `0x5528F0(src=テンプレート, dest=actor)` → `0x552880`（3 群 50/30/50 = **130** を `0.0`）の順で、**actor のモーフ値は最終的に 0.0**。対象は**全モーフ（カレントページ非依存）**。`-2.0` は Reset 経路に無い | `[確定(命令)]` |
 | V-660-A2 | **close（v663）**。乱数源＝**CRT `rand()`**（`0x9859DD`、MSVC LCG `*0x343fd+0x269ec3, (>>16)&0x7fff`、[0,32767]）、`0x47DF80` 経由。raw=`rand()/32767*50+15`∈**[15,65]**（`0x5273A0` で clamp）、`value=(raw-15)/50`∈[0,1]。`user3`(0xFB1) は (Main,Age)/(Main,Complexion) へ 3 連書き（sentinel/値/0.0、最終 0.0） | `[確定(命令)]` |
@@ -470,7 +470,7 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 
 - **race を選ぶのは Race トグル（id 211）**: `race_template_toggle` は `user4`=min index / `user5`=max index / `user0`=current index / `user6`=現在の文字列（コードが index から設定）。左右の子（`race_template_toggle_left`/`_right`）が index を増減する＝**リストではなく 1 個のトグルで race を巡回選択**する。`user1`=開始値（ビルド時の値）。
 - **クリック処理**: FAMILY は `(Race, Gender)` の 1 組だけ（Gender トグル、target `-1`＝ページ切替なし＝finalize 直行）。**Race トグルは FAMILY に無い** → 本体クリックはページ遷移ではなく、左右の子ボタンによる **値変更（race index）** として扱われる。選択結果は commit 時に読む。
-  - **実装（row656）**: クリック x がトグル幅の**左半分なら index-1、右半分なら +1**。端は **clamp**（wrap か未計測／`V-654-3`）。変化時に `applyLayout()` が race トグル label（`user6` 相当）と説明 text を更新。
+  - **実装（row656）**: クリック x がトグル幅の**左半分なら index-1、右半分なら +1**。端は **wrap**（`V-654-3` close／v635。XML `user0` が `<mod>`。**現行実装は `clamp` で原作とずれ**＝`#195` 本体で修正）。変化時に `applyLayout()` が race トグル label（`user6` 相当）と説明 text を更新。
 - **text の文字列源**: `Race Description`（`race_template_text` の `<string>` をコードが設定）。race **名**はトグルの `user6`（index から引く）で、text は説明文。
 
 **race 一覧の実体（item 2 の核心）** `[確定(命令)]`:
@@ -530,4 +530,17 @@ Race ページ（pane id 209 / slot `+0x44`）は **2 toggle + 1 text**（§2 �
 - **条件** `[方針]`: **race が変わったときだけ**（`raceChanged()`、原作 `0x51C090` no-op ガード）。同一 race の再適用は revert のため二重加算しない（host テストで固定）。
 - **RACE DATA skill bonus** `[確定(データ)]`: `DATA`（36B）byte0..13 = `7 × (int8 skillAV, int8 bonus)`（AV 0x0C..0x20、`0xFF`=未使用）。実測が既知値と一致（Redguard = Athletics/Blade/Blunt +10、HeavyArmor/LightArmor/Mercantile +5）。
 - **未配線** `[未確定]`: health（RACE に starting-health フィールドが無い＝`V-664-3`）と真の base 値（30 か 40 か）。属性（`V-664-2`）は配線済み。`Player::RaceBonus` は属性（`hasAttr`＋`attrs[8]`、性別選択済み）／skillBonuses／spells を運ぶ。
+
+### 10.9 Hair ページの toggle 214 Style / 215 Hair Color（v635 / ai-todo #201）`[確定(XML+命令)]`
+
+詳細: `tmp/re/v635_style_haircolor_ruling.md`（Ghidra 12.1.4 + GhidraMCP、base `0x00400000`、`0x5C4340` のベース一致確認済み）。
+
+- **214/215 は bool 反転ではなく index 巡回（wrap）** `[確定(XML)]`。`race_template_toggle`（template 102）の `user0`（current index）は XML の式で決まる:
+  `user0 = ((clicked − left.clicked + right.clicked + user3) − user4) mod (user5 − user4 + 1) + user4`（`race_sex_menu.xml` L417-430）。左右の子が ±1、端は **`<mod>` による wrap**。既定 `user4=0`/`user5=1` のときだけ見かけ上 bool になる（`user1`=開始値、`user6`=コードが index から設定する現在文字列）。
+- **通知 dispatch に 214/215 の行は無い** `[確定(命令)(negative)]`。`FUN_005CC200` の 28 ブロックで Hair に対応するのは 4 Red / 5 Green / 6 Blue / 7 Length のみ。クリックはメニュー側ハンドラに行かず、値変更は widget 側で完結（Race(211) と同じ構図）。
+- **要素名は GameSetting 実体** `[確定(命令)]`: `0xB38FB8`(`sStyle`="Style") / `0xB39330`(`sHairColor`="Hair Color"、文字列 `0xA638D8`)。毎 tick の `FUN_005cdef0` が `PUSH 0xFAE`(user0) を 12 回読み、**Style は int のまま `[+0x870]`、Hair Color は int のまま `[+0x88C]`** へキャッシュする（bool に正規化されるのは Gender だけ）。
+- **決定打** `[確定(命令)]`: Hair Color 適用 `FUN_005c5f00` が `user0` を **`[actor+0x8F0 + idx*4]` の添字**に使う（色テーブルの選択）。bool では成立しない。Style 適用 `FUN_005c5b00` も int のまま `[+0x870]` と比較する。
+- **min/max はコードが供給** `[確定(命令)]`: `FUN_005c7ba0` に `PUSH 0xFB2`(user4) / `PUSH 0xFB3`(user5) があり、`sStyle`/`sHairColor` を参照する＝ Race トグル（§10.4）と同じく件数が入る。
+- **id 順** `[確定(命令)]`: builder `FUN_005ca010` の生成順で **Style=214 / Hair Color=215**（`0x5CA652` が先）。port `race_sex_panel.cpp:148-149` と一致。
+- **port の受け皿は無い** `[確定(データ)]`: `UIToggle` は `bool checked_` のみ（左右ヒット領域も index も持たない）。`add_toggle` は左右の子を生成しない。適用先（`[+0x870]`/`[+0x88C]`/`[+0x8F0]`）に相当する構造体も無い。→ `#195` 本体（`UIToggle` の index 化・wrap）＋ min/max 供給と適用先（別チケット）。
 
