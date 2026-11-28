@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastUpdated": "2026-11-24T01:40:00Z",
+  "lastUpdated": "2026-11-28T00:00:00Z",
   "entries": [
     {
       "timestamp": "2026-10-19T15:00:00Z",
@@ -16071,14 +16071,30 @@
         "row651"
       ],
       "content": "2026-11-23（ai-todo #96・実装 lane 完了）＝RaceSexPanel の widget 化（row650）と chargen 配線（row651）を完了。row650: Element を descriptor（id/user0_id/type/label/page_slot/value/min/max/step/jump/checked/widget）に拡張し、widget 化は device-only の RaceSexPanel::instantiate(TextRenderer*)（race_sex_panel_instantiator.cpp）に分離（Button→UIButton, Text→MenuTextComponent, Toggle→UIToggle, Slider→UISlider）。新規 UISlider/UISlider::stepValue/UIToggle。CMake と host SOURCES に登録。add_* シグネチャ不変＝パリティスクリプト無変更。commit 8396bacd/6f30d87c。row651: RaceSexPanel::handleClick(arg1) を実装（arg1==90=chain §6.2、他=family §6.3、current_page_ は Main 初期化、Done=arg1==90&&Main で onDone_）。renderer は showCharacterCreation を enum class ChargenUi{None,Legacy,Panel} に置換し全ゲートを isChargenUiActive()/isLegacyChargenActive()/isPanelChargenActive() に統一（二重 active を構造で防止）。raceSexPanel は textRenderer の直後に宣言（破棄順で panel 先）。console コマンド chargenpanel で Legacy<->Panel を切替（既定 Legacy＝Panel は到達可能な dev トグル）。Done 出口は setOnDone→setChargenUi(None)。touch は Panel 中 handleClick(90)（layout/hit-test は未実装＝次段）。commit 4ab88931/9e28f676（後者は UIComponent に clearChildren が無く removeChild へ訂正）。検証: host RaceSexPanelTests 18/18（118 item/21 pane id/ページ別/chain 19/family 28/handleClick 4/UISlider 2/UIToggle 1/descriptor state）、CI 緑（run 45138087600、Build debug APK + Native C++ host tests とも success）。台帳 row650/651 done（open 8→6）。"
+    },
+    {
+      "id": "opencode-pane-id-offset-correction-20261128",
+      "timestamp": "2026-11-28T00:00:00Z",
+      "priority": "high",
+      "category": "reference",
+      "tags": [
+        "oblivion",
+        "chargen",
+        "racesexmenu",
+        "pane-id",
+        "ai-todo",
+        "198",
+        "v634"
+      ],
+      "content": "2026-11-28（ai-todo #198・訂正）＝v629/v631/v632 の pane id 表は Main=201 起点で全 +1 ずれ。正値は Main=0 / Race=209 / Hair=213 / … / NoseTex=424（実装・docs/chargen_ui_spec.md §2・v634 の 3 者一致）。理由は Main だけ arg4=0 即値で counter 非消費（id=0）のため。"
     }
   ],
   "metadata": {
-    "totalEntries": 1079,
+    "totalEntries": 1080,
     "compressedCount": 123,
     "sessionCount": 43,
-    "lastUpdated": "2026-11-24T01:40:00Z",
-    "entry_count": 1079,
-    "last_updated": "2026-11-24T01:40:00Z"
+    "lastUpdated": "2026-11-28T00:00:00Z",
+    "entry_count": 1080,
+    "last_updated": "2026-11-28T00:00:00Z"
   }
 }
