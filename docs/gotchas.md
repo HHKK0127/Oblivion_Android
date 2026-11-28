@@ -173,3 +173,22 @@ AGENTS.md の Learnings（振る舞い）とは別。ここは**ドメイン知�
   tools/host_tests/run_host_tests.sh` → `HOST RUNNER: ALL GREEN (0 suite(s) failed)`
   （2026-11-27 実測。`rust/target/gnu/x86_64-pc-windows-gnu/release/lib*_ffi.a` は
   6 本そろっている）。C++ のホストテストは手元で回せる。
+
+## 13. host テストの `OBLIVION_RUST_DIR` 既定は古い兄弟チェックアウトを指す
+
+- **症状**: host ビルドが
+  `app/src/main/cpp/assets/esm_reader.cpp(233): error C3861: 'esm_plugin_unindexed_tail'
+  識別子が見つかりませんでした`（同 2876 行も）で落ちる（2026-11-28 実測、MSVC ランナー）。
+- **原因**: `tools/host_tests/run_host_tests_msvc.ps1:127`（および `run_host_tests.sh`
+  の `RUST_DIR` ブロック）の既定が `Join-Path (Split-Path $repoRoot -Parent)
+  'oblivion-re-tools'` ＝ **兄弟チェックアウト**。Rust は 2026-11-09 に repo 内
+  `rust/` へ vendored され、兄弟側は更新が止まっている。`esm_plugin_unindexed_tail`
+  は vendored の `rust/crates/esm-ffi` にしか無い。**Android ビルド（CMakeLists）は
+  既に `${CMAKE_CURRENT_SOURCE_DIR}/../../../../rust` を既定にしているので、罠は
+  host テストランナーだけ**（`run_host_tests.sh` / `run_host_tests_msvc.ps1`）。
+- **正しい手順**: `OBLIVION_RUST_DIR=<repo>/rust` を付けて実行する
+  （`$env:OBLIVION_RUST_DIR = (Join-Path (Get-Location) 'rust')`）。
+- **確認方法**: `OBLIVION_RUST_DIR=<repo>/rust` で
+  `run_host_tests_msvc.ps1 -NoAsan` → `HOST RUNNER: ALL GREEN (0 suite(s) failed)`
+  （2026-11-28 実測）。恒久対応は ai-todo #208（既定を repo 相対 `rust/` にし、
+  解決後に必須シンボルの存在を検証して落とす）。

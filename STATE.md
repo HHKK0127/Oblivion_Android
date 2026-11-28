@@ -11,7 +11,7 @@ Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --w
 - **環境の罠**: `OBLIVION_RUST_DIR` の既定が古い兄弟チェックアウト `oblivion-re-tools` を指し、vendored `rust/` にしか無い `esm_plugin_unindexed_tail` で host ビルドが落ちる。`OBLIVION_RUST_DIR=<repo>/rust` で回避（恒久対応は別途）。
 - **次**: `#206`（214/215 の min/max 供給元＝Style メッシュ数・Hair Color 色数、適用先 `[+0x870]`/`[+0x88C]`）／`#207`（左右ヒットが行半分のヒューリスティックで矢印矩形と不一致）／`#200`・`#197`（health）／`#199`（Eyes 受け皿）。
 - **未確認**: renderer 結線の実機動作、`UIToggle::renderIndex` の見た目、`#195` の左右判定が原作の矢印矩形と一致しない点。
-- **規範の不一致（要判断）**: リポジトリ AGENTS.md は「STATE.md は追記でなく上書き・4 項目のみ」だが、実ファイルは日付付き履歴の蓄積。今回は既存の慣習（先頭に日付節を追加）に従った。上書きへ寄せるかは人間判断。
+- **規範の不一致（解消）**: リポジトリ AGENTS.md は「STATE.md は上書き・4 項目のみ」だったが、実ファイルは日付付き履歴の蓄積で、台帳・`tmp/re/` が日付節を参照している。AGENTS.md 側を実態（先頭に日付節を追記、各節は 裁定 / 反映 / 実装 / 検証 / 未確認）へ修正した（2026-11-28）。
 
 
 ## 2026-11-27 — #204 race の ATTR 属性を Player に適用（V-664-2 適用段・landing）
