@@ -2,6 +2,8 @@
 
 ## Tasks
 
+- [ ] **#208** host テストランナーの OBLIVION_RUST_DIR 既定が古い兄弟チェックアウト（..\oblivion-re-tools）を指し、vendored rust/ にしか無いシンボル（esm_plugin_unindexed_tail 等）で host ビルドが落ちる（2026-11-28 実測）。他マシンや CI でも静かに再現する。恒久対応: 既定を repo 相対の rust/ にし、解決後に必須シンボル（esm_plugin_unindexed_tail 等）の存在を検証して落とす。対象は tools/host_tests/run_host_tests.sh と run_host_tests_msvc.ps1（CMakeLists 側は既に ${CMAKE_CURRENT_SOURCE_DIR}/../../../../rust で正しい）。回避は OBLIVION_RUST_DIR=<repo>/rust。 `#gotcha` `#harness`
+
 - [ ] **#207** 左右ヒットが「行の半分行」のヒューリスティックで原作の矢印矩形と不一致（211 Race / 214 Style / 215 Hair Color）。原作の race_template_toggle は left/_right の細い矢印矩形で ±1 を判定するが、port は pane_local_x >= row_width*0.5 で判定するため、行の中央（値表示の上）を叩いても値が変わる。矢印矩形の座標（race_template_toggle_left/_right の x/width）を XML から実測して合わせる。#206（min/max 供給と適用先）とは独立。 `#V-635-2` `#chargen`
 
 - [ ] **#206** #RE: 214 Style / 215 Hair Color の min/max 供給元（Style のメッシュ数・Hair Color の色数）と適用先（[+0x870] / [+0x88C] / [+0x8F0]）を確定する。v635 で index 巡回（wrap）と確定済みだが、範囲の実値と適用先は未確定（V-635-1）。ESM に無い可能性が高く BSA 側の調査になる。#199 とは独立（混ぜると膨らむ）。 `#RE` `#V-635-1` `#chargen`
@@ -3794,6 +3796,11 @@
 
 ---
 
+## Task Metadata
+
+Task relationships and dependencies (managed by todo.ai tool).
+View with: `./todo.ai show <task-id>`
+
 <!-- TASK RELATIONSHIPS
 100:depends-on:98
 101:depends-on:97
@@ -3817,4 +3824,4 @@
 -->
 
 ---
-**ai-todo** | Last Updated: 2026-11-28 22:04:30
+**ai-todo** | Last Updated: 2026-11-28 22:17:10
