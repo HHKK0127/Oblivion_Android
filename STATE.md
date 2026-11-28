@@ -2,6 +2,18 @@
 
 Rust host-tests baseline: **197 passed / 31 suites**（`cargo test --offline --workspace` from `rust/`。テストを足したらここを更新。194 → 197 は #186 の末尾 3 テスト）。
 
+## 2026-11-28 — #201 裁定（214/215 = index 巡回 wrap）＋ #195 本体実装（UIToggle index）
+
+- **裁定（v635 / #201 close）**: 214 Style / 215 Hair Color は **bool 反転ではなく index 巡回（wrap）**。決定打は Hair Color 適用 `FUN_005c5f00` が `user0` を `[actor+0x8F0+idx*4]` の添字に使うこと（bool では不成立）。XML `race_template_toggle.user0` が `<mod>` で端は wrap（既定 `user4=0`/`user5=1` のときだけ見かけ上 bool）。通知 dispatch `FUN_005CC200` の 28 ブロックに 214/215 の行は 0 件。要素名は GameSetting `0xB38FB8`(sStyle)/`0xB39330`(sHairColor)。**`V-654-3` close（clamp→wrap に訂正）**。
+- **反映**: `tmp/re/v635_style_haircolor_ruling.md`（新規）/ spec §10.9 追加・§8 `V-654-3`・§10.4 clamp 訂正 / claims.md L54（実装済みと未着手を区別）。docs `7fa3e8ec` ＋ 台帳 `f5e80a36`。
+- **実装（#195 本体）**: `Element` に `index/index_min/index_max`（真実は Element のみ。UIToggle は index を持たない）。`UIToggle::renderIndex(index,count)` は描画のみ。`RaceSexPanel::render()` が index cycler を描く。`stepToggleFromTap/toggleIndex/setToggleRange`。`cycleRace` を clamp→wrap。renderer 結線は `Renderer::onTouchEvent` の `isPanelChargenActive()` 分岐のみ（214/215 を `stepToggleFromTap` へ）。コミット `d524fb72`（model/widget/panel/test）/ `375de632`（renderer）。
+- **検証**: host `RaceSexPanelTests` **99/99**、`HOST RUNNER: ALL GREEN`（新規 3 件＝211 wrap・race tap wrap・214/215 step wrap＋checked 不変、退行 204/210 bool）。`precheck OK`。**renderer.cpp は host 未検証**（host テストはリンクしない）。
+- **環境の罠**: `OBLIVION_RUST_DIR` の既定が古い兄弟チェックアウト `oblivion-re-tools` を指し、vendored `rust/` にしか無い `esm_plugin_unindexed_tail` で host ビルドが落ちる。`OBLIVION_RUST_DIR=<repo>/rust` で回避（恒久対応は別途）。
+- **次**: `#206`（214/215 の min/max 供給元＝Style メッシュ数・Hair Color 色数、適用先 `[+0x870]`/`[+0x88C]`）／`#207`（左右ヒットが行半分のヒューリスティックで矢印矩形と不一致）／`#200`・`#197`（health）／`#199`（Eyes 受け皿）。
+- **未確認**: renderer 結線の実機動作、`UIToggle::renderIndex` の見た目、`#195` の左右判定が原作の矢印矩形と一致しない点。
+- **規範の不一致（要判断）**: リポジトリ AGENTS.md は「STATE.md は追記でなく上書き・4 項目のみ」だが、実ファイルは日付付き履歴の蓄積。今回は既存の慣習（先頭に日付節を追加）に従った。上書きへ寄せるかは人間判断。
+
+
 ## 2026-11-27 — #204 race の ATTR 属性を Player に適用（V-664-2 適用段・landing）
 
 - **裁定（#203）**: ATTR の 30-50 は **base** で bonus ではない。`applyRace` は `resetAttributes()`（全 40）の後、`race->attr(kX, gender)` を `attributes.*` へ**代入**する。`BASE_ATTRIBUTE=40` は race 不在／ATTR 無しのフォールバック。根拠: `renderer.cpp:942-944` の Legacy 経路が既に代入、UESP の race 属性表は初期値。
